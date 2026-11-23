@@ -473,7 +473,7 @@
       "id": "dist",
       "title": "Spridning och uppdateringar",
       "owner": "main",
-      "notes": "Publikt repo, releaser via GitHub Actions och appar som uppdaterar sig själva, så att appen kan delas med kollegor.",
+      "notes": "Publikt repo, releaser byggda här och publicerade på GitHub, och appar som uppdaterar sig själva, så att appen kan delas med kollegor.",
       "items": [
         {
           "id": "dist.1",
@@ -488,7 +488,7 @@
         },
         {
           "id": "dist.3",
-          "title": "Release-flöde: npm run release och GitHub Actions",
+          "title": "Release-flöde: npm run release bygger och publicerar",
           "status": "done"
         },
         {
