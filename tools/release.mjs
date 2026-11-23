@@ -1,20 +1,41 @@
 // Publishes a new version: checks, bumps the version (commit + tag), pushes, builds the installer and
-// uploads it as a GitHub release, where installed apps find it and update themselves.
-// Uses the GitHub CLI's login (`gh auth token`), so nothing else needs a token.
+// publishes it as a GitHub release, where installed apps find it and update themselves.
+// Publishing goes through the GitHub CLI's login, and the script checks afterwards that every file the
+// updater needs (installer, blockmap, latest.yml) is on the release.
 //   npm run release            patch: 0.1.0 -> 0.1.1
 //   npm run release -- minor   0.1.0 -> 0.2.0
 import { execSync } from 'node:child_process';
+import { copyFileSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 
 const level = process.argv[2] ?? 'patch';
 if (!['patch', 'minor', 'major'].includes(level)) throw new Error(`Okänd nivå: ${level} (patch, minor eller major).`);
 
-const run = (command, env = {}) => execSync(command, { stdio: 'inherit', env: { ...process.env, ...env } });
+const run = (command) => execSync(command, { stdio: 'inherit' });
+const read = (command) => execSync(command).toString().trim();
 
-if (execSync('git status --porcelain').toString().trim()) throw new Error('Committa eller ångra ändringarna först.');
+if (read('git status --porcelain')) throw new Error('Committa eller ångra ändringarna först.');
 run('npm run typecheck');
 run('npm test');
 run(`npm version ${level}`);
 run('git push --follow-tags');
-const token = execSync('gh auth token').toString().trim();
 run('npx electron-vite build');
-run('npx electron-builder --win --publish always', { GH_TOKEN: token });
+run('npx electron-builder --win --publish never');
+
+// latest.yml names the files with dashes instead of spaces; the release assets must carry those names.
+const version = JSON.parse(readFileSync('package.json', 'utf8')).version;
+const built = `dist/Claude Manager Setup ${version}.exe`;
+const name = `Claude-Manager-Setup-${version}.exe`;
+const staging = 'dist/upload';
+rmSync(staging, { recursive: true, force: true });
+mkdirSync(staging, { recursive: true });
+copyFileSync(built, `${staging}/${name}`);
+copyFileSync(`${built}.blockmap`, `${staging}/${name}.blockmap`);
+copyFileSync('dist/latest.yml', `${staging}/latest.yml`);
+
+const tag = `v${version}`;
+run(`gh release create ${tag} --title ${tag} --notes "Claude Manager ${version}" "${staging}/${name}" "${staging}/${name}.blockmap" "${staging}/latest.yml"`);
+
+const assets = read(`gh release view ${tag} --json assets --jq ".assets[].name"`).split(/\r?\n/);
+const missing = [name, `${name}.blockmap`, 'latest.yml'].filter((file) => !assets.includes(file));
+if (missing.length) throw new Error(`Releasen ${tag} saknar: ${missing.join(', ')}. Ladda upp med gh release upload ${tag} <filer> --clobber.`);
+console.log(`\nReleasen ${tag} är publicerad. Installerade appar uppdaterar sig när de är lediga.`);

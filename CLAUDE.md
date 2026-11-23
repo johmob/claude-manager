@@ -13,6 +13,6 @@ Never commit personal or company data: names, e-mail addresses, user paths, cust
 ## Shipping a new version
 Installed apps update themselves from this repo's GitHub releases. They download in the background and install once no session is working or waiting for the user.
 1. Commit and push the change to `main`.
-2. Run `npm run release` (`-- minor` for a minor version). It runs the checks, bumps the version, tags `vX.Y.Z`, pushes, builds the installer and publishes it as a GitHub release, using the GitHub CLI's login (`tools/release.mjs`).
+2. Run `npm run release` (`-- minor` for a minor version). It runs the checks, bumps the version, tags `vX.Y.Z`, pushes, builds the installer and publishes it as a GitHub release with the GitHub CLI (`tools/release.mjs`), then checks that the installer, blockmap and `latest.yml` are all on the release.
 
 Do not build or reinstall the user's installed app yourself unless they ask. They run many agents in it.
