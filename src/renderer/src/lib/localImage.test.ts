@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localImageUrl, wrapLocalImageLinks } from './localImage';
+import { isLocalPath, localImageUrl, wrapLocalImageLinks } from './localImage';
 
 describe('localImageUrl', () => {
   it('turns a Windows path or file URL to an image into an app address', () => {
@@ -20,5 +20,12 @@ describe('localImageUrl', () => {
 describe('wrapLocalImageLinks', () => {
   it('wraps local image targets so paths with spaces parse', () => {
     expect(wrapLocalImageLinks('![Ikon](C:\\Mina bilder\\a.png) och [länk](https://x.se)')).toBe('![Ikon](<C:\\Mina bilder\\a.png>) och [länk](https://x.se)');
+  });
+});
+
+describe('isLocalPath', () => {
+  it('recognises local paths and file URLs, also percent-encoded, and not web links', () => {
+    expect(['C:\\Kod\\a.txt', 'C:%5CKod%5Ca.txt', 'file:///C:/a.txt', 'D:/x'].every(isLocalPath)).toBe(true);
+    expect(['https://example.com', 'mailto:a@b.c', 'docs/a.md'].some(isLocalPath)).toBe(false);
   });
 });

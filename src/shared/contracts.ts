@@ -413,6 +413,8 @@ export interface IpcInvokeMap {
   /** Ends the quick chat so the next question starts a new conversation. */
   'quick:reset': { req: void; res: void };
   'quick:current': { req: void; res: SessionSummary | null };
+  /** Opens a link from agent text: web links in the browser, local files and folders in Windows. */
+  'shell:open': { req: { target: string }; res: void };
   /** Short versions of the quick chat's long answers, by transcript entry id. */
   'quick:summaries': { req: void; res: Record<string, string> };
   'session:new-project': { req: NewSessionOptions & { name: string; createGitRepo: boolean }; res: string };

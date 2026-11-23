@@ -1,5 +1,10 @@
 const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
 
+/** A file: URL or a Windows path (drive or network share), possibly percent-encoded by the markdown parser. */
+export function isLocalPath(ref: string): boolean {
+  return /^(?:file:\/\/|[a-zA-Z]:(?:[\\/]|%5C)|\\\\|%5C%5C)/i.test(ref.trim());
+}
+
 /**
  * A local image an agent refers to (a Windows path or a file: URL) as an address the app can show
  * (main serves it on cm-img://), or null when the reference is not a local image.

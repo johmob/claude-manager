@@ -96,6 +96,8 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
       ...options,
       webPreferences: { preload: opts.preloadPath, sandbox: true, contextIsolation: true },
     });
+    win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    win.webContents.on('will-navigate', (event) => event.preventDefault());
     if (opts.rendererUrl) void win.loadURL(`${opts.rendererUrl}#${route}`);
     else void win.loadFile(opts.rendererFile, { hash: route });
     return win;

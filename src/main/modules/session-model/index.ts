@@ -64,6 +64,8 @@ interface SessionState {
   questionsAnswer: string;
   /** Callouts that came before the latest turn ended; only newer ones are this turn's questions. */
   calloutsBefore: number;
+  /** Questions the user has already replied to in this session (normalised), so a repeat is not asked again. */
+  answered: string[];
   mapping: boolean;
   context: ContextUsage | null;
   todo: TodoTree | null;
@@ -103,6 +105,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       questionsId: '',
       questionsAnswer: '',
       calloutsBefore: 0,
+      answered: [],
       mapping: false,
       context: null,
       todo: null,
@@ -161,7 +164,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       );
       const found = findOpenQuestions(s.turnText);
       const seen = new Set<string>();
-      const asked = [...tagged, ...found].filter((q) => !seen.has(q.text) && seen.add(q.text)).slice(0, MAX_QUESTIONS);
+      const asked = [...tagged, ...found]
+        .filter((q) => !seen.has(q.text) && seen.add(q.text))
+        .filter((q) => !alreadyAnswered(s.answered, q.text))
+        .slice(0, MAX_QUESTIONS);
       // A turn the user did not start (e.g. after a subagent finished) without questions leaves the open
       // ones as they are: they are still unanswered. Only new questions replace them.
       if (!asked.length) return [];
@@ -190,6 +196,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.slashCommands = event.slashCommands;
         return [];
       case 'turn_started':
+        // Replying puts the open questions behind the user: an agent that lists them again is not asking anew.
+        s.answered = [...s.answered, ...s.questions.map((q) => normalizeQuestion(q.text))].slice(-MAX_ANSWERED);
         s.limitResetsAt = null;
         s.turnAgents = new Set(s.subagents);
         s.turnActive = true;
@@ -402,6 +410,22 @@ function statusOf(s: SessionState): SessionStatus {
 }
 
 const MAX_QUESTIONS = 20;
+const MAX_ANSWERED = 200;
+
+/** A question reduced to its words: lower case, no punctuation, no trailing note such as "(besvarad)". */
+export function normalizeQuestion(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\s*[([][^)\]]*[)\]]\s*$/, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
+/** Whether a question was answered already: the same words, or one containing the other when long enough. */
+function alreadyAnswered(answered: string[], text: string): boolean {
+  const q = normalizeQuestion(text);
+  return answered.some((a) => a === q || (Math.min(a.length, q.length) >= 20 && (a.includes(q) || q.includes(a))));
+}
 const QUESTION_END = /\?["”'»)]*$/;
 const QUESTION_HEADING = /(?:öppna|obesvarade)\s+fråg|(?:jag har|några|ett par|en|två|tre|fyra|fem|\d+)\s+(?:\w+\s+)?fråg|fråg\w*\s+(?:till|för|åt)\s+(?:dig|er)|att\s+(?:svara|ta\s+ställning)|open questions|questions?\s+for\s+you/i;
 const ASSUMPTION_HEADING = /antag|assum|rätta|bekräfta|stämmer det/i;

@@ -635,9 +635,9 @@ textarea.input { resize: vertical; }
 .transcript .t-round .t-assistant[data-final] { flex-direction: column; background: none; padding: 2px 0 2px 12px; border-radius: 0; }
 
 /* ---------- Tables in agent text ---------- */
-.md-table { max-width: 100%; overflow-x: auto; margin: .7em 0; border: 1px solid var(--border); border-radius: 8px; }
+.md-table { container-type: inline-size; max-width: 100%; overflow-x: auto; margin: .7em 0; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,.015); }
 .md table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85em; font-variant-numeric: tabular-nums; }
-.md th, .md td { min-width: 7em; padding: 6px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.md th, .md td { min-width: 8em; padding: 7px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); overflow-wrap: break-word; hyphens: auto; }
 .md th + th, .md td + td { border-left: 1px solid rgba(255,255,255,.07); }
 .md thead th { background: rgba(255,255,255,.07); color: #fff; font-weight: 700; white-space: nowrap; }
 .md tbody tr:nth-child(even) td { background: rgba(255,255,255,.03); }
@@ -764,3 +764,24 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 /* Local images in agent text: a preview, large on double-click */
 .md-img { display: block; max-width: min(100%, 440px); max-height: 300px; margin: .5em 0; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,.03); object-fit: contain; cursor: zoom-in; }
 .image-view { display: block; max-width: 100%; max-height: 82vh; margin: 0 auto; object-fit: contain; }
+
+/* Tables: the heading row stands out, the first column names the row */
+.md thead th { border-bottom: 2px solid var(--accent-ui); font-size: 0.78rem; letter-spacing: .03em; }
+.md tbody td:first-child { font-weight: 650; color: #fff; }
+/* Where a table has no room, each row becomes a card: the column heading above each value */
+@container (max-width: 560px) {
+  .md-table table, .md-table tbody, .md-table tr, .md-table td { display: block; width: 100%; }
+  .md-table thead { display: none; }
+  .md-table tr { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  .md-table tr:last-child { border-bottom: 0; }
+  .md-table tbody tr:nth-child(even) td { background: none; }
+  .md-table tbody tr:nth-child(even) { background: rgba(255,255,255,.03); }
+  .md-table td { min-width: 0; padding: 2px 0; border: 0 !important; }
+  .md-table td::before { content: attr(data-label); display: block; margin-top: 4px; font-size: 0.68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--accent-ui); }
+  .md-table td:first-child::before { margin-top: 0; }
+  .md-table td:first-child { font-size: 1.02em; }
+}
+
+/* Links in agent text are clickable */
+.md a.md-link { color: var(--accent-ui); text-decoration: underline; text-decoration-color: rgba(82,200,255,.45); text-underline-offset: 2px; cursor: pointer; overflow-wrap: anywhere; }
+.md a.md-link:hover { text-decoration-color: currentColor; }

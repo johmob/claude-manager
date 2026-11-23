@@ -1,10 +1,11 @@
 // Composition root: the only place that knows every module. It wires modules together with
 // callbacks and data, owns persistence of records/settings, and serves the renderer's IPC.
-import { app, dialog, ipcMain, nativeImage } from 'electron';
+import { app, dialog, ipcMain, nativeImage, shell } from 'electron';
 import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import iconPath from '../../resources/icon.png?asset';
 import { CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, THEME_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
@@ -656,6 +657,17 @@ function boot(): void {
   });
 
   handle('quick:current', () => model.summary(QUICK_ID) ?? null);
+
+  handle('shell:open', async (req) => {
+    const target = req.target.trim();
+    if (/^(https?:|mailto:)/i.test(target)) return shell.openExternal(target);
+    const path = localPath(target);
+    if (!path || !existsSync(path)) throw new Error(`Hittar inte ${path ?? target}`);
+    // A program or script an agent links to is shown in its folder, never started by a click.
+    if (RUNNABLE.test(path)) return shell.showItemInFolder(path);
+    const failed = await shell.openPath(path);
+    if (failed) throw new Error(failed);
+  });
   handle('quick:summaries', () => Object.fromEntries(quickSummaries));
 
   handle('session:new-project', (req) => {
@@ -816,6 +828,19 @@ function boot(): void {
 // ---------- Pure helpers ----------
 
 /** In the installed app the SDK's Claude binary sits outside the asar archive; in development the SDK finds it itself. */
+/** Files a click must not start. */
+const RUNNABLE = /\.(exe|com|bat|cmd|ps1|psm1|vbs|vbe|js|jse|wsf|wsh|msi|msp|scr|lnk|hta|cpl|reg|jar)$/i;
+
+/** A local path from a link target: a file: URL, a Windows path, possibly percent-encoded. Null otherwise. */
+function localPath(target: string): string | null {
+  try {
+    const path = /^file:/i.test(target) ? fileURLToPath(target) : decodeURIComponent(target);
+    return /^(?:[a-zA-Z]:[\\/]|\\\\)/.test(path) ? path : null;
+  } catch {
+    return null;
+  }
+}
+
 function sameFolder(a: string, b: string): boolean {
   return resolve(a).toLowerCase() === resolve(b).toLowerCase();
 }

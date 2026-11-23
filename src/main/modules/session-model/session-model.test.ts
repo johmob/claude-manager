@@ -294,3 +294,18 @@ describe('open questions across turns', () => {
     expect(model.summary('s1')?.status).toBe('waiting');
   });
 });
+
+describe('questions already answered', () => {
+  it('does not ask again what the user replied to, even when the agent lists it anew', () => {
+    const { model, apply } = setup();
+    const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'text', text: 'Ska jag använda SPI-bussen för givaren?' });
+    apply(finish);
+    apply({ type: 'turn_started', prompt: 'Svar: ja' });
+    apply({ type: 'text', text: 'Öppna frågor:\n1. Ska jag använda SPI-bussen för givaren? (besvarad)\n2. Vilken baudrate ska gälla' });
+    apply(finish);
+    expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Vilken baudrate ska gälla']);
+  });
+});
