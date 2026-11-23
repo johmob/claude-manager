@@ -3,6 +3,7 @@ import type { SessionSummary } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { useTranscript } from '../state/useTranscript';
 import { Spinner } from './Atoms';
+import { PlusIcon, SendIcon, TrashIcon } from './Icons';
 import { MarkdownText } from './MarkdownText';
 import { Modal } from './Modal';
 import { PendingPanel } from './PendingPanel';
@@ -96,8 +97,13 @@ export function QuickChatBody({ compact = false, large = false }: { compact?: bo
             if (e.key === 'Enter') ask();
           }}
         />
-        <button type="button" className="btn primary" disabled={!text.trim()} onClick={ask}>Fråga</button>
-        {shown.length > 0 && <button type="button" className="btn" onClick={() => send('quick:reset', undefined)}>Ny fråga</button>}
+        <button type="button" className="btn primary quick-icon" title="Fråga (Enter)" aria-label="Fråga" disabled={!text.trim()} onClick={ask}><SendIcon /></button>
+        {shown.length > 0 && (
+          <>
+            <button type="button" className="btn quick-icon" title="Ny fråga: nytt samtal, svaren hittills står kvar" aria-label="Ny fråga" onClick={() => send('quick:new', undefined)}><PlusIcon /></button>
+            <button type="button" className="btn quick-icon" title="Ta bort: rensa chatten" aria-label="Ta bort" onClick={() => send('quick:reset', undefined)}><TrashIcon /></button>
+          </>
+        )}
       </div>
     </div>
   );

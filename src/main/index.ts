@@ -661,6 +661,11 @@ function boot(): void {
     engine.start({ id: QUICK_ID, cwd, model: 'sonnet', effort: 'low', permissionMode: 'auto', contextWindow: 'auto', appendSystemPrompt: QUICK_PROMPT, initialPrompt: text });
   });
 
+  handle('quick:new', async () => {
+    // The next question starts a fresh session; the transcript so far stays.
+    await engine.stop(QUICK_ID);
+  });
+
   handle('quick:reset', async () => {
     quickSummaries.clear();
     windows.send('state:quick-summaries', {});

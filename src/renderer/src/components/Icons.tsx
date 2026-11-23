@@ -49,3 +49,26 @@ export const AgentsIcon = () => (
     <path d="M10.25 3.25a2.25 2.25 0 0 1 0 4.25M11.75 9.75c1.25.5 2.15 1.65 2.5 3.5" />
   </Icon>
 );
+
+/** Paper plane: send. */
+export const SendIcon = () => (
+  <Icon>
+    <path d="M2.5 7.75 13.5 2.5l-3.75 11-2.5-4.75z" />
+    <path d="m7.25 8.75 6.25-6.25" />
+  </Icon>
+);
+
+/** Plus: start something new. */
+export const PlusIcon = () => (
+  <Icon>
+    <path d="M8 3v10M3 8h10" />
+  </Icon>
+);
+
+/** Bin: remove. */
+export const TrashIcon = () => (
+  <Icon>
+    <path d="M2.75 4.25h10.5M6.25 4.25V2.75h3.5v1.5M4 4.25l.75 9h6.5l.75-9" />
+    <path d="M6.75 6.75v4.25M9.25 6.75v4.25" />
+  </Icon>
+);

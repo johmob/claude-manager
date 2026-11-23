@@ -790,3 +790,8 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
    its right end (titleBarOverlay, 52 px high), so the bar leaves room for them. */
 .topbar { height: 52px; padding-top: 0; padding-bottom: 0; padding-right: 150px; -webkit-app-region: drag; }
 .topbar button, .topbar select, .topbar input, .topbar label, .topbar .settings-pop { -webkit-app-region: no-drag; }
+
+/* Quick chat buttons: icons only */
+.quick-icon { display: inline-grid; place-items: center; width: 38px; padding: 0; }
+.quick-icon .icon { width: 16px; height: 16px; }
+.quick.compact .quick-icon { width: 34px; }

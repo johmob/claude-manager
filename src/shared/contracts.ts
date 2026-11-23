@@ -412,7 +412,9 @@ export interface IpcInvokeMap {
   'update:check': { req: void; res: void };
   /** Asks the quick chat ("Ny chatt"); starts it on the first question. */
   'quick:ask': { req: { text: string }; res: void };
-  /** Ends the quick chat so the next question starts a new conversation. */
+  /** Starts a new quick-chat conversation with the next question; the answers so far stay on screen. */
+  'quick:new': { req: void; res: void };
+  /** Clears the quick chat: conversation and answers. */
   'quick:reset': { req: void; res: void };
   'quick:current': { req: void; res: SessionSummary | null };
   /** Opens a link from agent text: web links in the browser, local files and folders in Windows. */
