@@ -396,6 +396,8 @@ export interface IpcInvokeMap {
   'settings:choose-projects-root': { req: void; res: AppSettings | null };
   /** Installs the newer version now (fetching it first if needed); the app restarts. */
   'update:install': { req: void; res: void };
+  /** Looks for a new version now. */
+  'update:check': { req: void; res: void };
   'session:new-chat': { req: NewSessionOptions & { name?: string }; res: string };
   'session:new-project': { req: NewSessionOptions & { name: string; createGitRepo: boolean }; res: string };
   'session:locate-project': { req: { description: string }; res: LocateResult };

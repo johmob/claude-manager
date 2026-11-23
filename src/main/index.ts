@@ -26,7 +26,7 @@ import { createSessionModel } from './modules/session-model';
 import { createUsageMonitor } from './modules/usage-monitor';
 import { createTodoWatcher, mappingRequest, TODO_PROTOCOL, TODO_RELATIVE_PATH } from './modules/todo-tree';
 import { createJsonStore } from './modules/json-store';
-import { pickColor } from './modules/palette';
+import { currentColor, pickColor } from './modules/palette';
 import { createGroundRules, groundRulesEditorPrompt } from './modules/ground-rules';
 import { createProjects, locateProject } from './modules/projects';
 import { createStructuredQuery } from './modules/structured-query';
@@ -539,6 +539,7 @@ function boot(): void {
 
   handle('app:get-state', () => ({ sessions: model.summaries(), usage: usage.current(), settings, account, update: updateStatus() }));
   handle('update:install', () => updater?.installNow());
+  handle('update:check', () => updater?.checkNow());
 
   handle('session:new-chat', (req) => {
     const id = randomUUID();
@@ -761,6 +762,8 @@ function validRecords(raw: unknown): SessionRecord[] | null {
     const lastActiveAt = typeof r['lastActiveAt'] === 'string' ? r['lastActiveAt'] : String(r['createdAt']);
     const contextWindow = CONTEXT_WINDOW_CHOICES.find((w) => w === r['contextWindow']) ?? 'auto';
     const tokensUsed = typeof r['tokensUsed'] === 'number' ? r['tokensUsed'] : 0;
-    return [{ ...(r as unknown as SessionRecord), effort, focused, lastActiveAt, contextWindow, tokensUsed }];
+    // Sessions saved with the earlier bright colours get their muted counterparts.
+    const color = currentColor(String(r['color']));
+    return [{ ...(r as unknown as SessionRecord), color, effort, focused, lastActiveAt, contextWindow, tokensUsed }];
   });
 }

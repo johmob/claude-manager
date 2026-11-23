@@ -91,7 +91,12 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
             </select>
           </label>
           <div className="settings-version">
-            Version {update.version} · {updateText(update)}
+            Version {update.version} · {update.state === 'checking' ? 'Söker…' : updateText(update)}
+            {update.state !== 'off' && (
+              <button type="button" className="link-btn" disabled={update.state === 'checking' || update.state === 'downloading'} onClick={() => send('update:check', undefined)}>
+                Sök efter uppdatering nu
+              </button>
+            )}
           </div>
         </div>
       )}

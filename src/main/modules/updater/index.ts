@@ -19,12 +19,15 @@ export interface Updater {
   setAuto(on: boolean): void;
   /** Installs the new version now, fetching it first if needed. Restarts the app. */
   installNow(): void;
+  /** Looks for a new version now instead of waiting for the next regular check. */
+  checkNow(): void;
   current(): UpdateStatus;
   stop(): void;
 }
 
-const FIRST_CHECK_MS = 60 * 1000;
-const CHECK_EVERY_MS = 3 * 60 * 60 * 1000;
+// A new release reaches running apps within minutes; a check is one small request to GitHub.
+const FIRST_CHECK_MS = 30 * 1000;
+const CHECK_EVERY_MS = 10 * 60 * 1000;
 const IDLE_POLL_MS = 60 * 1000;
 
 export function createUpdater(opts: UpdaterOptions): Updater {
@@ -79,6 +82,9 @@ export function createUpdater(opts: UpdaterOptions): Updater {
       installWhenReady = true;
       if (status.state === 'available') void autoUpdater.downloadUpdate();
       else if (status.state !== 'downloading') check();
+    },
+    checkNow() {
+      if (status.state !== 'downloading' && status.state !== 'ready') check();
     },
     current: () => status,
     stop() {
