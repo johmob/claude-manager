@@ -40,3 +40,12 @@ export const RulesIcon = () => (
     <path d="M5.75 7h4.5M5.75 9.25h4.5M5.75 11.5h3" />
   </Icon>
 );
+
+/** Two people: a session's agents. */
+export const AgentsIcon = () => (
+  <Icon>
+    <circle cx="6" cy="5.25" r="2.25" />
+    <path d="M1.75 13.25c.4-2.4 2.1-3.75 4.25-3.75s3.85 1.35 4.25 3.75" />
+    <path d="M10.25 3.25a2.25 2.25 0 0 1 0 4.25M11.75 9.75c1.25.5 2.15 1.65 2.5 3.5" />
+  </Icon>
+);

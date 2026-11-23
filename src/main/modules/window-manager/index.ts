@@ -15,6 +15,8 @@ export interface WindowManagerOptions {
   icon: NativeImage;
   /** Called when the user tries to close the main window; call `event.preventDefault()` to keep it. */
   onMainClose: (event: Electron.Event) => void;
+  /** Keep the main window hidden at start (e.g. started with Windows); the tray opens it. */
+  startHidden?: boolean;
 }
 
 export interface WindowManager {
@@ -39,11 +41,11 @@ export interface WindowManager {
 const DOCK_CARD = { width: 204, height: 60, gap: 8, pad: 8 };
 const DOCK_VERTICAL_WIDTH = 220;
 const DOCK_HORIZONTAL_HEIGHT = 76;
-const OVERLAY_CELL = 60;
-const OVERLAY_USAGE_WIDTH = 78;
-const OVERLAY_HEIGHT = 44;
-const OVERLAY_DETAIL_HEIGHT = 170;
-const OVERLAY_DETAIL_WIDTH = 360;
+const OVERLAY_CELL = 78;
+const OVERLAY_USAGE_WIDTH = 132;
+const OVERLAY_HEIGHT = 88;
+const OVERLAY_DETAIL_HEIGHT = 280;
+const OVERLAY_DETAIL_WIDTH = 284;
 const EDGE_MARGIN = 8;
 
 type Route = 'main' | 'dock' | 'overlay';
@@ -61,7 +63,9 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     autoHideMenuBar: true,
     icon: opts.icon,
   });
-  main.once('ready-to-show', () => main.show());
+  main.once('ready-to-show', () => {
+    if (!opts.startHidden) main.show();
+  });
   main.on('close', (event) => {
     if (!closeAllowed) opts.onMainClose(event);
   });

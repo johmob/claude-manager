@@ -42,13 +42,17 @@ const DEFAULT_SETTINGS: AppSettings = {
   alertOnDone: false,
   dockVisible: false,
   dockEdge: 'right',
-  overlayVisible: false,
+  overlayVisible: true,
+  launchAtLogin: true,
   defaultModel: 'opus',
   defaultEffort: 'medium',
   defaultPermissionMode: 'auto',
 };
 
 const SYNC_DELAY_MS = 80;
+
+/** Given to the app when Windows starts it at login, so it starts in the tray instead of opening its window. */
+const AUTOSTART_ARG = '--autostart';
 
 /** A project waiting to be mapped by its session's main agent, with the user's first message held until then. */
 interface MappingJob {
@@ -109,9 +113,17 @@ function boot(): void {
     rendererFile: join(__dirname, '../renderer/index.html'),
     icon,
     onMainClose: confirmClose,
+    startHidden: process.argv.includes(AUTOSTART_ARG),
   });
   const notifier = createNotifier({ onClick: showSession, flash: (on) => windows.flash(on) });
-  const tray = createTray({ icon, onOpen: () => windows.showMain(), onQuit: quit });
+  const tray = createTray({
+    icon,
+    onOpen: () => windows.showMain(),
+    onQuit: quit,
+    launchAtLogin: settings.launchAtLogin,
+    onLaunchAtLogin: (on) => updateSettings({ launchAtLogin: on }),
+  });
+  applyLaunchAtLogin();
 
   for (const record of activeRecords()) {
     model.upsertRecord(record);
@@ -434,6 +446,23 @@ function boot(): void {
     windows.send('ui:open-session', { id });
   }
 
+  // ---------- Settings ----------
+  function updateSettings(changes: Partial<AppSettings>): AppSettings {
+    settings = validSettings({ ...settings, ...changes }) ?? settings;
+    settingsStore.write(settings);
+    notifier.setDoNotDisturb(settings.doNotDisturb);
+    applyLaunchAtLogin();
+    tray.setLaunchAtLogin(settings.launchAtLogin);
+    windows.send('state:settings', settings);
+    scheduleSync();
+    return settings;
+  }
+
+  /** Registers (or removes) the app as a Windows login item. Only the installed app: a dev run would register electron.exe. */
+  function applyLaunchAtLogin(): void {
+    if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: settings.launchAtLogin, args: [AUTOSTART_ARG] });
+  }
+
   // ---------- Lifecycle ----------
   function confirmClose(event: Electron.Event): void {
     if (!model.summaries().some((s) => !s.resumable)) {
@@ -616,14 +645,7 @@ function boot(): void {
     return createSession('ground-rules', 'Grundregler', userData, options);
   });
 
-  handle('settings:update', (req) => {
-    settings = validSettings({ ...settings, ...req }) ?? settings;
-    settingsStore.write(settings);
-    notifier.setDoNotDisturb(settings.doNotDisturb);
-    windows.send('state:settings', settings);
-    scheduleSync();
-    return settings;
-  });
+  handle('settings:update', (req) => updateSettings(req));
 
   handle('usage:refresh', () => usage.refreshNow());
   handle('window:snap', (req) => windows.snap(req.mode));
@@ -665,6 +687,7 @@ function validSettings(r: unknown): AppSettings | null {
     dockVisible: bool(r['dockVisible'], d.dockVisible),
     dockEdge: pick(r['dockEdge'], DOCK_EDGES, d.dockEdge),
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),
+    launchAtLogin: bool(r['launchAtLogin'], d.launchAtLogin),
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),
     defaultEffort: pick(r['defaultEffort'], EFFORT_CHOICES, d.defaultEffort),
     defaultPermissionMode: pick(r['defaultPermissionMode'], PERMISSION_CHOICES, d.defaultPermissionMode),

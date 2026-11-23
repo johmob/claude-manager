@@ -129,10 +129,6 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
         </div>
       )}
       <div className="card-foot">
-        <label className="select-box" title="Kommer med i Fokus automatiskt när du skriver till den, och lämnar efter några dagar utan arbete" onClick={(e) => e.stopPropagation()}>
-          <input type="checkbox" checked={session.focused} onChange={() => send('session:set-focus', { id: session.id, focused: !session.focused })} />
-          <span>Fokus</span>
-        </label>
         <button type="button" className="link-btn" onClick={onOpen}>Arbetsschema</button>
         <CardActions session={session} onRename={() => setRenaming(true)} />
       </div>

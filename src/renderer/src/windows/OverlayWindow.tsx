@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { SessionSummary, UsageSnapshot, UsageWindow } from '../../../shared/contracts';
-import { SessionInfo } from '../components/SessionInfo';
+import { AgentsIcon } from '../components/Icons';
+import { InfoBar, InfoRow, SessionInfo } from '../components/SessionInfo';
 import { send } from '../lib/api';
 import { formatReset, monogram } from '../lib/format';
 import { usageLevel } from '../lib/usage';
 import { useAppState } from '../state/useAppState';
 
-const MAX_NAME = 7;
+const MAX_NAME = 10;
 
 function shortName(name: string): string {
   return name.length > MAX_NAME ? `${name.slice(0, MAX_NAME - 1)}…` : name;
@@ -26,21 +27,49 @@ function UsageRow({ label, window: w }: { label: string; window: UsageWindow | n
   );
 }
 
+const LEVEL_COLOR = { ok: '#3fb950', notice: '#facc15', warn: '#ff8a1f', crit: '#ff3b30' } as const;
+
 function UsageDetail({ usage }: { usage: UsageSnapshot }) {
-  const line = (label: string, w: UsageWindow | null, weekday: boolean): string =>
-    w ? `${label}: ${Math.round(w.utilization)} % använt${formatReset(w.resetsAt, weekday) ? ` · ${formatReset(w.resetsAt, weekday)}` : ''}` : `${label}: ingen data`;
+  const row = (label: string, w: UsageWindow | null, weekday: boolean) => {
+    const used = w ? Math.round(w.utilization) : null;
+    const reset = w ? formatReset(w.resetsAt, weekday) : '';
+    return (
+      <InfoRow label={label}>
+        {used === null ? (
+          <span className="si-dim">ingen data</span>
+        ) : (
+          <InfoBar percent={used} color={LEVEL_COLOR[usageLevel(used)]}>
+            {used} % {reset && <span className="si-dim">· {reset}</span>}
+          </InfoBar>
+        )}
+      </InfoRow>
+    );
+  };
   return (
     <div className="session-info">
-      <div className="si-head"><strong>Användning</strong></div>
-      <div>{line('5 timmar', usage.fiveHour, false)}</div>
-      <div>{line('Vecka', usage.sevenDay, true)}</div>
+      <div className="si-head"><strong className="si-name">Användning</strong></div>
+      <div className="si-grid">
+        {row('5 tim', usage.fiveHour, false)}
+        {row('Vecka', usage.sevenDay, true)}
+      </div>
     </div>
+  );
+}
+
+/** How many of the session's agents are working, out of all agents of its current turn. */
+function AgentCount({ session }: { session: SessionSummary }) {
+  if (!session.agentCount) return <span className="ov-agents" title="Inte startad"><AgentsIcon />–</span>;
+  return (
+    <span className="ov-agents" data-busy={session.activeAgents > 0} title={`${session.activeAgents} av ${session.agentCount} agenter jobbar`}>
+      <AgentsIcon />
+      <b>{session.activeAgents}</b>/{session.agentCount}
+    </span>
   );
 }
 
 /**
  * Click-through strip at the top of the screen: usage first, then one icon per session with its
- * status and number of active agents. Hovering shows details below; Ctrl+click opens the session.
+ * status, and how many of its agents are working. Hovering shows details below; Ctrl+click opens the session.
  */
 export function OverlayWindow() {
   const state = useAppState();
@@ -87,9 +116,9 @@ export function OverlayWindow() {
               <span className="ov-ring" />
               <span className="ov-letters">{monogram(s.name)}</span>
               {STATUS_MARK[s.status] && <span className="ov-mark">{STATUS_MARK[s.status]}</span>}
-              {s.activeAgents > 0 && <span className="ov-agents" title="Aktiva agenter">{s.activeAgents}</span>}
             </span>
             <span className="ov-name">{shortName(s.name)}</span>
+            <AgentCount session={s} />
           </div>
         ))}
       </div>

@@ -83,9 +83,15 @@ describe('session-model', () => {
     apply({ type: 'turn_started', prompt: 'bygg' });
     apply({ type: 'subagent_started', taskId: 'a', description: 'research' });
     apply({ type: 'subagent_started', taskId: 'b', description: 'tests' });
-    expect(model.summary('s1')?.activeAgents).toBe(3);
+    expect(model.summary('s1')).toMatchObject({ activeAgents: 3, agentCount: 3 });
     apply({ type: 'subagent_finished', taskId: 'a' });
-    expect(model.summary('s1')?.activeAgents).toBe(2);
+    expect(model.summary('s1')).toMatchObject({ activeAgents: 2, agentCount: 3 });
+    apply({ type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 });
+    expect(model.summary('s1')).toMatchObject({ activeAgents: 1, agentCount: 2 });
+    apply({ type: 'turn_started', prompt: 'mer' });
+    expect(model.summary('s1')?.agentCount).toBe(2);
+    apply({ type: 'subagent_finished', taskId: 'b' });
+    expect(model.summary('s1')).toMatchObject({ activeAgents: 1, agentCount: 2 });
     const item = (id: string, title: string, status: TodoNode['status'], children: TodoNode[] = []): TodoNode => ({
       id,
       title,

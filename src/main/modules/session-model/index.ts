@@ -44,6 +44,8 @@ interface SessionState {
   unseenDone: boolean;
   pending: PendingInput[];
   subagents: Set<string>;
+  /** Subagents of the current turn, running or finished (and those still running from earlier turns). */
+  turnAgents: Set<string>;
   turnStartedAt: number | null;
   startedAt: number | null;
   lastActivity: string;
@@ -76,6 +78,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       unseenDone: false,
       pending: [],
       subagents: new Set(),
+      turnAgents: new Set(),
       turnStartedAt: null,
       startedAt: null,
       lastActivity: '',
@@ -134,6 +137,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.slashCommands = event.slashCommands;
         return [];
       case 'turn_started':
+        s.turnAgents = new Set(s.subagents);
         s.turnActive = true;
         s.turnStartedAt = at;
         s.unseenDone = false;
@@ -173,6 +177,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       }
       case 'subagent_started':
         s.subagents.add(event.taskId);
+        s.turnAgents.add(event.taskId);
         s.lastActivity = `Subagent: ${event.description}`;
         return [];
       case 'subagent_finished':
@@ -194,6 +199,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       case 'effort_changed':
         return system(`Effort bytt till ${event.effort}.`, 'info');
       case 'turn_finished': {
+        s.turnAgents = new Set(s.subagents);
         s.turnActive = false;
         s.turnStartedAt = null;
         s.lastActivity = '';
@@ -220,6 +226,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.turnStartedAt = null;
         s.pending = [];
         s.subagents.clear();
+        s.turnAgents.clear();
         s.pendingThinking = '';
         // The card's status already says it stopped; a restart (e.g. a new context window) should not look like a halt.
         return [];
@@ -240,6 +247,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       status: statusOf(s),
       currentTask: currentTask(s.todo) ?? s.lastActivity,
       activeAgents: (s.turnActive ? 1 : 0) + s.subagents.size,
+      agentCount: s.running ? 1 + s.turnAgents.size : 0,
       pending: s.pending[0] ?? null,
       pendingCount: s.pending.length,
       turnStartedAt: s.turnStartedAt,

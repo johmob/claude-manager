@@ -250,6 +250,8 @@ export interface SessionSummary {
   currentTask: string;
   /** Main agent (1 while working) plus running subagents. */
   activeAgents: number;
+  /** All agents of the current turn: the main agent plus its subagents, working or finished; 0 when not running. */
+  agentCount: number;
   /** Oldest unanswered question or permission request. */
   pending: PendingInput | null;
   pendingCount: number;
@@ -294,6 +296,8 @@ export interface AppSettings {
   dockVisible: boolean;
   dockEdge: DockEdge;
   overlayVisible: boolean;
+  /** Start with Windows, in the system tray (installed app only). */
+  launchAtLogin: boolean;
   defaultModel: ModelChoice;
   defaultEffort: EffortChoice;
   defaultPermissionMode: PermissionChoice;
