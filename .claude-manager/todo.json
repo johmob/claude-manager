@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T09:13:43Z",
+  "updated": "2026-11-23T09:18:09Z",
   "blocks": [
     {
       "id": "1",
@@ -207,7 +207,7 @@
     {
       "id": "7",
       "title": "Callouts: agents tag what matters",
-      "status": "in_progress",
+      "status": "done",
       "steps": [
         {
           "id": "7.1",
@@ -232,7 +232,7 @@
         {
           "id": "7.5",
           "title": "Rebuild installer",
-          "status": "in_progress"
+          "status": "done"
         }
       ]
     }
