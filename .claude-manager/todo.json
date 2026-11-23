@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T11:04:45Z",
+  "updated": "2026-11-23T11:07:01Z",
   "tracks": [
     {
       "id": "1",
@@ -392,8 +392,7 @@
         {
           "id": "12.4",
           "title": "Rebuild and reinstall",
-          "status": "in_progress",
-          "progress": 50
+          "status": "done"
         }
       ]
     },
@@ -425,8 +424,7 @@
         {
           "id": "13.5",
           "title": "Rebuild and reinstall",
-          "status": "in_progress",
-          "progress": 50
+          "status": "done"
         }
       ]
     }
