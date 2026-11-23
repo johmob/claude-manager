@@ -3,7 +3,7 @@ import type { SessionSummary, UsageSnapshot } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { MAX_FOCUS, type Selection } from '../state/useSelection';
 import { SessionCard } from '../components/SessionCard';
-import { TodoPanel } from '../components/TodoPanel';
+import { WorkSchema } from '../components/WorkSchema';
 import { UsagePanel } from '../components/UsagePanel';
 import type { DialogKind } from '../components/StartDialogs';
 
@@ -59,7 +59,7 @@ export function OverviewView({ sessions, usage, selection, onDialog }: OverviewV
         )}
       </div>
       <UsagePanel usage={usage} />
-      {openSession && <TodoPanel session={openSession} onClose={() => setOpenId(null)} />}
+      {openSession && <WorkSchema session={openSession} onClose={() => setOpenId(null)} />}
     </div>
   );
 }

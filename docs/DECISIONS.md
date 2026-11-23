@@ -48,7 +48,7 @@ Run `node tools/verify-sdk.mjs <workDir> <logFile>` to repeat. Results:
 ## Usage panel
 
 Ported from `johmob/claude-usage-trafficmonitor`:
-`GET https://api.anthropic.com/api/oauth/usage` with `Authorization: Bearer <claudeAiOauth.accessToken>` from `%USERPROFILE%\.claude\.credentials.json` (or `%CLAUDE_CONFIG_DIR%`) and header `anthropic-beta: oauth-2025-04-20`. Fields `five_hour` / `seven_day` → `utilization` (percent) and `resets_at`. Poll every 180 s. Never refresh the token (that could log Claude Code out). Thresholds same as the plugin: orange from 70 % used, red from 90 % used.
+`GET https://api.anthropic.com/api/oauth/usage` with `Authorization: Bearer <claudeAiOauth.accessToken>` from `%USERPROFILE%\.claude\.credentials.json` (or `%CLAUDE_CONFIG_DIR%`) and header `anthropic-beta: oauth-2025-04-20`. Fields `five_hour` / `seven_day` → `utilization` (percent) and `resets_at`. Poll every 180 s. Never refresh the token (that could log Claude Code out). Levels: green below 50 % used, yellow from 50 %, orange from 70 %, red from 90 % (the red bar pulses).
 
 ## Callouts: the agent tags what matters (replacement for the You Should Know plugin)
 
@@ -70,22 +70,32 @@ Why the working agent tags its own callouts: it costs nothing extra, it knows it
 
 `structured-query` is also what the project locator uses. The root passes the function into both modules, so neither imports the other.
 
-## Todo tree file
+## Work schema (the todo tree file)
 
-Path: `<project>/.claude-manager/todo.json`. Only the main agent writes it; the format is given to every session in the appended system prompt.
+Path: `<project>/.claude-manager/todo.json`. The main agent writes it, following `TODO_PROTOCOL` in the todo-tree module, which is appended to every session. The user asked for the plan to read like an org chart. The project sits on top, **parallel tracks** sit under it (CAD, firmware for each device, result pages …), and items and sub-items sit under each track.
 
 ```json
 {
   "title": "What this session is building",
   "updated": "2026-11-23T09:00:00Z",
-  "blocks": [
-    { "id": "1", "title": "Main block", "status": "in_progress",
-      "steps": [ { "id": "1.1", "title": "Sub-step", "status": "done" } ] }
+  "tracks": [
+    { "id": "fw-a", "title": "Firmware – controller", "owner": "firmware-a", "items": [
+      { "id": "fw-a.1", "title": "SPI driver", "status": "done" },
+      { "id": "fw-a.2", "title": "Data protocol", "status": "in_progress", "progress": 40 } ] },
+    { "id": "web", "title": "Web – result pages", "owner": "main", "items": [
+      { "id": "web.1", "title": "Live chart", "status": "not_started", "dependsOn": ["fw-a.2"] } ] }
   ]
 }
 ```
 
-`status` is `not_started`, `in_progress` or `done`. The card's "current task" is the first `in_progress` step (falling back to the latest tool activity).
+- **Status and progress.** The agent sets `status` only on the lowest-level items, plus `progress` (0–100) while an item is in progress. The parser computes each parent and track from its items, so they never contradict each other. It also computes the overall progress. Done always counts as 100 and not started as 0. An item in progress without a `progress` value counts as 50.
+- **Dependencies.** An item is marked **blocked** while any item it lists in `dependsOn` is unfinished. This works across tracks.
+- **Owners.** `owner` names the subagent responsible for a track, or "main". The ground rules ask for one subagent per track where that makes sense.
+- **New tracks.** When the work reaches a new area or phase that no track covers, the agent asks (AskUserQuestion) whether to open a new track before starting on it, proposing a title and an owner. Verified: given "Vi behöver också en mobilapp…", Sonnet asked exactly that and offered "under the web track" as the alternative.
+- **Older format.** The earlier `blocks`/`steps` format still parses; blocks become tracks.
+- **Arbetsschema view.** It opens from the card button, a card click or the tile header. It shows the org chart with progress for every track and item, "Pågår nu", "Väntar" with the items being waited for, and owners. If the tracks do not fit side by side, the window is maximised while the view is open and restored afterwards. The tracks then share the width, and titles wrap.
+- **Ask about a part.** Clicking a track or an item opens a message box. The app adds the reference automatically before sending the message to the session's Claude, for example `Angående punkt fw-s.2 "…" i arbetsschemat (spår fw-s "…", ansvarig …):`. The session then opens in Fokus.
+- **Current task on the card.** The card shows the first in-progress item of each track, for example "fw-s.1 SPI-drivrutin (+1 parallellt)".
 
 ## Other open items
 

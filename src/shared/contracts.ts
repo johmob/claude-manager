@@ -95,31 +95,43 @@ export interface UsageSnapshot extends UsageWindows {
   error?: string;
 }
 
-/** Percent used at which a usage bar turns orange / red. */
+/** Percent used at which a usage bar turns yellow / orange / red. */
+export const USAGE_NOTICE_PCT = 50;
 export const USAGE_WARN_PCT = 70;
 export const USAGE_CRIT_PCT = 90;
 
-// ---------- Todo tree ----------
+// ---------- Work schema (the todo tree) ----------
 
 export type TodoStatus = 'not_started' | 'in_progress' | 'done';
 
-export interface TodoStep {
+/**
+ * One item of the work schema. Leaves carry the status and progress the agent wrote; for a node
+ * with children both are computed from the children, so parents never contradict their parts.
+ */
+export interface TodoNode {
   id: string;
   title: string;
   status: TodoStatus;
+  /** 0–100. */
+  progress: number;
+  /** Agent or subagent responsible, e.g. "firmware-a". May be empty. */
+  owner: string;
+  /** Ids of items that must be done first. */
+  dependsOn: string[];
+  /** True when some dependency is not done yet. */
+  blocked: boolean;
+  children: TodoNode[];
 }
 
-export interface TodoBlock {
-  id: string;
-  title: string;
-  status: TodoStatus;
-  steps: TodoStep[];
-}
-
+/** The project's work schema: parallel tracks (CAD, firmware, web …) like branches of an org chart. */
 export interface TodoTree {
   title: string;
   updated: string;
-  blocks: TodoBlock[];
+  tracks: TodoNode[];
+  /** Overall 0–100, the average of the tracks. */
+  progress: number;
+  doneItems: number;
+  totalItems: number;
 }
 
 // ---------- One-shot structured Claude calls ----------
@@ -177,7 +189,7 @@ export type SessionEvent =
   | { type: 'compacted'; sessionId: string }
   | { type: 'cleared'; sessionId: string }
   | { type: 'model_changed'; sessionId: string; model: ModelChoice }
-  | { type: 'turn_finished'; sessionId: string; result: string; isError: boolean; costUsd: number; durationMs: number }
+  | { type: 'turn_finished'; sessionId: string; result: string; isError: boolean; interrupted: boolean; costUsd: number; durationMs: number }
   | { type: 'rate_limit'; sessionId: string; windows: UsageWindows; rejected: boolean }
   | { type: 'callout'; sessionId: string; callout: Callout; agentId?: string }
   | { type: 'error'; sessionId: string; message: string }
@@ -298,7 +310,9 @@ export interface IpcInvokeMap {
   'ground-rules:edit': { req: { instructions: string }; res: string };
   'settings:update': { req: Partial<AppSettings>; res: AppSettings };
   'usage:refresh': { req: void; res: void };
-  'window:snap': { req: { mode: 'left' | 'right' | 'full' }; res: void };
+  'window:snap': { req: { mode: 'left' | 'right' | 'full' | 'restore' }; res: void };
+  /** Maximises the main window when its content is narrower than `width`. True when it did. */
+  'window:ensure-width': { req: { width: number }; res: boolean };
   'window:show-session': { req: { id: string }; res: void };
   'overlay:set-interactive': { req: { interactive: boolean }; res: void };
 }

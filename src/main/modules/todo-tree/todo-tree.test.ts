@@ -6,16 +6,56 @@ import type { TodoTree } from '../../../shared/contracts';
 import { createTodoWatcher, parseTodoTree, TODO_RELATIVE_PATH } from './index';
 
 describe('parseTodoTree', () => {
-  it('parses a valid tree', () => {
+  const schema = {
+    title: 'Demonstrator',
+    updated: 'u',
+    tracks: [
+      {
+        id: 'fw-a',
+        title: 'Firmware – styrenhet',
+        owner: 'firmware-a',
+        items: [
+          { id: 'fw-a.1', title: 'SPI', status: 'done' },
+          { id: 'fw-a.2', title: 'Protokoll', status: 'in_progress', progress: 40 },
+        ],
+      },
+      { id: 'web', title: 'Webb', owner: 'main', items: [{ id: 'web.1', title: 'Graf', status: 'not_started', dependsOn: ['fw-a.2', 'okänd'] }] },
+    ],
+  };
+
+  it('computes tracks from their items and the overall progress', () => {
+    const tree = parseTodoTree(JSON.stringify(schema))!;
+    const [fw, web] = tree.tracks;
+    expect(fw).toMatchObject({ id: 'fw-a', owner: 'firmware-a', status: 'in_progress', progress: 70 });
+    expect(web).toMatchObject({ status: 'not_started', progress: 0 });
+    expect(tree).toMatchObject({ progress: 35, doneItems: 1, totalItems: 3 });
+  });
+
+  it('marks items blocked by unfinished dependencies, also across tracks', () => {
+    const tree = parseTodoTree(JSON.stringify(schema))!;
+    expect(tree.tracks[1]!.children[0]).toMatchObject({ id: 'web.1', blocked: true, dependsOn: ['fw-a.2', 'okänd'] });
+    expect(tree.tracks[0]!.children[1]!.blocked).toBe(false);
+  });
+
+  it('nests sub-items and rolls them up', () => {
+    const tree = parseTodoTree(
+      JSON.stringify({ tracks: [{ title: 'CAD', items: [{ title: 'Hölje', items: [{ title: 'Skiss', status: 'done' }, { title: 'Fästen', status: 'done' }] }] }] }),
+    )!;
+    expect(tree.tracks[0]).toMatchObject({ id: '1', status: 'done', progress: 100 });
+    expect(tree.tracks[0]!.children[0]!.children.map((c) => c.id)).toEqual(['1.1.1', '1.1.2']);
+  });
+
+  it('still reads the earlier blocks/steps format', () => {
     const tree = parseTodoTree(
       JSON.stringify({ title: 'T', updated: 'u', blocks: [{ id: 1, title: 'B', status: 'done', steps: [{ id: '1.1', title: 'S', status: 'in_progress' }] }] }),
-    );
-    expect(tree?.blocks[0]).toEqual({ id: '1', title: 'B', status: 'done', steps: [{ id: '1.1', title: 'S', status: 'in_progress' }] });
+    )!;
+    expect(tree.tracks[0]).toMatchObject({ id: '1', title: 'B', status: 'in_progress', progress: 50 });
+    expect(tree.tracks[0]!.children[0]).toMatchObject({ id: '1.1', title: 'S', status: 'in_progress' });
   });
 
   it('is tolerant of odd input', () => {
-    const tree = parseTodoTree(JSON.stringify({ blocks: [{ title: 'B', status: 'weird' }, { id: 2 }] }));
-    expect(tree?.blocks).toEqual([{ id: '1', title: 'B', status: 'not_started', steps: [] }]);
+    const tree = parseTodoTree(JSON.stringify({ tracks: [{ title: 'B', status: 'weird', progress: 400 }, { id: 2 }] }))!;
+    expect(tree.tracks).toEqual([{ id: '1', title: 'B', status: 'not_started', progress: 0, owner: '', dependsOn: [], blocked: false, children: [] }]);
   });
 
   it('rejects invalid JSON and wrong shapes', () => {
@@ -33,7 +73,7 @@ describe('createTodoWatcher', () => {
     watcher.watch('s1', cwd);
     expect(calls).toEqual([null]);
     mkdirSync(join(cwd, '.claude-manager'));
-    writeFileSync(join(cwd, TODO_RELATIVE_PATH), JSON.stringify({ title: 'T', updated: '', blocks: [] }));
+    writeFileSync(join(cwd, TODO_RELATIVE_PATH), JSON.stringify({ title: 'T', updated: '', tracks: [] }));
     const deadline = Date.now() + 5000;
     while (calls.length < 2 && Date.now() < deadline) await new Promise((r) => setTimeout(r, 100));
     watcher.close();

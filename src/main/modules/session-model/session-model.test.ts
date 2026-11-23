@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SessionEvent, SessionRecord, TodoTree } from '../../../shared/contracts';
+import type { SessionEvent, SessionRecord, TodoNode, TodoTree } from '../../../shared/contracts';
 import { createSessionModel } from './index';
 
 const record: SessionRecord = {
@@ -40,7 +40,7 @@ describe('session-model', () => {
     const resolved = apply({ type: 'input_resolved', requestId: 'r1', answer: 'Godkänd' });
     expect(resolved[0]).toMatchObject({ kind: 'system', text: 'Godkänd: Bash: ls' });
     expect(model.summary('s1')?.status).toBe('working');
-    apply({ type: 'turn_finished', result: 'klart', isError: false, costUsd: 0.01, durationMs: 5 });
+    apply({ type: 'turn_finished', result: 'klart', isError: false, interrupted: false, costUsd: 0.01, durationMs: 5 });
     expect(model.summary('s1')).toMatchObject({ status: 'done', costUsd: 0.01, turnStartedAt: null });
     model.markSeen('s1');
     expect(model.summary('s1')?.status).toBe('idle');
@@ -81,13 +81,30 @@ describe('session-model', () => {
     expect(model.summary('s1')?.activeAgents).toBe(3);
     apply({ type: 'subagent_finished', taskId: 'a' });
     expect(model.summary('s1')?.activeAgents).toBe(2);
+    const item = (id: string, title: string, status: TodoNode['status'], children: TodoNode[] = []): TodoNode => ({
+      id,
+      title,
+      status,
+      progress: 0,
+      owner: '',
+      dependsOn: [],
+      blocked: false,
+      children,
+    });
     const tree: TodoTree = {
       title: 'x',
       updated: '',
-      blocks: [{ id: '1', title: 'Block', status: 'in_progress', steps: [{ id: '1.2', title: 'Steg', status: 'in_progress' }] }],
+      progress: 0,
+      doneItems: 0,
+      totalItems: 3,
+      tracks: [
+        item('cad', 'CAD', 'done'),
+        item('fw', 'Firmware', 'in_progress', [item('fw.1', 'SPI', 'done'), item('fw.2', 'Protokoll', 'in_progress')]),
+        item('web', 'Webb', 'in_progress'),
+      ],
     };
     model.setTodo('s1', tree);
-    expect(model.summary('s1')?.currentTask).toBe('1.2 Steg');
+    expect(model.summary('s1')?.currentTask).toBe('fw.2 Protokoll (+1 parallellt)');
   });
 
   it('prepends saved history without changing live status', () => {
@@ -115,6 +132,15 @@ describe('session-model', () => {
     apply({ type: 'callout', callout: { kind: 'tip', title: 'Nästa steg', text: 'Lägg till tester.', source: 'agent' } });
     apply({ type: 'turn_started', prompt: 'nästa' });
     expect(model.summary('s1')?.callouts).toEqual([]);
+  });
+
+  it('treats an interrupted turn as stopped work, not as an error or a finished task', () => {
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'lång uppgift' });
+    const [entry] = apply({ type: 'turn_finished', result: '', isError: false, interrupted: true, costUsd: 0, durationMs: 1 });
+    expect(entry).toMatchObject({ kind: 'system', text: 'Avbruten.', level: 'info' });
+    expect(model.summary('s1')).toMatchObject({ status: 'idle', lastError: null });
   });
 
   it('marks errors and clears everything on exit', () => {

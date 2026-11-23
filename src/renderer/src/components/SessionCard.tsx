@@ -1,6 +1,6 @@
 import { useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
-import { formatCost, formatElapsed, todoProgress } from '../lib/format';
+import { formatCost, formatElapsed } from '../lib/format';
 import { send } from '../lib/api';
 import { useNow } from '../lib/useNow';
 import { AgentDots, IconButton, ModelBadge, StatusChip } from './Atoms';
@@ -77,8 +77,7 @@ export function SessionCard({ session, selected, selectDisabled, onToggleSelect,
   const [renaming, setRenaming] = useState(false);
   const working = session.status === 'working' && session.turnStartedAt !== null;
   const now = useNow(working);
-  const progress = session.todo ? todoProgress(session.todo) : null;
-  const pct = progress && progress.total > 0 ? (progress.done / progress.total) * 100 : 0;
+  const { todo } = session;
 
   return (
     <article className="card" data-status={session.status} data-expanded={session.pending ? 'true' : 'false'} style={{ '--accent': session.color } as CSSProperties}>
@@ -97,9 +96,9 @@ export function SessionCard({ session, selected, selectDisabled, onToggleSelect,
           <span className="muted small-text">{formatCost(session.costUsd)}</span>
         </div>
         <div className="card-task">{session.currentTask || ' '}</div>
-        {progress && (
-          <div className="thin-bar" title={`${progress.done} / ${progress.total}`}>
-            <div style={{ width: `${pct}%`, background: session.color }} />
+        {todo && (
+          <div className="thin-bar" title={`${todo.progress} % · ${todo.doneItems} av ${todo.totalItems} punkter · ${todo.tracks.length} spår`}>
+            <div style={{ width: `${todo.progress}%`, background: session.color }} />
           </div>
         )}
         {session.lastError && <div className="card-error">{session.lastError}</div>}
@@ -111,6 +110,7 @@ export function SessionCard({ session, selected, selectDisabled, onToggleSelect,
           <input type="checkbox" checked={selected} disabled={selectDisabled && !selected} onChange={onToggleSelect} />
           <span>Fokus</span>
         </label>
+        <button type="button" className="link-btn" onClick={onOpen}>Arbetsschema</button>
         <CardActions session={session} onRename={() => setRenaming(true)} />
       </div>
     </article>

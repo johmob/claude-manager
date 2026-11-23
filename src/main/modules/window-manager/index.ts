@@ -2,7 +2,9 @@
 // Knows nothing about sessions beyond how many cards the dock and overlay must fit.
 import { BrowserWindow, screen } from 'electron';
 import type { NativeImage, Rectangle } from 'electron';
-import type { DockEdge, IpcEventChannel, IpcEventMap } from '../../../shared/contracts';
+import type { DockEdge, IpcEventChannel, IpcEventMap, IpcInvokeMap } from '../../../shared/contracts';
+
+type SnapMode = IpcInvokeMap['window:snap']['req']['mode'];
 
 export interface WindowManagerOptions {
   preloadPath: string;
@@ -23,7 +25,10 @@ export interface WindowManager {
   setDock(visible: boolean, edge: DockEdge, count: number): void;
   setOverlay(visible: boolean, count: number): void;
   setOverlayInteractive(interactive: boolean): void;
-  snap(mode: 'left' | 'right' | 'full'): void;
+  /** Left or right half, maximised, or back from maximised. */
+  snap(mode: SnapMode): void;
+  /** Maximises the main window when its content is narrower than `width`; true when it did. */
+  ensureWidth(width: number): boolean;
   flash(on: boolean): void;
   send<K extends IpcEventChannel>(channel: K, payload: IpcEventMap[K]): void;
   destroyAll(): void;
@@ -136,15 +141,22 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     else overlay.setIgnoreMouseEvents(true, { forward: true });
   }
 
-  function snap(mode: 'left' | 'right' | 'full'): void {
+  function snap(mode: SnapMode): void {
     if (mode === 'full') {
       main.maximize();
       return;
     }
     if (main.isMaximized()) main.unmaximize();
+    if (mode === 'restore') return;
     const area = screen.getDisplayMatching(main.getBounds()).workArea;
     const half = Math.floor(area.width / 2);
     main.setBounds({ x: mode === 'left' ? area.x : area.x + half, y: area.y, width: half, height: area.height });
+  }
+
+  function ensureWidth(width: number): boolean {
+    if (main.isMaximized() || main.getContentSize()[0]! >= width) return false;
+    main.maximize();
+    return true;
   }
 
   function showMain(): void {
@@ -161,6 +173,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     setOverlay,
     setOverlayInteractive,
     snap,
+    ensureWidth,
     flash: (on) => main.flashFrame(on && !main.isFocused()),
     send: (channel, payload) => {
       for (const win of [main, dock, overlay]) {

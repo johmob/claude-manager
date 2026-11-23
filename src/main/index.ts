@@ -127,12 +127,14 @@ function boot(): void {
       case 'exited':
         if (!model.summary(event.sessionId)?.pendingCount) notifier.clear(event.sessionId);
         break;
-      case 'turn_finished':
-        if (settings.alertOnDone && !event.isError) {
+      case 'turn_finished': {
+        const completed = !event.isError && !event.interrupted;
+        if (settings.alertOnDone && completed) {
           notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} är klar`, body: event.result, urgent: false });
         }
-        if (settings.reviewEnabled && !event.isError && record && record.kind !== 'ground-rules') void reviewFinishedTurn(record);
+        if (settings.reviewEnabled && completed && record && record.kind !== 'ground-rules') void reviewFinishedTurn(record);
         break;
+      }
       case 'rate_limit':
         usage.ingest(event.windows);
         break;
@@ -399,6 +401,7 @@ function boot(): void {
 
   handle('usage:refresh', () => usage.refreshNow());
   handle('window:snap', (req) => windows.snap(req.mode));
+  handle('window:ensure-width', (req) => windows.ensureWidth(req.width));
   handle('window:show-session', (req) => showSession(req.id));
   handle('overlay:set-interactive', (req) => windows.setOverlayInteractive(req.interactive));
 }

@@ -1,12 +1,12 @@
 {
   "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T09:29:17Z",
-  "blocks": [
+  "updated": "2026-11-23T10:16:09Z",
+  "tracks": [
     {
       "id": "1",
       "title": "Foundation",
-      "status": "done",
-      "steps": [
+      "owner": "main",
+      "items": [
         {
           "id": "1.1",
           "title": "Private GitHub repo and spec",
@@ -37,8 +37,8 @@
     {
       "id": "2",
       "title": "Main-process modules",
-      "status": "done",
-      "steps": [
+      "owner": "main",
+      "items": [
         {
           "id": "2.1",
           "title": "session-engine (Agent SDK wrapper)",
@@ -79,8 +79,8 @@
     {
       "id": "3",
       "title": "User interface",
-      "status": "done",
-      "steps": [
+      "owner": "main",
+      "items": [
         {
           "id": "3.1",
           "title": "Overview cards with inline answers and approvals",
@@ -121,8 +121,8 @@
     {
       "id": "4",
       "title": "Windows and lifecycle",
-      "status": "done",
-      "steps": [
+      "owner": "main",
+      "items": [
         {
           "id": "4.1",
           "title": "Window manager (main, dock, overlay, snapping)",
@@ -153,8 +153,8 @@
     {
       "id": "5",
       "title": "Test and delivery",
-      "status": "done",
-      "steps": [
+      "owner": "main",
+      "items": [
         {
           "id": "5.1",
           "title": "Unit tests for pure modules",
@@ -180,8 +180,8 @@
     {
       "id": "6",
       "title": "Follow-ups after v1",
-      "status": "done",
-      "steps": [
+      "owner": "main",
+      "items": [
         {
           "id": "6.1",
           "title": "Load saved transcripts after restart",
@@ -207,8 +207,8 @@
     {
       "id": "7",
       "title": "Callouts: agents tag what matters",
-      "status": "done",
-      "steps": [
+      "owner": "main",
+      "items": [
         {
           "id": "7.1",
           "title": "Test tagging with Haiku and Sonnet (8/8 correct)",
@@ -239,8 +239,8 @@
     {
       "id": "8",
       "title": "Import sessions from terminal windows",
-      "status": "done",
-      "steps": [
+      "owner": "main",
+      "items": [
         {
           "id": "8.1",
           "title": "Read live-session registry and saved sessions",
@@ -260,6 +260,44 @@
           "id": "8.4",
           "title": "Rebuild and reinstall",
           "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "9",
+      "title": "Work schema and polish",
+      "owner": "main",
+      "items": [
+        {
+          "id": "9.1",
+          "title": "Org-chart work schema format (tracks, owners, dependencies)",
+          "status": "done"
+        },
+        {
+          "id": "9.2",
+          "title": "Ask before opening a new track",
+          "status": "done"
+        },
+        {
+          "id": "9.3",
+          "title": "Arbetsschema view, auto-maximise, click to ask Claude",
+          "status": "done"
+        },
+        {
+          "id": "9.4",
+          "title": "Yellow/orange/red usage levels",
+          "status": "done"
+        },
+        {
+          "id": "9.5",
+          "title": "Interrupt shown as Avbruten, not as an error",
+          "status": "done"
+        },
+        {
+          "id": "9.6",
+          "title": "Rebuild and reinstall",
+          "status": "in_progress",
+          "progress": 50
         }
       ]
     }

@@ -1,4 +1,4 @@
-import type { CalloutKind, ModelChoice, PermissionChoice, SessionStatus, TodoTree } from '../../../shared/contracts';
+import type { CalloutKind, ModelChoice, PermissionChoice, SessionStatus } from '../../../shared/contracts';
 
 /** "nyss", "12 min sedan", "3 h sedan", "2 d sedan". */
 export function formatAgo(epochMs: number, now: number): string {
@@ -88,25 +88,4 @@ export function monogram(name: string): string {
   if (words.length === 0) return '?';
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
-}
-
-export interface TodoProgress {
-  done: number;
-  total: number;
-}
-
-/** Done/total over steps (blocks without steps count as one unit). */
-export function todoProgress(todo: TodoTree): TodoProgress {
-  let done = 0;
-  let total = 0;
-  for (const block of todo.blocks) {
-    if (block.steps.length === 0) {
-      total += 1;
-      if (block.status === 'done') done += 1;
-    } else {
-      total += block.steps.length;
-      done += block.steps.filter((s) => s.status === 'done').length;
-    }
-  }
-  return { done, total };
 }

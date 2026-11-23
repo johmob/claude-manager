@@ -8,6 +8,7 @@ import type {
   SessionRecord,
   SessionStatus,
   SessionSummary,
+  TodoNode,
   TodoTree,
   TranscriptEntry,
 } from '../../../shared/contracts';
@@ -186,10 +187,11 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.turnStartedAt = null;
         s.costUsd = event.costUsd;
         s.lastActivity = '';
-        s.unseenDone = !event.isError;
+        s.unseenDone = !event.isError && !event.interrupted;
         s.lastError = event.isError ? event.result : null;
         const thinking = takeThinking();
         const leftover = thinking ? add({ kind: 'assistant', text: '', thinking }) : [];
+        if (event.interrupted) return [...leftover, ...system('Avbruten.', 'info')];
         return event.isError ? [...leftover, ...system(event.result, 'error')] : leftover;
       }
       case 'callout':
@@ -284,15 +286,22 @@ function statusOf(s: SessionState): SessionStatus {
   return s.unseenDone ? 'done' : 'idle';
 }
 
-/** First in-progress step ("2.3 Title"), else the first in-progress block, else null. */
+/**
+ * What is being worked on now: the first in-progress item of each track ("fw-a.2 Protokoll (+1 parallellt)").
+ * Falls back to tracks that are partly done when no single item is marked in progress.
+ */
 function currentTask(tree: TodoTree | null): string | null {
-  if (!tree) return null;
-  for (const block of tree.blocks) {
-    const step = block.steps.find((st) => st.status === 'in_progress');
-    if (step) return `${step.id} ${step.title}`;
-  }
-  const block = tree.blocks.find((b) => b.status === 'in_progress');
-  return block ? `${block.id} ${block.title}` : null;
+  const tracks = tree?.tracks ?? [];
+  const items = tracks.flatMap((track) => inProgressLeaves(track).slice(0, 1));
+  const active = items.length ? items : tracks.filter((t) => t.status === 'in_progress');
+  if (!active.length) return null;
+  const first = `${active[0]!.id} ${active[0]!.title}`;
+  return active.length > 1 ? `${first} (+${active.length - 1} parallellt)` : first;
+}
+
+function inProgressLeaves(node: TodoNode): TodoNode[] {
+  if (node.children.length) return node.children.flatMap(inProgressLeaves);
+  return node.status === 'in_progress' ? [node] : [];
 }
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;

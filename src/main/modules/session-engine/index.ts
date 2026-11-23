@@ -49,6 +49,8 @@ interface LiveSession {
   pending: Map<string, PendingDecision>;
   stderrTail: string[];
   stopping: boolean;
+  /** Set by interrupt(); the turn's result then reports an interruption rather than an error. */
+  interrupting: boolean;
 }
 
 /** Async iterable of user messages that stays open until closed, so one process serves many turns. */
@@ -109,7 +111,7 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
       },
     });
 
-    const live: LiveSession = { q, inbox, pending, stderrTail, stopping: false };
+    const live: LiveSession = { q, inbox, pending, stderrTail, stopping: false, interrupting: false };
     sessions.set(spec.id, live);
     onEvent({ type: 'started', sessionId: spec.id });
     if (spec.initialPrompt) send(spec.id, spec.initialPrompt);
@@ -119,6 +121,11 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
   async function pump(id: string, live: LiveSession): Promise<void> {
     try {
       for await (const message of live.q) {
+        if (message.type === 'result' && live.interrupting) {
+          live.interrupting = false;
+          onEvent({ type: 'turn_finished', sessionId: id, result: '', isError: false, interrupted: true, costUsd: message.total_cost_usd, durationMs: message.duration_ms });
+          continue;
+        }
         for (const event of translate(id, message)) onEvent(event);
       }
     } catch (error) {
@@ -202,7 +209,10 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
   }
 
   async function interrupt(id: string): Promise<void> {
-    await sessions.get(id)?.q.interrupt();
+    const live = sessions.get(id);
+    if (!live) return;
+    live.interrupting = true;
+    await live.q.interrupt();
   }
 
   async function setModel(id: string, model: ModelChoice): Promise<void> {
@@ -397,6 +407,7 @@ export function translate(sessionId: string, m: SDKMessage): SessionEvent[] {
           sessionId,
           result: m.subtype === 'success' ? m.result : resultErrorText(m),
           isError: m.is_error,
+          interrupted: false,
           costUsd: m.total_cost_usd,
           durationMs: m.duration_ms,
         },
@@ -459,9 +470,10 @@ function toWindow(fraction: number, resetsAtSeconds: unknown): UsageWindow {
   };
 }
 
+/** Readable error text for a failed turn; Claude Code's internal "[ede_diagnostic] …" lines are left out. */
 function resultErrorText(m: Extract<SDKMessage, { type: 'result' }>): string {
   const errors = asRecord(m)['errors'];
-  const list = Array.isArray(errors) ? errors.filter((e): e is string => typeof e === 'string') : [];
+  const list = Array.isArray(errors) ? errors.filter((e): e is string => typeof e === 'string' && !e.startsWith('[ede_diagnostic]')) : [];
   return list.length ? list.join('; ') : `Turen avbröts (${m.subtype}).`;
 }
 
