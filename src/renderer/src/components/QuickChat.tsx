@@ -21,6 +21,29 @@ export function useQuickChat(): SessionSummary | null {
   return summary;
 }
 
+/** Short versions of long answers, by transcript entry id. */
+function useQuickSummaries(): Record<string, string> {
+  const [summaries, setSummaries] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const off = window.cm.on('state:quick-summaries', setSummaries);
+    void window.cm.invoke('quick:summaries', undefined).then(setSummaries);
+    return off;
+  }, []);
+  return summaries;
+}
+
+/** An answer: in the small panel its short version with "Visa mer" when there is one, otherwise in full. */
+function QuickAnswer({ text, summary }: { text: string; summary: string | undefined }) {
+  const [full, setFull] = useState(false);
+  if (!summary || full) return <MarkdownText text={text} className="md quick-a" />;
+  return (
+    <div className="quick-a-short">
+      <div className="quick-a">{summary}</div>
+      <button type="button" className="link-btn" onClick={() => setFull(true)}>Visa mer</button>
+    </div>
+  );
+}
+
 /**
  * Quick questions, like a web search: the questions and answers so far and a box for the next one.
  * Follow-ups continue the conversation; "Ny fråga" starts over. Used in the "Ny chatt" window and
@@ -28,6 +51,7 @@ export function useQuickChat(): SessionSummary | null {
  */
 export function QuickChatBody({ compact = false, large = false }: { compact?: boolean; large?: boolean }) {
   const summary = useQuickChat();
+  const short = useQuickSummaries();
   const [text, setText] = useState('');
   const entries = useTranscript(QUICK_ID);
   const log = useRef<HTMLDivElement>(null);
@@ -52,7 +76,7 @@ export function QuickChatBody({ compact = false, large = false }: { compact?: bo
             e.kind === 'user' ? (
               <div key={e.id} className="quick-q">{e.text}</div>
             ) : e.kind === 'assistant' ? (
-              <MarkdownText key={e.id} text={e.text} className="md quick-a" />
+              compact ? <QuickAnswer key={e.id} text={e.text} summary={short[e.id]} /> : <MarkdownText key={e.id} text={e.text} className="md quick-a" />
             ) : e.kind === 'system' ? (
               <div key={e.id} className="quick-error">{e.text}</div>
             ) : null,

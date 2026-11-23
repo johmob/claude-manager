@@ -413,6 +413,8 @@ export interface IpcInvokeMap {
   /** Ends the quick chat so the next question starts a new conversation. */
   'quick:reset': { req: void; res: void };
   'quick:current': { req: void; res: SessionSummary | null };
+  /** Short versions of the quick chat's long answers, by transcript entry id. */
+  'quick:summaries': { req: void; res: Record<string, string> };
   'session:new-project': { req: NewSessionOptions & { name: string; createGitRepo: boolean }; res: string };
   'session:locate-project': { req: { description: string }; res: LocateResult };
   /** Opens a project folder: continues `claudeSessionId` when given, otherwise starts a new conversation there. */
@@ -467,6 +469,7 @@ export interface IpcEventMap {
   'state:update': UpdateStatus;
   /** The quick chat's state (working, pending permission), or null when it has not started. */
   'state:quick': SessionSummary | null;
+  'state:quick-summaries': Record<string, string>;
   'session:transcript-upsert': { id: string; entry: TranscriptEntry };
   /** Replaces a whole transcript, e.g. after saved history was loaded in front of it. */
   'session:transcript-reset': { id: string; entries: TranscriptEntry[] };

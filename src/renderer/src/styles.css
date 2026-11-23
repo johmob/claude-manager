@@ -757,3 +757,6 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .quick.large { flex: 1; min-height: 0; }
 .quick.large .quick-log { flex: 1; max-height: none; }
 .quick.large .quick-a { font-size: 0.98rem; }
+
+.quick-a-short { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.quick-a-short .link-btn { padding: 0; font-size: 0.8rem; }

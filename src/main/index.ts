@@ -38,6 +38,7 @@ import { probeAccount, UNVERIFIED_ACCOUNT } from './modules/account';
 import { bringIntoFocus, expireFocus } from './modules/focus-rules';
 import { createUpdater } from './modules/updater';
 import { briefRequest, readBriefs } from './modules/question-briefs';
+import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 
 const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: '',
@@ -61,8 +62,9 @@ const SYNC_DELAY_MS = 80;
 /** The quick chat ("Ny chatt"): one hidden session, never a card or saved record. */
 const QUICK_ID = 'quick';
 const QUICK_PROMPT = [
-  'Du svarar på snabba frågor i ett litet fönster, ungefär som en sökning.',
-  'Svara kort och direkt på svenska, utan rubriker om de inte behövs.',
+  'Du svarar på snabba frågor, ungefär som en sökning.',
+  'Svara på svenska och rakt på sak, utan rubriker om de inte behövs. Svaret får vara så långt som frågan kräver;',
+  'en kort sammanfattning görs separat.',
   'Sök på webben när frågan gäller något aktuellt eller fakta du är osäker på, och ange källan kort.',
   'Ställ bara motfrågor när frågan inte går att besvara annars.',
 ].join(' ');
@@ -237,7 +239,10 @@ function boot(): void {
         if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
         const completed = !event.isError && !event.interrupted;
         const asks = model.summary(event.sessionId);
-        if (event.sessionId === QUICK_ID) break;
+        if (event.sessionId === QUICK_ID) {
+          if (completed) void summarizeQuickAnswer();
+          break;
+        }
         if (completed && asks?.questions.length) void writeQuestionBriefs(event.sessionId);
         if (completed && asks?.status === 'waiting' && !asks.pendingCount) {
           // The turn ended with questions: as urgent as a question asked with the tool.
@@ -408,6 +413,25 @@ function boot(): void {
       if (Number.isFinite(resets) ? now < resets + RESUME_MARGIN_MS : !roomAgain) continue;
       notifier.alert({ sessionId: s.id, title: `${s.name} fortsätter`, body: 'Användningsgränsen har återställts.', urgent: false });
       sendToSession(s.id, RESUME_MESSAGE);
+    }
+  }
+
+  /** Short versions of the quick chat's long answers (by transcript entry), for the overlay's small panel. */
+  const quickSummaries = new Map<string, string>();
+
+  /** Has a cheap model shorten the quick chat's latest answer when it is long; the full answer stays. */
+  async function summarizeQuickAnswer(): Promise<void> {
+    const transcript = model.transcript(QUICK_ID);
+    const answer = [...transcript].reverse().find((e) => e.kind === 'assistant' && e.text.trim());
+    const question = [...transcript].reverse().find((e) => e.kind === 'user');
+    if (!answer || answer.kind !== 'assistant' || answer.text.length <= SUMMARY_THRESHOLD || quickSummaries.has(answer.id)) return;
+    try {
+      const summary = readSummary(await structuredQuery(summaryRequest(question?.kind === 'user' ? question.text : '', answer.text, userData)));
+      if (!summary) return;
+      quickSummaries.set(answer.id, summary);
+      windows.send('state:quick-summaries', Object.fromEntries(quickSummaries));
+    } catch {
+      // The full answer shows instead.
     }
   }
 
@@ -618,6 +642,8 @@ function boot(): void {
   });
 
   handle('quick:reset', async () => {
+    quickSummaries.clear();
+    windows.send('state:quick-summaries', {});
     await engine.stop(QUICK_ID);
     model.remove(QUICK_ID);
     windows.send('session:transcript-reset', { id: QUICK_ID, entries: [] });
@@ -625,6 +651,7 @@ function boot(): void {
   });
 
   handle('quick:current', () => model.summary(QUICK_ID) ?? null);
+  handle('quick:summaries', () => Object.fromEntries(quickSummaries));
 
   handle('session:new-project', (req) => {
     const cwd = projects.create(req.name);
