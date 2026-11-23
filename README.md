@@ -14,7 +14,7 @@ The app updates itself. It checks this repo's releases, downloads a new version 
 
 ## Releasing
 
-Commit and push, then run `npm run release`. It bumps the patch version, tags it and pushes. GitHub Actions builds the installer and publishes the release, and installed apps pick it up.
+Commit and push, then run `npm run release` (`npm run release -- minor` for a minor version). It runs the checks, bumps the version, tags it, pushes, builds the installer and publishes it as a GitHub release with the GitHub CLI's login. Installed apps pick it up.
 
 ## Build from source
 
