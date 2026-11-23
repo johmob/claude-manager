@@ -9,6 +9,7 @@ const record: SessionRecord = {
   kind: 'chat',
   cwd: 'C:\\tmp',
   model: 'haiku',
+  effort: 'default',
   permissionMode: 'default',
   createdAt: '2026-11-23T00:00:00Z',
   archived: false,

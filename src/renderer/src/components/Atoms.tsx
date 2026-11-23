@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import type { ModelChoice, SessionStatus, TodoStatus } from '../../../shared/contracts';
-import { MODEL_SHORT, STATUS_LABEL } from '../lib/format';
+import type { EffortChoice, ModelChoice, SessionStatus, SessionSummary, TodoStatus } from '../../../shared/contracts';
+import { send } from '../lib/api';
+import { EFFORT_LABEL, STATUS_LABEL } from '../lib/format';
+import { effortOptions, modelOptions, useAccount } from '../state/account';
 
 export function StatusChip({ status }: { status: SessionStatus }) {
   return (
@@ -10,8 +12,34 @@ export function StatusChip({ status }: { status: SessionStatus }) {
   );
 }
 
-export function ModelBadge({ model }: { model: ModelChoice }) {
-  return <span className="badge">{MODEL_SHORT[model]}</span>;
+/**
+ * The session's model and effort as two small selects, limited to what the account offers and what
+ * the chosen model supports. A change applies to a running session at once.
+ */
+export function ModelEffortPicker({ session }: { session: SessionSummary }) {
+  const models = modelOptions(useAccount(), session.model);
+  return (
+    <span className="picker" onClick={(e) => e.stopPropagation()}>
+      <select
+        className="badge-select"
+        title="Modell"
+        value={session.model}
+        onChange={(e) => send('session:set-model', { id: session.id, model: e.target.value as ModelChoice })}
+      >
+        {models.map((m) => <option key={m.choice} value={m.choice}>{m.label}</option>)}
+      </select>
+      <select
+        className="badge-select"
+        title="Effort (hur grundligt modellen tänker)"
+        value={session.effort}
+        onChange={(e) => send('session:set-effort', { id: session.id, effort: e.target.value as EffortChoice })}
+      >
+        {effortOptions(models, session.model, session.effort).map((level) => (
+          <option key={level} value={level}>Effort: {EFFORT_LABEL[level]}</option>
+        ))}
+      </select>
+    </span>
+  );
 }
 
 /** One dot per active agent, filled in the session colour. */

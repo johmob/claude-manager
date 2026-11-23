@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import iconPath from '../../resources/icon.png?asset';
-import { DOCK_EDGES, MODEL_CHOICES, PERMISSION_CHOICES } from '../shared/contracts';
+import { DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
@@ -25,12 +25,13 @@ import { createJsonStore } from './modules/json-store';
 import { pickColor } from './modules/palette';
 import { createGroundRules, groundRulesEditorPrompt } from './modules/ground-rules';
 import { createProjects, locateProject } from './modules/projects';
-import { structuredQuery } from './modules/structured-query';
+import { createStructuredQuery } from './modules/structured-query';
 import { digestTurn, reviewTurn } from './modules/turn-review';
 import { createNotifier } from './modules/notifier';
 import { createWindowManager } from './modules/window-manager';
 import { createTray } from './modules/tray';
 import { importCandidates, liveTerminals } from './modules/terminal-sessions';
+import { probeAccount, UNVERIFIED_ACCOUNT } from './modules/account';
 
 const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: 'C:\\Kod',
@@ -41,6 +42,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   dockEdge: 'right',
   overlayVisible: false,
   defaultModel: 'default',
+  defaultEffort: 'default',
   defaultPermissionMode: 'auto',
 };
 
@@ -73,7 +75,10 @@ function boot(): void {
 
   // ---------- Modules ----------
   const model = createSessionModel();
-  const engine = createSessionEngine(onSessionEvent, { pathToClaudeCodeExecutable: packagedClaudeBinary() });
+  // Every Claude process the app starts (sessions and one-shot calls) must use the same executable.
+  const claudeExecutable = { pathToClaudeCodeExecutable: packagedClaudeBinary() };
+  const engine = createSessionEngine(onSessionEvent, claudeExecutable);
+  const structuredQuery = createStructuredQuery(claudeExecutable);
   const todo = createTodoWatcher((id, tree) => {
     model.setTodo(id, tree);
     scheduleSync();
@@ -99,6 +104,13 @@ function boot(): void {
   }
   notifier.setDoNotDisturb(settings.doNotDisturb);
   usage.start();
+  let account = UNVERIFIED_ACCOUNT;
+  probeAccount({ cwd: userData, ...claudeExecutable })
+    .then((found) => {
+      account = found;
+      windows.send('state:account', found);
+    })
+    .catch((error: unknown) => console.warn('Kontot kunde inte läsas; alla modeller visas', error));
   scheduleSync();
 
   app.on('second-instance', () => windows.showMain());
@@ -114,6 +126,9 @@ function boot(): void {
         break;
       case 'model_changed':
         if (record) saveRecord({ ...record, model: event.model });
+        break;
+      case 'effort_changed':
+        if (record) saveRecord({ ...record, effort: event.effort });
         break;
       case 'input_requested':
         notifier.alert({
@@ -200,6 +215,7 @@ function boot(): void {
       id: record.id,
       cwd: record.cwd,
       model: record.model,
+      effort: record.effort,
       permissionMode: record.permissionMode,
       appendSystemPrompt: composeAppend(),
       resumeClaudeSessionId: record.claudeSessionId,
@@ -215,6 +231,7 @@ function boot(): void {
       kind,
       cwd,
       model: options.model,
+      effort: options.effort,
       permissionMode: options.permissionMode,
       createdAt: new Date().toISOString(),
       archived: false,
@@ -284,7 +301,7 @@ function boot(): void {
     ipcMain.handle(channel, (_event, req: IpcInvokeMap[K]['req']) => fn(req));
   }
 
-  handle('app:get-state', () => ({ sessions: model.summaries(), usage: usage.current(), settings }));
+  handle('app:get-state', () => ({ sessions: model.summaries(), usage: usage.current(), settings, account }));
 
   handle('session:new-chat', (req) => {
     const id = randomUUID();
@@ -322,6 +339,7 @@ function boot(): void {
         kind: 'project',
         cwd: candidate.cwd,
         model: settings.defaultModel,
+        effort: settings.defaultEffort,
         permissionMode: settings.defaultPermissionMode,
         claudeSessionId: candidate.claudeSessionId,
         createdAt: new Date().toISOString(),
@@ -354,6 +372,11 @@ function boot(): void {
     else saveRecord({ ...requireRecord(req.id), model: req.model });
   });
 
+  handle('session:set-effort', async (req) => {
+    if (engine.isRunning(req.id)) await engine.setEffort(req.id, req.effort);
+    else saveRecord({ ...requireRecord(req.id), effort: req.effort });
+  });
+
   handle('session:resume', (req) => {
     if (!engine.isRunning(req.id)) run(requireRecord(req.id), undefined);
   });
@@ -384,6 +407,7 @@ function boot(): void {
     groundRules.ensure();
     const options: NewSessionOptions = {
       model: settings.defaultModel,
+      effort: settings.defaultEffort,
       permissionMode: 'acceptEdits',
       prompt: groundRulesEditorPrompt(groundRules.path, req.instructions),
     };
@@ -436,16 +460,21 @@ function validSettings(r: unknown): AppSettings | null {
     dockEdge: pick(r['dockEdge'], DOCK_EDGES, d.dockEdge),
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),
+    defaultEffort: pick(r['defaultEffort'], EFFORT_CHOICES, d.defaultEffort),
     defaultPermissionMode: pick(r['defaultPermissionMode'], PERMISSION_CHOICES, d.defaultPermissionMode),
   };
 }
 
+/** Keeps well-formed records; records saved before effort existed get the default effort. */
 function validRecords(raw: unknown): SessionRecord[] | null {
   if (!Array.isArray(raw)) return null;
-  return raw.filter(
-    (r): r is SessionRecord =>
+  return raw.flatMap((r): SessionRecord[] => {
+    const valid =
       isRecord(r) &&
       ['id', 'name', 'color', 'kind', 'cwd', 'model', 'permissionMode', 'createdAt'].every((k) => typeof r[k] === 'string') &&
-      typeof r['archived'] === 'boolean',
-  );
+      typeof r['archived'] === 'boolean';
+    if (!valid) return [];
+    const effort = EFFORT_CHOICES.find((e) => e === r['effort']) ?? 'default';
+    return [{ ...(r as unknown as SessionRecord), effort }];
+  });
 }

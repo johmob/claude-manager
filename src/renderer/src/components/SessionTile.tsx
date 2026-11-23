@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
 import { useTranscript } from '../state/useTranscript';
-import { AgentDots, ModelBadge, StatusChip } from './Atoms';
+import { AgentDots, ModelEffortPicker, StatusChip } from './Atoms';
 import { ChatInput } from './ChatInput';
 import { PendingPanel } from './PendingPanel';
 import { TranscriptView } from './TranscriptView';
@@ -16,7 +16,7 @@ export function SessionTile({ session }: { session: SessionSummary }) {
       <header className="tile-head">
         <span className="tile-name">{session.name}</span>
         <StatusChip status={session.status} />
-        <ModelBadge model={session.model} />
+        <ModelEffortPicker session={session} />
         <AgentDots count={session.activeAgents} color="#fff" />
         <button type="button" className="tile-schema-btn" onClick={() => setSchemaOpen(true)}>
           Arbetsschema{session.todo ? ` · ${session.todo.progress} %` : ''}

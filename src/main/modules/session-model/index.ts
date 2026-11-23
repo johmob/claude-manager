@@ -182,6 +182,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         return system('Konversationen rensades.', 'info');
       case 'model_changed':
         return system(`Modell bytt till ${event.model}.`, 'info');
+      case 'effort_changed':
+        return system(`Effort bytt till ${event.effort}.`, 'info');
       case 'turn_finished': {
         s.turnActive = false;
         s.turnStartedAt = null;
@@ -224,6 +226,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       kind: record.kind,
       cwd: record.cwd,
       model: record.model,
+      effort: record.effort,
       permissionMode: record.permissionMode,
       status: statusOf(s),
       currentTask: currentTask(s.todo) ?? s.lastActivity,

@@ -87,7 +87,7 @@ export async function locateProject(root: string, description: string, candidate
     if (!outcome) return { path: null, reason: 'Kunde inte avgöra vilket projekt som avses' };
     const match = candidates.find((c) => c.toLowerCase() === outcome.path?.toLowerCase());
     return { path: match ?? null, reason: outcome.reason };
-  } catch {
-    return { path: null, reason: 'Sökningen misslyckades' };
+  } catch (error) {
+    return { path: null, reason: `Sökningen misslyckades: ${error instanceof Error ? error.message : String(error)}` };
   }
 }

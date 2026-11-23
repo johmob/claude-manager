@@ -1,4 +1,4 @@
-import type { CalloutKind, ModelChoice, PermissionChoice, SessionStatus } from '../../../shared/contracts';
+import type { CalloutKind, EffortChoice, PermissionChoice, SessionStatus } from '../../../shared/contracts';
 
 /** "nyss", "12 min sedan", "3 h sedan", "2 d sedan". */
 export function formatAgo(epochMs: number, now: number): string {
@@ -27,20 +27,13 @@ export const STATUS_LABEL: Record<SessionStatus, string> = {
   stopped: 'Stoppad',
 };
 
-export const MODEL_LABEL: Record<ModelChoice, string> = {
+export const EFFORT_LABEL: Record<EffortChoice, string> = {
   default: 'Standard',
-  opus: 'Opus',
-  sonnet: 'Sonnet',
-  haiku: 'Haiku',
-  fable: 'Fable (endast stor planering)',
-};
-
-export const MODEL_SHORT: Record<ModelChoice, string> = {
-  default: 'Standard',
-  opus: 'Opus',
-  sonnet: 'Sonnet',
-  haiku: 'Haiku',
-  fable: 'Fable',
+  low: 'Låg',
+  medium: 'Medel',
+  high: 'Hög',
+  xhigh: 'Extra hög',
+  max: 'Max',
 };
 
 export const PERMISSION_LABEL: Record<PermissionChoice, string> = {

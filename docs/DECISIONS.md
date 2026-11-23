@@ -104,7 +104,9 @@ Path: `<project>/.claude-manager/todo.json`. The main agent writes it, following
 | Session statuses | `starting`, `working`, `waiting` (question or permission), `done` (turn finished, not yet seen), `idle`, `error`, `stopped` (resumable after restart). |
 | Do-not-disturb | Toggle. Suppresses Windows notifications and taskbar flashing; cards, dock and overlay still turn red. |
 | Alert on finished turn | Setting, off by default. A finished turn always shows as `done` on the card. |
-| Model per session | Chosen at start (`default`, `opus`, `sonnet`, `haiku`, `fable`); switchable later from the tile menu. |
+| Model and effort per session | Chosen at start and changeable on every card and tile header. A change applies to a running session at once: `query.setModel()` for the model, `query.applyFlagSettings({ effortLevel })` for effort (`null` returns to the model's default). Both are saved with the card. |
+| Which models the account may use | The `account` module asks Claude Code at start-up (`accountInfo()`, `supportedModels()` on an idle query, so no tokens are used, < 1 s). The choices offered are exactly the ones Claude Code lists for the logged-in account (e.g. Fable only on Max, Ultra and business plans), labelled as Claude Code names them ("Opus 5.5", "Standard (Opus 5.5)"), and the effort levels each model supports. The plan ("Claude Team") shows in the usage panel. If the probe fails, every choice is offered. |
+| One-shot Claude calls in the installed app | The project locator and the optional review spawn their own Claude process. They must get the same unpacked executable path as the sessions, or they fail at once in the installed app; the root now passes one shared executable setting to every Claude process it starts. |
 | Permission mode per session | Chosen at start; default `auto` (classifier approves, asks only when unsure). |
 | New chat folder | `%APPDATA%\claude-manager\chats\<id>` so chats never touch a code project. |
 | Existing project | A short Haiku query, limited to read-only tools in `C:\Kod`, returns the matching folder; the user confirms before the session starts there. |

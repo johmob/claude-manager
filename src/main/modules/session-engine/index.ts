@@ -7,6 +7,7 @@ import type {
   Callout,
   CalloutKind,
   ContextUsage,
+  EffortChoice,
   ModelChoice,
   PermissionDecision,
   QuestionAnswers,
@@ -25,6 +26,7 @@ export interface SessionEngine {
   resolvePermission(id: string, requestId: string, decision: PermissionDecision): void;
   interrupt(id: string): Promise<void>;
   setModel(id: string, model: ModelChoice): Promise<void>;
+  setEffort(id: string, effort: EffortChoice): Promise<void>;
   contextUsage(id: string): Promise<ContextUsage | null>;
   isRunning(id: string): boolean;
   stop(id: string): void;
@@ -98,6 +100,7 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
       options: {
         cwd: spec.cwd,
         model: spec.model === 'default' ? undefined : spec.model,
+        effort: spec.effort === 'default' ? undefined : spec.effort,
         permissionMode: spec.permissionMode,
         resume: spec.resumeClaudeSessionId,
         thinking: { type: 'adaptive', display: 'summarized' },
@@ -222,6 +225,14 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
     onEvent({ type: 'model_changed', sessionId: id, model });
   }
 
+  async function setEffort(id: string, effort: EffortChoice): Promise<void> {
+    const live = sessions.get(id);
+    if (!live) return;
+    // null clears the override, so the model's (or the user's configured) default applies again.
+    await live.q.applyFlagSettings({ effortLevel: effort === 'default' ? null : effort });
+    onEvent({ type: 'effort_changed', sessionId: id, effort });
+  }
+
   async function contextUsage(id: string): Promise<ContextUsage | null> {
     const live = sessions.get(id);
     if (!live) return null;
@@ -244,6 +255,7 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
     resolvePermission,
     interrupt,
     setModel,
+    setEffort,
     contextUsage,
     isRunning: (id) => sessions.has(id),
     stop,

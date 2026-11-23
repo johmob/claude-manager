@@ -1,6 +1,7 @@
 import { USAGE_CRIT_PCT, USAGE_NOTICE_PCT, USAGE_WARN_PCT, type UsageSnapshot, type UsageWindow } from '../../../shared/contracts';
 import { formatReset } from '../lib/format';
 import { send } from '../lib/api';
+import { useAccount } from '../state/account';
 
 /** Green below 50 % used, yellow from 50 %, orange from 70 %, red from 90 %. */
 function level(utilization: number): 'ok' | 'notice' | 'warn' | 'crit' {
@@ -21,13 +22,12 @@ function UsageBar(props: { label: string; window: UsageWindow | null; weekday: b
     );
   }
   const used = Math.min(100, Math.max(0, w.utilization));
-  const remaining = Math.round(100 - used);
   const reset = formatReset(w.resetsAt, weekday);
   return (
     <div className="usage-row" data-level={level(used)}>
       <div className="usage-label">
         <span>{label}</span>
-        <span className="usage-remaining">{remaining} % kvar</span>
+        <span className="usage-used">{Math.round(used)} % använt</span>
       </div>
       <div className="usage-bar" role="progressbar" aria-valuenow={used} aria-valuemin={0} aria-valuemax={100}>
         <div className="usage-fill" style={{ width: `${used}%` }} />
@@ -38,10 +38,14 @@ function UsageBar(props: { label: string; window: UsageWindow | null; weekday: b
 }
 
 export function UsagePanel({ usage }: { usage: UsageSnapshot }) {
+  const plan = useAccount()?.plan;
   return (
     <aside className="usage-panel">
       <div className="usage-title">
-        <span>Användning</span>
+        <span>
+          Användning
+          {plan && <span className="usage-plan">{plan}</span>}
+        </span>
         <button type="button" className="icon-btn" title="Uppdatera" aria-label="Uppdatera" onClick={() => send('usage:refresh', undefined)}>
           ↻
         </button>

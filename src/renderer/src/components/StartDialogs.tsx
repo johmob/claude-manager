@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import {
-  MODEL_CHOICES,
   PERMISSION_CHOICES,
   type AppSettings,
+  type EffortChoice,
   type ImportCandidate,
   type LocateResult,
   type ModelChoice,
@@ -10,7 +10,8 @@ import {
   type PermissionChoice,
   type TerminalStatus,
 } from '../../../shared/contracts';
-import { formatAgo, MODEL_LABEL, PERMISSION_LABEL } from '../lib/format';
+import { EFFORT_LABEL, formatAgo, PERMISSION_LABEL } from '../lib/format';
+import { effortOptions, modelOptions, useAccount } from '../state/account';
 import { errorMessage } from '../lib/api';
 import { Modal } from './Modal';
 import { Spinner } from './Atoms';
@@ -34,6 +35,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 interface OptionsState {
   model: ModelChoice;
+  effort: EffortChoice;
   permissionMode: PermissionChoice;
   prompt: string;
 }
@@ -42,6 +44,7 @@ interface OptionsState {
 function useOptions(settings: AppSettings): [OptionsState, (patch: Partial<OptionsState>) => void] {
   const [state, setState] = useState<OptionsState>({
     model: settings.defaultModel,
+    effort: settings.defaultEffort,
     permissionMode: settings.defaultPermissionMode,
     prompt: '',
   });
@@ -50,16 +53,28 @@ function useOptions(settings: AppSettings): [OptionsState, (patch: Partial<Optio
 
 function toSessionOptions(o: OptionsState): NewSessionOptions {
   const prompt = o.prompt.trim();
-  return { model: o.model, permissionMode: o.permissionMode, ...(prompt ? { prompt } : {}) };
+  return { model: o.model, effort: o.effort, permissionMode: o.permissionMode, ...(prompt ? { prompt } : {}) };
 }
 
 function OptionFields({ value, onChange }: { value: OptionsState; onChange: (patch: Partial<OptionsState>) => void }) {
+  const models = modelOptions(useAccount(), value.model);
+  const efforts = effortOptions(models, value.model);
+  const chooseModel = (model: ModelChoice): void => {
+    // Keep the effort when the new model supports it; otherwise fall back to the model's default.
+    const supported = effortOptions(models, model).includes(value.effort);
+    onChange({ model, ...(supported ? {} : { effort: 'default' }) });
+  };
   return (
     <>
       <div className="field-row">
         <Field label="Modell">
-          <select className="input" value={value.model} onChange={(e) => onChange({ model: e.target.value as ModelChoice })}>
-            {MODEL_CHOICES.map((m) => <option key={m} value={m}>{MODEL_LABEL[m]}</option>)}
+          <select className="input" value={value.model} onChange={(e) => chooseModel(e.target.value as ModelChoice)}>
+            {models.map((m) => <option key={m.choice} value={m.choice}>{m.label}</option>)}
+          </select>
+        </Field>
+        <Field label="Effort">
+          <select className="input" value={value.effort} onChange={(e) => onChange({ effort: e.target.value as EffortChoice })}>
+            {efforts.map((level) => <option key={level} value={level}>{EFFORT_LABEL[level]}</option>)}
           </select>
         </Field>
         <Field label="Behörigheter">

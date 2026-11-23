@@ -1,10 +1,9 @@
 import { useState, type KeyboardEvent } from 'react';
-import { MODEL_CHOICES, type SessionSummary } from '../../../shared/contracts';
-import { MODEL_LABEL, formatTokens } from '../lib/format';
+import type { SessionSummary } from '../../../shared/contracts';
+import { formatTokens } from '../lib/format';
 import { errorMessage, send } from '../lib/api';
 
 function ActionsMenu({ session, onClose }: { session: SessionSummary; onClose: () => void }) {
-  const [submenu, setSubmenu] = useState(false);
   const [context, setContext] = useState<string | null>(null);
 
   const sendText = (text: string): void => {
@@ -25,21 +24,6 @@ function ActionsMenu({ session, onClose }: { session: SessionSummary; onClose: (
     <div className="menu" onMouseLeave={onClose}>
       <button type="button" onClick={() => sendText('/compact')}>/compact</button>
       <button type="button" onClick={() => sendText('/clear')}>/clear</button>
-      <button type="button" onClick={() => setSubmenu(!submenu)}>Byt modell ›</button>
-      {submenu &&
-        MODEL_CHOICES.map((m) => (
-          <button
-            type="button"
-            key={m}
-            className={m === session.model ? 'sub selected' : 'sub'}
-            onClick={() => {
-              send('session:set-model', { id: session.id, model: m });
-              onClose();
-            }}
-          >
-            {MODEL_LABEL[m]}
-          </button>
-        ))}
       <button type="button" onClick={showContext}>Kontext</button>
       {context && <div className="popover">{context}</div>}
       {session.status === 'working' && (

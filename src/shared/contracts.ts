@@ -8,6 +8,9 @@ export type ModelChoice = 'default' | 'opus' | 'sonnet' | 'haiku' | 'fable';
 export type PermissionChoice = 'auto' | 'default' | 'acceptEdits' | 'plan';
 
 export const MODEL_CHOICES: readonly ModelChoice[] = ['default', 'opus', 'sonnet', 'haiku', 'fable'];
+/** Reasoning effort; 'default' leaves it to the model (or the user's Claude Code setting). */
+export type EffortChoice = 'default' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+export const EFFORT_CHOICES: readonly EffortChoice[] = ['default', 'low', 'medium', 'high', 'xhigh', 'max'];
 export const PERMISSION_CHOICES: readonly PermissionChoice[] = ['auto', 'default', 'acceptEdits', 'plan'];
 
 /** Persisted description of one session. Survives app restarts. */
@@ -18,6 +21,7 @@ export interface SessionRecord {
   kind: SessionKind;
   cwd: string;
   model: ModelChoice;
+  effort: EffortChoice;
   permissionMode: PermissionChoice;
   /** Claude Code's own session id, used to resume. Set after the first `init` event. */
   claudeSessionId?: string;
@@ -30,6 +34,7 @@ export interface SessionStartSpec {
   id: string;
   cwd: string;
   model: ModelChoice;
+  effort: EffortChoice;
   permissionMode: PermissionChoice;
   /** Text appended to Claude Code's system prompt (base CLAUDE.md + todo-tree protocol). */
   appendSystemPrompt: string;
@@ -74,6 +79,25 @@ export type PendingInput = PendingQuestion | PendingPermission;
 /** Question text -> chosen label(s) or free text. Multi-select answers are comma-separated. */
 export type QuestionAnswers = Record<string, string>;
 export type PermissionDecision = 'allow' | 'deny';
+
+// ---------- Account ----------
+
+/** A model the account can use, with the effort levels it supports ("default" first). */
+export interface ModelOption {
+  choice: ModelChoice;
+  /** As Claude Code names it, e.g. "Opus 5.5"; the default row names the model it stands for. */
+  label: string;
+  efforts: EffortChoice[];
+}
+
+/** What the logged-in account offers, as Claude Code reports it (no tokens used). */
+export interface AccountSnapshot {
+  /** e.g. "Claude Team", "Claude Max"; null when unknown. */
+  plan: string | null;
+  models: ModelOption[];
+  /** False when Claude Code could not be asked; then every choice is offered. */
+  verified: boolean;
+}
 
 // ---------- Usage ----------
 
@@ -189,6 +213,7 @@ export type SessionEvent =
   | { type: 'compacted'; sessionId: string }
   | { type: 'cleared'; sessionId: string }
   | { type: 'model_changed'; sessionId: string; model: ModelChoice }
+  | { type: 'effort_changed'; sessionId: string; effort: EffortChoice }
   | { type: 'turn_finished'; sessionId: string; result: string; isError: boolean; interrupted: boolean; costUsd: number; durationMs: number }
   | { type: 'rate_limit'; sessionId: string; windows: UsageWindows; rejected: boolean }
   | { type: 'callout'; sessionId: string; callout: Callout; agentId?: string }
@@ -206,6 +231,7 @@ export interface SessionSummary {
   kind: SessionKind;
   cwd: string;
   model: ModelChoice;
+  effort: EffortChoice;
   permissionMode: PermissionChoice;
   status: SessionStatus;
   /** First in-progress todo step, else the latest activity, else ''. */
@@ -252,6 +278,7 @@ export interface AppSettings {
   dockEdge: DockEdge;
   overlayVisible: boolean;
   defaultModel: ModelChoice;
+  defaultEffort: EffortChoice;
   defaultPermissionMode: PermissionChoice;
 }
 
@@ -259,6 +286,7 @@ export interface AppSettings {
 
 export interface NewSessionOptions {
   model: ModelChoice;
+  effort: EffortChoice;
   permissionMode: PermissionChoice;
   /** Optional first message to the agent. */
   prompt?: string;
@@ -288,7 +316,7 @@ export interface ImportCandidate {
 
 /** Renderer -> main requests. `req` is the argument, `res` the resolved value. */
 export interface IpcInvokeMap {
-  'app:get-state': { req: void; res: { sessions: SessionSummary[]; usage: UsageSnapshot; settings: AppSettings } };
+  'app:get-state': { req: void; res: { sessions: SessionSummary[]; usage: UsageSnapshot; settings: AppSettings; account: AccountSnapshot } };
   'session:new-chat': { req: NewSessionOptions & { name?: string }; res: string };
   'session:new-project': { req: NewSessionOptions & { name: string; createGitRepo: boolean }; res: string };
   'session:locate-project': { req: { description: string }; res: LocateResult };
@@ -300,6 +328,7 @@ export interface IpcInvokeMap {
   'session:permission': { req: { id: string; requestId: string; decision: PermissionDecision }; res: void };
   'session:interrupt': { req: { id: string }; res: void };
   'session:set-model': { req: { id: string; model: ModelChoice }; res: void };
+  'session:set-effort': { req: { id: string; effort: EffortChoice }; res: void };
   'session:context-usage': { req: { id: string }; res: ContextUsage | null };
   'session:resume': { req: { id: string }; res: void };
   'session:archive': { req: { id: string }; res: void };
@@ -322,6 +351,7 @@ export interface IpcEventMap {
   'state:sessions': SessionSummary[];
   'state:usage': UsageSnapshot;
   'state:settings': AppSettings;
+  'state:account': AccountSnapshot;
   'session:transcript-upsert': { id: string; entry: TranscriptEntry };
   /** Replaces a whole transcript, e.g. after saved history was loaded in front of it. */
   'session:transcript-reset': { id: string; entries: TranscriptEntry[] };

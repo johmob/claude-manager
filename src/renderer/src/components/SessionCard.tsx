@@ -3,7 +3,7 @@ import type { SessionSummary } from '../../../shared/contracts';
 import { formatCost, formatElapsed } from '../lib/format';
 import { send } from '../lib/api';
 import { useNow } from '../lib/useNow';
-import { AgentDots, IconButton, ModelBadge, StatusChip } from './Atoms';
+import { AgentDots, IconButton, ModelEffortPicker, StatusChip } from './Atoms';
 import { CalloutBox } from './CalloutBox';
 import { PendingPanel } from './PendingPanel';
 
@@ -89,7 +89,7 @@ export function SessionCard({ session, selected, selectDisabled, onToggleSelect,
           <StatusChip status={session.status} />
         </div>
         <div className="card-sub">
-          <ModelBadge model={session.model} />
+          <ModelEffortPicker session={session} />
           <AgentDots count={session.activeAgents} color={session.color} />
           {working && session.turnStartedAt !== null && <span className="elapsed">{formatElapsed(now - session.turnStartedAt)}</span>}
           <span className="spacer" />

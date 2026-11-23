@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AccountContext } from '../state/account';
 import { useAppState } from '../state/useAppState';
 import { useSelection } from '../state/useSelection';
 import { TopBar, type ViewMode } from '../components/TopBar';
@@ -23,10 +24,11 @@ export function MainWindow() {
   );
 
   if (!state) return <div className="loading">Laddar…</div>;
-  const { sessions, usage, settings } = state;
+  const { sessions, usage, settings, account } = state;
   const focused = selection.selected.flatMap((id) => sessions.filter((s) => s.id === id));
 
   return (
+    <AccountContext.Provider value={account}>
     <div className="main-window">
       <TopBar settings={settings} view={view} onView={setView} onDialog={setDialog} />
       <main className="main-content">
@@ -38,5 +40,6 @@ export function MainWindow() {
       </main>
       {dialog && <StartDialog kind={dialog} settings={settings} onClose={() => setDialog(null)} />}
     </div>
+    </AccountContext.Provider>
   );
 }

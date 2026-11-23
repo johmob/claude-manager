@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T10:19:33Z",
+  "updated": "2026-11-23T10:28:03Z",
   "tracks": [
     {
       "id": "1",
@@ -297,6 +297,44 @@
           "id": "9.6",
           "title": "Rebuild and reinstall",
           "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "10",
+      "title": "Account, model and effort",
+      "owner": "main",
+      "items": [
+        {
+          "id": "10.1",
+          "title": "Fix project search in the installed app",
+          "status": "done"
+        },
+        {
+          "id": "10.2",
+          "title": "Effort per session, changeable live",
+          "status": "done"
+        },
+        {
+          "id": "10.3",
+          "title": "Model and effort picker on every card",
+          "status": "done"
+        },
+        {
+          "id": "10.4",
+          "title": "Detect plan and available models",
+          "status": "done"
+        },
+        {
+          "id": "10.5",
+          "title": "Usage shown as used",
+          "status": "done"
+        },
+        {
+          "id": "10.6",
+          "title": "Rebuild and reinstall",
+          "status": "in_progress",
+          "progress": 50
         }
       ]
     }
