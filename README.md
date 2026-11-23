@@ -43,7 +43,7 @@ To drive a running app from scripts (screenshots, clicks):
 
 | Where | What |
 |---|---|
-| **Ny chatt** | A plain conversation in its own folder under `%APPDATA%\claude-manager\chats`. |
+| **Ny chatt** | A small window for quick questions, like a web search: answers in Swedish, searches the web when needed, follow-ups continue, "Ny fråga" starts over. Never a card. Also always in the overlay: click to fold it out, double-click for a large window. |
 | **Nytt projekt** | Creates `<projects folder>\<name>` and starts there. **Skapa Git-repo** makes the agent's first task a local repo plus a private GitHub repo (`gh`). |
 | **Befintligt projekt** | One place to get back to existing work. Either pick recent conversations from the list (the same list as `/resume`, including ones still open in a terminal) and open them as cards, or describe the project: Haiku finds the folder under `C:Kod`, and its latest conversation is preselected to continue, with "Nytt samtal i mappen" as the alternative. If the folder already has a card, you can open that instead. A conversation still running in a terminal opens with its history but continues only after the terminal window is closed. |
 | **Grundregler** | Starts an agent whose only job is to merge your instructions into the base CLAUDE.md that every session gets. |

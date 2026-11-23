@@ -729,3 +729,31 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .transcript .t-round .t-assistant[data-final] { align-items: stretch; min-width: 0; }
 .t-assistant { min-width: 0; max-width: 100%; }
 .md pre { max-width: 100%; }
+
+/* ---------- Quick chat ("Ny chatt") ---------- */
+.modal:has(.quick) { width: 640px; }
+.quick { display: flex; flex-direction: column; gap: 12px; }
+.quick-log { max-height: 55vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+.quick-q { align-self: flex-start; max-width: 90%; padding: 6px 11px; border-radius: 10px; background: rgba(250,204,21,.06); border: 1px solid rgba(250,204,21,.2); white-space: pre-wrap; }
+.quick-a { font-size: 0.9rem; line-height: 1.6; }
+.quick-a p { margin: .4em 0; }
+.quick-error { color: var(--red); font-size: 0.85rem; }
+.quick-working { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.85rem; }
+.quick-input { display: flex; gap: 8px; }
+.quick-input .input { flex: 1; font-size: 0.95rem; padding: 9px 12px; }
+
+/* The quick chat button in the overlay: always there, set apart from the session cards. */
+.ov-cell.ov-chat { width: 64px; border-style: dashed; }
+.ov-chat-icon { background: transparent; border: 1.5px solid var(--accent-ui); box-shadow: none; color: var(--accent-ui); }
+.ov-chat-icon .icon { width: 17px; height: 17px; }
+.ov-cell.ov-chat[data-open] { border-style: solid; border-color: var(--accent-ui); background: rgba(82,200,255,.08); }
+.ov-detail.wide { width: 420px; }
+.quick.compact .quick-log { max-height: 260px; }
+.quick.compact .quick-input .input { font-size: 0.85rem; padding: 7px 10px; }
+.quick.compact .quick-a { font-size: 0.85rem; }
+
+.modal.full:has(.quick.large) { width: min(1000px, 96vw); height: 90vh; }
+.modal.full:has(.quick.large) .modal-body { flex: 1; display: flex; }
+.quick.large { flex: 1; min-height: 0; }
+.quick.large .quick-log { flex: 1; max-height: none; }
+.quick.large .quick-a { font-size: 0.98rem; }

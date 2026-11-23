@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { PopupView } from '../../../shared/contracts';
 import { AskQuestionsContext, QuestionFlow, questionsKey } from '../components/QuestionFlow';
+import { QuickChat } from '../components/QuickChat';
 import { WorkSchema } from '../components/WorkSchema';
 import { send } from '../lib/api';
 import { AccountContext } from '../state/account';
@@ -36,6 +37,7 @@ export function PopupWindow() {
     if (answered) close();
   }, [answered]);
 
+  if (state && view?.kind === 'quick') return <QuickChat onClose={close} large />;
   if (!state || !session || !view || answered) return null;
   return (
     <AccountContext.Provider value={state.account}>

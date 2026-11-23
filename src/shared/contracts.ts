@@ -3,7 +3,8 @@
 
 // ---------- Session configuration ----------
 
-export type SessionKind = 'chat' | 'project' | 'ground-rules';
+/** "quick": the small "Ny chatt" window for quick questions; never a card. */
+export type SessionKind = 'chat' | 'project' | 'ground-rules' | 'quick';
 export type ModelChoice = 'default' | 'opus' | 'sonnet' | 'haiku' | 'fable';
 export type PermissionChoice = 'auto' | 'default' | 'acceptEdits' | 'plan';
 
@@ -274,7 +275,8 @@ export interface UpdateStatus {
 
 /** What the popup window over the screen shows: a session's work schema or its questions. */
 export interface PopupView {
-  kind: 'schema' | 'questions';
+  /** "quick": the quick chat, large, for reading long answers (its id is "quick"). */
+  kind: 'schema' | 'questions' | 'quick';
   id: string;
 }
 
@@ -406,7 +408,11 @@ export interface IpcInvokeMap {
   'update:install': { req: void; res: void };
   /** Looks for a new version now. */
   'update:check': { req: void; res: void };
-  'session:new-chat': { req: NewSessionOptions & { name?: string }; res: string };
+  /** Asks the quick chat ("Ny chatt"); starts it on the first question. */
+  'quick:ask': { req: { text: string }; res: void };
+  /** Ends the quick chat so the next question starts a new conversation. */
+  'quick:reset': { req: void; res: void };
+  'quick:current': { req: void; res: SessionSummary | null };
   'session:new-project': { req: NewSessionOptions & { name: string; createGitRepo: boolean }; res: string };
   'session:locate-project': { req: { description: string }; res: LocateResult };
   /** Opens a project folder: continues `claudeSessionId` when given, otherwise starts a new conversation there. */
@@ -441,7 +447,10 @@ export interface IpcInvokeMap {
   'window:show-session': { req: { id: string }; res: void };
   'overlay:set-interactive': { req: { interactive: boolean }; res: void };
   /** Grows the overlay to show details under the icons (while hovered), or shrinks it back. */
-  'overlay:set-detail': { req: { open: boolean }; res: void };
+  /** Shows or hides the area under the overlay row; `wide` makes room for the quick chat. */
+  'overlay:set-detail': { req: { open: boolean; wide?: boolean }; res: void };
+  /** Lets the overlay take keyboard focus while its quick chat is open (normally it never takes focus). */
+  'overlay:set-focus': { req: { focus: boolean }; res: void };
   /** Shows a session's work schema or questions in the popup window over the screen, without the main window. */
   'popup:open': { req: PopupView; res: void };
   'popup:close': { req: void; res: void };
@@ -456,6 +465,8 @@ export interface IpcEventMap {
   'state:settings': AppSettings;
   'state:account': AccountSnapshot;
   'state:update': UpdateStatus;
+  /** The quick chat's state (working, pending permission), or null when it has not started. */
+  'state:quick': SessionSummary | null;
   'session:transcript-upsert': { id: string; entry: TranscriptEntry };
   /** Replaces a whole transcript, e.g. after saved history was loaded in front of it. */
   'session:transcript-reset': { id: string; entries: TranscriptEntry[] };

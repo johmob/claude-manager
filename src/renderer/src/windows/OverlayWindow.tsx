@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { SessionSummary, UsageSnapshot, UsageWindow } from '../../../shared/contracts';
-import { AgentsIcon } from '../components/Icons';
+import { AgentsIcon, ChatIcon } from '../components/Icons';
+import { QuickChatBody, useQuickChat } from '../components/QuickChat';
 import { QuickQuestion, questionsKey } from '../components/QuestionFlow';
 import { InfoBar, InfoRow, SessionInfo } from '../components/SessionInfo';
 import { send } from '../lib/api';
@@ -80,6 +81,24 @@ export function OverlayWindow() {
   useTheme(state?.settings.theme);
   const interactive = useRef(false);
   const [hovered, setHovered] = useState<string | null>(null);
+  /** The quick chat folded out under its button; it stays open until closed (Esc, the button, a click elsewhere). */
+  const [chatOpen, setChatOpen] = useState(false);
+  const quick = useQuickChat();
+  const chatClick = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    send('overlay:set-focus', { focus: chatOpen });
+    if (!chatOpen) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setChatOpen(false);
+    };
+    const onBlur = (): void => setChatOpen(false);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [chatOpen]);
 
   const setInteractive = (value: boolean): void => {
     if (interactive.current === value) return;
@@ -88,8 +107,8 @@ export function OverlayWindow() {
   };
 
   // The window grows downwards while details are shown, and shrinks back afterwards.
-  const detailOpen = hovered !== null;
-  useEffect(() => send('overlay:set-detail', { open: detailOpen }), [detailOpen]);
+  const detailOpen = chatOpen || hovered !== null;
+  useEffect(() => send('overlay:set-detail', { open: detailOpen, wide: chatOpen }), [detailOpen, chatOpen]);
 
   if (!state) return null;
   const session = state.sessions.find((s) => s.id === hovered) ?? null;
@@ -97,8 +116,9 @@ export function OverlayWindow() {
   return (
     <div
       className="overlay"
-      onMouseMove={(e: MouseEvent) => setInteractive(e.ctrlKey || (e.target instanceof Element && !!e.target.closest('.ov-cell, .ov-q')))}
+      onMouseMove={(e: MouseEvent) => chatOpen || setInteractive(e.ctrlKey || (e.target instanceof Element && !!e.target.closest('.ov-cell, .ov-q')))}
       onMouseLeave={() => {
+        if (chatOpen) return;
         setInteractive(false);
         setHovered(null);
       }}
@@ -107,6 +127,29 @@ export function OverlayWindow() {
         <div className="ov-usage" onMouseEnter={() => setHovered('usage')}>
           <UsageRow label="5h" window={state.usage.fiveHour} />
           <UsageRow label="V" window={state.usage.sevenDay} />
+        </div>
+        <div
+          className="ov-cell ov-chat"
+          data-status={quick?.status ?? 'idle'}
+          data-open={chatOpen ? 'true' : undefined}
+          title="Snabbfråga · Klicka: fäll ut · Dubbelklicka: stort fönster"
+          onMouseEnter={() => setHovered(null)}
+          onClick={() => {
+            // A second click soon after is a double-click: wait before folding out the small chat.
+            window.clearTimeout(chatClick.current);
+            chatClick.current = window.setTimeout(() => setChatOpen((open) => !open), 250);
+          }}
+          onDoubleClick={() => {
+            window.clearTimeout(chatClick.current);
+            setChatOpen(false);
+            send('popup:open', { kind: 'quick', id: 'quick' });
+          }}
+        >
+          <span className="ov-icon ov-chat-icon">
+            <span className="ov-ring" />
+            <ChatIcon />
+          </span>
+          <span className="ov-name">Fråga</span>
         </div>
         <span className="ov-divider" />
         {state.sessions.map((s) => (
@@ -133,7 +176,11 @@ export function OverlayWindow() {
           </div>
         ))}
       </div>
-      {detailOpen && (
+      {chatOpen ? (
+        <div className="ov-detail wide">
+          <QuickChatBody compact />
+        </div>
+      ) : detailOpen && (
         <div className="ov-detail">
           {hovered === 'usage' ? (
             <UsageDetail usage={state.usage} />

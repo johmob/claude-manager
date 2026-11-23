@@ -152,6 +152,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
      * one box, so they stand out in the transcript. The user answers them all in the question flow.
      */
     const collectQuestions = (): TranscriptEntry[] => {
+      // The quick chat is answered right where it is asked.
+      if (s.record.kind === 'quick') return [];
       const fresh = s.callouts.slice(s.calloutsBefore);
       s.calloutsBefore = s.callouts.length;
       const tagged = fresh.flatMap((c): OpenQuestion[] =>
@@ -376,7 +378,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.calloutsBefore = 0;
       }
     },
-    summaries: () => [...states.values()].map(summarize),
+    summaries: () => [...states.values()].filter((s) => s.record.kind !== 'quick').map(summarize),
     summary: (id) => {
       const s = states.get(id);
       return s ? summarize(s) : undefined;

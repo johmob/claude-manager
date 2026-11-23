@@ -27,7 +27,9 @@ export interface WindowManager {
   setDock(visible: boolean, edge: DockEdge, count: number): void;
   setOverlay(visible: boolean, count: number): void;
   /** Shows or hides the detail area under the overlay icons. */
-  setOverlayDetail(open: boolean): void;
+  setOverlayDetail(open: boolean, wide?: boolean): void;
+  /** Lets the overlay take keyboard focus (for its quick chat), or gives it back. */
+  setOverlayFocus(focus: boolean): void;
   setOverlayInteractive(interactive: boolean): void;
   /** Shows a session's work schema or questions in a transparent window over the primary screen, focused, without the main window. */
   openPopup(view: PopupView): void;
@@ -51,6 +53,8 @@ const OVERLAY_USAGE_WIDTH = 180;
 const OVERLAY_HEIGHT = 112;
 const OVERLAY_DETAIL_HEIGHT = 280;
 const OVERLAY_DETAIL_WIDTH = 284;
+const OVERLAY_CHAT_HEIGHT = 440;
+const OVERLAY_CHAT_WIDTH = 430;
 const EDGE_MARGIN = 8;
 
 type Route = 'main' | 'dock' | 'overlay' | 'popup';
@@ -82,6 +86,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   let overlay: BrowserWindow | null = null;
   let overlayInteractive = false;
   let overlayDetail = false;
+  let overlayWide = false;
   let overlayCount = 0;
   let popup: BrowserWindow | null = null;
   let popupShows: PopupView | null = null;
@@ -153,15 +158,30 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     overlayCount = count;
     const area = screen.getPrimaryDisplay().workArea;
     const row = OVERLAY_USAGE_WIDTH + count * OVERLAY_CELL + 16;
-    const width = Math.min(overlayDetail ? Math.max(row, OVERLAY_DETAIL_WIDTH) : row, area.width);
-    const height = OVERLAY_HEIGHT + (overlayDetail ? OVERLAY_DETAIL_HEIGHT : 0);
+    const detailWidth = overlayWide ? OVERLAY_CHAT_WIDTH : OVERLAY_DETAIL_WIDTH;
+    const width = Math.min(overlayDetail ? Math.max(row, detailWidth) : row, area.width);
+    const height = OVERLAY_HEIGHT + (overlayDetail ? (overlayWide ? OVERLAY_CHAT_HEIGHT : OVERLAY_DETAIL_HEIGHT) : 0);
     place(overlay, { x: area.x + Math.round((area.width - width) / 2), y: area.y + 2, width, height });
   }
 
-  function setOverlayDetail(open: boolean): void {
-    if (open === overlayDetail) return;
+  function setOverlayDetail(open: boolean, wide = false): void {
+    if (open === overlayDetail && wide === overlayWide) return;
     overlayDetail = open;
+    overlayWide = open && wide;
     if (overlay?.isVisible()) setOverlay(true, overlayCount);
+  }
+
+  function setOverlayFocus(focus: boolean): void {
+    if (!overlay || overlay.isDestroyed()) return;
+    overlay.setFocusable(focus);
+    if (focus) {
+      overlayInteractive = true;
+      overlay.setIgnoreMouseEvents(false);
+      overlay.focus();
+    } else {
+      overlayInteractive = false;
+      overlay.setIgnoreMouseEvents(true, { forward: true });
+    }
   }
 
   function setOverlayInteractive(interactive: boolean): void {
@@ -241,6 +261,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     setOverlay,
     setOverlayInteractive,
     setOverlayDetail,
+    setOverlayFocus,
     openPopup,
     closePopup,
     popupView: () => popupShows,

@@ -14,6 +14,7 @@ import { EFFORT_LABEL, formatAgo, PERMISSION_LABEL } from '../lib/format';
 import { effortOptions, modelOptions, useAccount } from '../state/account';
 import { errorMessage, send } from '../lib/api';
 import { Modal } from './Modal';
+import { QuickChat } from './QuickChat';
 import { Spinner } from './Atoms';
 
 export type DialogKind = 'chat' | 'project' | 'existing' | 'rules';
@@ -139,28 +140,6 @@ function DialogForm({ title, onClose, submitLabel, canSubmit, onSubmit, children
         </div>
       </form>
     </Modal>
-  );
-}
-
-function NewChatDialog({ settings, onClose }: DialogProps) {
-  const [name, setName] = useState('');
-  const [options, patch] = useOptions(settings);
-  return (
-    <DialogForm
-      title="Ny chatt"
-      onClose={onClose}
-      submitLabel="Starta"
-      canSubmit
-      onSubmit={async () => {
-        const trimmed = name.trim();
-        await window.cm.invoke('session:new-chat', { ...toSessionOptions(options), ...(trimmed ? { name: trimmed } : {}) });
-      }}
-    >
-      <Field label="Namn (valfritt)">
-        <input className="input" autoFocus value={name} onChange={(e) => setName(e.target.value)} />
-      </Field>
-      <OptionFields value={options} onChange={patch} />
-    </DialogForm>
   );
 }
 
@@ -417,7 +396,7 @@ function FolderStep({ settings, found, now, onClose }: DialogProps & { found: Lo
 export function StartDialog({ kind, settings, onClose }: DialogProps & { kind: DialogKind }) {
   switch (kind) {
     case 'chat':
-      return <NewChatDialog settings={settings} onClose={onClose} />;
+      return <QuickChat onClose={onClose} />;
     case 'project':
       return <NewProjectDialog settings={settings} onClose={onClose} />;
     case 'existing':

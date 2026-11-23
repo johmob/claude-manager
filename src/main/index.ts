@@ -58,6 +58,15 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 const SYNC_DELAY_MS = 80;
 
+/** The quick chat ("Ny chatt"): one hidden session, never a card or saved record. */
+const QUICK_ID = 'quick';
+const QUICK_PROMPT = [
+  'Du svarar på snabba frågor i ett litet fönster, ungefär som en sökning.',
+  'Svara kort och direkt på svenska, utan rubriker om de inte behövs.',
+  'Sök på webben när frågan gäller något aktuellt eller fakta du är osäker på, och ange källan kort.',
+  'Ställ bara motfrågor när frågan inte går att besvara annars.',
+].join(' ');
+
 /** Sent to a session stopped by the usage limit once it has reset. */
 const RESUME_MESSAGE =
   'Användningsgränsen har återställts. Fortsätt där du var, och starta om de subagenter som stoppades.';
@@ -228,6 +237,7 @@ function boot(): void {
         if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
         const completed = !event.isError && !event.interrupted;
         const asks = model.summary(event.sessionId);
+        if (event.sessionId === QUICK_ID) break;
         if (completed && asks?.questions.length) void writeQuestionBriefs(event.sessionId);
         if (completed && asks?.status === 'waiting' && !asks.pendingCount) {
           // The turn ended with questions: as urgent as a question asked with the tool.
@@ -253,8 +263,9 @@ function boot(): void {
       const summaries = model.summaries();
       windows.send('state:sessions', summaries);
       windows.setDock(settings.dockVisible, settings.dockEdge, summaries.length);
-      windows.setOverlay(settings.overlayVisible, summaries.length);
+      windows.setOverlay(settings.overlayVisible, summaries.length + 1);
       tray.setWaiting(summaries.filter((s) => s.status === 'waiting').length);
+      windows.send('state:quick', model.summary(QUICK_ID) ?? null);
     }, SYNC_DELAY_MS);
   }
 
@@ -592,13 +603,28 @@ function boot(): void {
   handle('update:install', () => updater?.installNow());
   handle('update:check', () => updater?.checkNow());
 
-  handle('session:new-chat', (req) => {
-    const id = randomUUID();
-    const cwd = join(userData, 'chats', id);
+  handle('quick:ask', (req) => {
+    const text = req.text.trim();
+    if (!text) return;
+    if (engine.isRunning(QUICK_ID)) return engine.send(QUICK_ID, text);
+    const cwd = join(userData, 'quick');
     mkdirSync(cwd, { recursive: true });
-    const name = req.name?.trim() || `Chatt ${new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}`;
-    return createSession('chat', name, cwd, req, id);
+    const now = new Date().toISOString();
+    model.upsertRecord({
+      id: QUICK_ID, name: 'Snabbfråga', color: '#6a76b8', kind: 'quick', cwd, model: 'sonnet', effort: 'low', permissionMode: 'auto',
+      createdAt: now, archived: false, focused: false, lastActiveAt: now, contextWindow: 'auto', tokensUsed: 0,
+    });
+    engine.start({ id: QUICK_ID, cwd, model: 'sonnet', effort: 'low', permissionMode: 'auto', contextWindow: 'auto', appendSystemPrompt: QUICK_PROMPT, initialPrompt: text });
   });
+
+  handle('quick:reset', async () => {
+    await engine.stop(QUICK_ID);
+    model.remove(QUICK_ID);
+    windows.send('session:transcript-reset', { id: QUICK_ID, entries: [] });
+    scheduleSync();
+  });
+
+  handle('quick:current', () => model.summary(QUICK_ID) ?? null);
 
   handle('session:new-project', (req) => {
     const cwd = projects.create(req.name);
@@ -748,7 +774,8 @@ function boot(): void {
   handle('window:ensure-width', (req) => windows.ensureWidth(req.width));
   handle('window:show-session', (req) => showSession(req.id));
   handle('overlay:set-interactive', (req) => windows.setOverlayInteractive(req.interactive));
-  handle('overlay:set-detail', (req) => windows.setOverlayDetail(req.open));
+  handle('overlay:set-detail', (req) => windows.setOverlayDetail(req.open, req.wide));
+  handle('overlay:set-focus', (req) => windows.setOverlayFocus(req.focus));
   handle('popup:open', (req) => windows.openPopup(req));
   handle('popup:close', () => windows.closePopup());
   handle('popup:current', () => windows.popupView());
