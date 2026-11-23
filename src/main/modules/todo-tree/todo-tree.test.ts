@@ -74,12 +74,13 @@ describe('createTodoWatcher', () => {
     expect(calls).toEqual([null]);
     mkdirSync(join(cwd, '.claude-manager'));
     writeFileSync(join(cwd, TODO_RELATIVE_PATH), JSON.stringify({ title: 'T', updated: '', tracks: [] }));
-    const deadline = Date.now() + 5000;
+    // fs.watchFile polls once a second; a busy machine can take several rounds to notice the write.
+    const deadline = Date.now() + 12000;
     while (calls.length < 2 && Date.now() < deadline) await new Promise((r) => setTimeout(r, 100));
     watcher.close();
     expect(calls.length).toBe(2);
     expect(calls[1]?.title).toBe('T');
-  });
+  }, 15000);
 });
 
 describe('mappingRequest', () => {
