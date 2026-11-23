@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-23T12:10:04Z",
+  "updated": "2026-11-23T12:29:50Z",
   "tracks": [
     {
       "id": "eng",
@@ -120,6 +120,12 @@
               "id": "plan.2.4",
               "title": "Taggning av det viktiga (callouts)",
               "status": "done"
+            },
+            {
+              "id": "plan.2.5",
+              "title": "Frågor i löptext räknas som väntan på svar",
+              "status": "done",
+              "notes": "Instruktionen säger AskUserQuestion eller [!QUESTION]. Som skyddsnät samlar appen frågetecken-rader i sista svaret till en frågeruta och sätter sessionen som väntande (blinkar, notis)."
             }
           ]
         },

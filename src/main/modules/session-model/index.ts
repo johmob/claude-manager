@@ -51,6 +51,10 @@ interface SessionState {
   lastActivity: string;
   lastError: string | null;
   callouts: Callout[];
+  /** The main agent's latest text in the current turn; its questions are checked when the turn ends. */
+  turnText: string;
+  /** The turn ended with questions to the user (a [!QUESTION] block or questions in its final answer). */
+  awaitingAnswer: boolean;
   mapping: boolean;
   context: ContextUsage | null;
   todo: TodoTree | null;
@@ -84,6 +88,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       lastActivity: '',
       lastError: null,
       callouts: [],
+      turnText: '',
+      awaitingAnswer: false,
       mapping: false,
       context: null,
       todo: null,
@@ -126,6 +132,27 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       if (activity) s.lastActivity = activity;
     };
     const system = (text: string, level: 'info' | 'warning' | 'error'): TranscriptEntry[] => add({ kind: 'system', text, level });
+    /**
+     * A finished turn that leaves questions for the user waits for an answer. Questions the agent tagged
+     * ([!QUESTION]) count as they are; questions left as plain text in its final answer are collected into
+     * one question box, so they stand out on the card and in the transcript.
+     */
+    const collectQuestions = (): TranscriptEntry[] => {
+      if (s.callouts.some((c) => c.kind === 'question')) {
+        s.awaitingAnswer = true;
+        return [];
+      }
+      const found = findQuestions(s.turnText);
+      if (!found.length) return [];
+      s.awaitingAnswer = true;
+      const callout: Callout = {
+        kind: 'question',
+        title: found.length === 1 ? 'Fråga till dig' : `${found.length} frågor till dig`,
+        text: found.map((q) => `- ${q}`).join('\n'),
+      };
+      s.callouts.push(callout);
+      return add({ kind: 'callout', callout });
+    };
 
     switch (event.type) {
       case 'started':
@@ -144,6 +171,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.lastError = null;
         s.lastActivity = '';
         s.callouts = [];
+        s.turnText = '';
+        s.awaitingAnswer = false;
         return add({ kind: 'user', text: event.prompt });
       case 'thinking':
         markActive('Tänker…');
@@ -151,6 +180,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         return [];
       case 'text':
         markActive('Skriver svar…');
+        if (!event.agentId) s.turnText = event.text;
         return add({ kind: 'assistant', text: event.text, thinking: takeThinking(), agentId: event.agentId });
       case 'tool_use':
         markActive(event.summary ? `${event.name}: ${event.summary}` : event.name);
@@ -208,7 +238,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         const thinking = takeThinking();
         const leftover = thinking ? add({ kind: 'assistant', text: '', thinking }) : [];
         if (event.interrupted) return [...leftover, ...system('Avbruten.', 'info')];
-        return event.isError ? [...leftover, ...system(event.result, 'error')] : leftover;
+        if (event.isError) return [...leftover, ...system(event.result, 'error')];
+        return [...leftover, ...collectQuestions()];
       }
       case 'callout':
         s.callouts.push(event.callout);
@@ -296,7 +327,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     },
     dismissCallouts: (id) => {
       const s = states.get(id);
-      if (s) s.callouts = [];
+      if (s) {
+        s.callouts = [];
+        s.awaitingAnswer = false;
+      }
     },
     summaries: () => [...states.values()].map(summarize),
     summary: (id) => {
@@ -308,11 +342,37 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
 }
 
 function statusOf(s: SessionState): SessionStatus {
-  if (!s.running) return s.lastError ? 'error' : 'stopped';
+  if (!s.running) return s.lastError ? 'error' : s.awaitingAnswer ? 'waiting' : 'stopped';
   if (s.pending.length) return 'waiting';
   if (s.turnActive) return 'working';
+  if (s.awaitingAnswer) return 'waiting';
   if (s.lastError) return 'error';
   return s.unseenDone ? 'done' : 'idle';
+}
+
+const MAX_QUESTIONS = 12;
+const QUESTION_END = /\?["”'»)]*$/;
+
+/**
+ * Questions to the user in an answer: lines that end with a question mark, outside code blocks, without
+ * list markers and emphasis. A turn's final answer that ends this way is asking the user something.
+ */
+export function findQuestions(text: string): string[] {
+  const found: string[] = [];
+  let inFence = false;
+  for (const raw of text.split(/\r?\n/)) {
+    if (/^\s*(```|~~~)/.test(raw)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const line = raw
+      .replace(/^\s*(?:>\s*)?(?:#{1,6}\s+)?(?:[-*+]\s+|\d+[.)]\s+)?/, '')
+      .replace(/\*\*|__|`/g, '')
+      .trim();
+    if (line.length >= 6 && QUESTION_END.test(line)) found.push(line);
+  }
+  return found.slice(0, MAX_QUESTIONS);
 }
 
 /**

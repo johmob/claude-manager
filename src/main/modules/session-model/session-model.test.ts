@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionEvent, SessionRecord, TodoNode, TodoTree } from '../../../shared/contracts';
-import { createSessionModel } from './index';
+import { createSessionModel, findQuestions } from './index';
 
 const record: SessionRecord = {
   id: 's1',
@@ -165,5 +165,43 @@ describe('session-model', () => {
     expect(model.summary('s1')).toMatchObject({ status: 'error', lastError: 'krasch', activeAgents: 0, resumable: true });
     apply({ type: 'started' });
     expect(model.summary('s1')).toMatchObject({ status: 'idle', lastError: null });
+  });
+});
+
+describe('questions left for the user', () => {
+  const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+
+  it('finds questions in an answer, outside code and without list markers', () => {
+    const text = ['Klart med steg 1.', '', '1. **Ska jag köra B först?**', '- Vilken port gäller (COM3)?', '```', 'if (x?) y', '```', 'Säg till.'].join('\n');
+    expect(findQuestions(text)).toEqual(['Ska jag köra B först?', 'Vilken port gäller (COM3)?']);
+  });
+
+  it('waits for the user when the final answer ends with questions, until the next message', () => {
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'text', text: 'Är det rätt fil?' }); // an earlier text is not the final answer
+    apply({ type: 'text', text: 'Jag har två frågor:\n1. Ska jag byta till rev C7?\n2. Behåller vi 115 200 baud?' });
+    apply(finish);
+    expect(model.summary('s1')).toMatchObject({ status: 'waiting' });
+    expect(model.summary('s1')?.callouts[0]).toMatchObject({ kind: 'question', title: '2 frågor till dig' });
+    apply({ type: 'turn_started', prompt: 'ja, och ja' });
+    expect(model.summary('s1')?.status).toBe('working');
+  });
+
+  it('counts a tagged question and ignores subagent text; dismissing ends the wait', () => {
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'text', text: 'Vad gör funktionen?', agentId: 'sub' });
+    apply({ type: 'text', text: 'Klart.' });
+    apply(finish);
+    expect(model.summary('s1')?.status).toBe('done');
+    apply({ type: 'turn_started', prompt: 'nästa' });
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'Rev C7?' } });
+    apply(finish);
+    expect(model.summary('s1')?.status).toBe('waiting');
+    model.dismissCallouts('s1');
+    expect(model.summary('s1')?.status).toBe('done');
   });
 });

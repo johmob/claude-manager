@@ -165,6 +165,7 @@ function boot(): void {
           saveRecord({ ...record, lastActiveAt: new Date().toISOString() });
           focus(record.id);
         }
+        notifier.clear(event.sessionId);
         break;
       // The mapping turn's own model and effort are temporary and never saved to the card.
       case 'model_changed':
@@ -190,7 +191,12 @@ function boot(): void {
       case 'turn_finished': {
         if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
         const completed = !event.isError && !event.interrupted;
-        if (settings.alertOnDone && completed) {
+        const asks = model.summary(event.sessionId);
+        if (completed && asks?.status === 'waiting' && !asks.pendingCount) {
+          // The turn ended with questions: as urgent as a question asked with the tool.
+          const question = asks.callouts.find((c) => c.kind === 'question');
+          notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} har frågor till dig`, body: question?.text ?? event.result, urgent: true });
+        } else if (settings.alertOnDone && completed) {
           notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} är klar`, body: event.result, urgent: false });
         }
         if (awaitingRestart.delete(event.sessionId)) void restart(event.sessionId);
@@ -211,7 +217,7 @@ function boot(): void {
       windows.send('state:sessions', summaries);
       windows.setDock(settings.dockVisible, settings.dockEdge, summaries.length);
       windows.setOverlay(settings.overlayVisible, summaries.length);
-      tray.setWaiting(summaries.filter((s) => s.pendingCount > 0).length);
+      tray.setWaiting(summaries.filter((s) => s.status === 'waiting').length);
     }, SYNC_DELAY_MS);
   }
 
@@ -634,6 +640,7 @@ function boot(): void {
 
   handle('session:dismiss-callouts', (req) => {
     model.dismissCallouts(req.id);
+    if (!model.summary(req.id)?.pendingCount) notifier.clear(req.id);
     scheduleSync();
   });
 

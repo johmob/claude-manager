@@ -8,8 +8,12 @@ import { StatusChip } from './Atoms';
 /** What a waiting session needs from the user, in one line. */
 function waitingFor(session: SessionSummary): string | null {
   const p = session.pending;
-  if (!p) return null;
-  return p.kind === 'question' ? p.questions.map((q) => q.question).join(' · ') : `Behörighet: ${p.summary}`;
+  if (p) return p.kind === 'question' ? p.questions.map((q) => q.question).join(' · ') : `Behörighet: ${p.summary}`;
+  if (session.status !== 'waiting') return null;
+  const asked = session.callouts.filter((c) => c.kind === 'question');
+  const lines = asked.flatMap((c) => c.text.split('\n')).map((l) => l.replace(/^\s*[-*]\s+/, '').trim()).filter(Boolean);
+  if (!lines.length) return null;
+  return lines.length > 3 ? `${lines.slice(0, 3).join(' · ')} · +${lines.length - 3} till` : lines.join(' · ');
 }
 
 /** A labelled row: muted label on the left, the value on the right. */
