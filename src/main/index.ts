@@ -44,6 +44,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   dockEdge: 'right',
   overlayVisible: true,
   launchAtLogin: true,
+  textScale: 1.1,
   defaultModel: 'opus',
   defaultEffort: 'medium',
   defaultPermissionMode: 'auto',
@@ -680,6 +681,11 @@ function packagedClaudeBinary(): string | undefined {
   return join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '@anthropic-ai', 'claude-agent-sdk-win32-x64', 'claude.exe');
 }
 
+/** Text size between 80 % and 160 %, in steps of 5 %. */
+function clampScale(value: number): number {
+  return Math.round(Math.min(1.6, Math.max(0.8, value)) * 20) / 20;
+}
+
 function gitSetupPrompt(name: string): string {
   return [
     'First task: initialise a local Git repository in this folder (branch main) and create a matching private repository',
@@ -701,6 +707,7 @@ function validSettings(r: unknown): AppSettings | null {
     dockEdge: pick(r['dockEdge'], DOCK_EDGES, d.dockEdge),
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),
     launchAtLogin: bool(r['launchAtLogin'], d.launchAtLogin),
+    textScale: typeof r['textScale'] === 'number' && Number.isFinite(r['textScale']) ? clampScale(r['textScale']) : d.textScale,
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),
     defaultEffort: pick(r['defaultEffort'], EFFORT_CHOICES, d.defaultEffort),
     defaultPermissionMode: pick(r['defaultPermissionMode'], PERMISSION_CHOICES, d.defaultPermissionMode),

@@ -324,6 +324,8 @@ export interface AppSettings {
   overlayVisible: boolean;
   /** Start with Windows, in the system tray (installed app only). */
   launchAtLogin: boolean;
+  /** Text size in the main window and popups, 1 = 16 px root (Ctrl + plus/minus/0). */
+  textScale: number;
   defaultModel: ModelChoice;
   defaultEffort: EffortChoice;
   defaultPermissionMode: PermissionChoice;

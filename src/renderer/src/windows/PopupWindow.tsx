@@ -5,6 +5,7 @@ import { WorkSchema } from '../components/WorkSchema';
 import { send } from '../lib/api';
 import { AccountContext } from '../state/account';
 import { useAppState } from '../state/useAppState';
+import { useTextScale } from '../lib/textScale';
 
 /**
  * A session's work schema or its questions on their own, opened from the overlay without bringing the
@@ -14,6 +15,7 @@ import { useAppState } from '../state/useAppState';
 export function PopupWindow() {
   const state = useAppState();
   const [view, setView] = useState<PopupView | null>(null);
+  useTextScale(state?.settings.textScale);
   useEffect(() => {
     const off = window.cm.on('popup:show', (next) => setView(next));
     // The first "show" may arrive before this listener exists, so ask once as well.

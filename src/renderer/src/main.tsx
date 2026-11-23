@@ -1,5 +1,6 @@
 import { StrictMode, type ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@fontsource-variable/inter';
 import './styles.css';
 import { MainWindow } from './windows/MainWindow';
 import { DockWindow } from './windows/DockWindow';

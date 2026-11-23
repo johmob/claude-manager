@@ -1,6 +1,6 @@
 // window-manager: creates and positions the app's windows (main, dock, overlay, and the popup over the screen).
 // Knows nothing about sessions beyond how many cards the dock and overlay must fit.
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow, Menu, screen } from 'electron';
 import type { NativeImage, Rectangle } from 'electron';
 import type { DockEdge, IpcEventChannel, IpcEventMap, IpcInvokeMap, PopupView } from '../../../shared/contracts';
 
@@ -56,6 +56,9 @@ const EDGE_MARGIN = 8;
 type Route = 'main' | 'dock' | 'overlay' | 'popup';
 
 export function createWindowManager(opts: WindowManagerOptions): WindowManager {
+  // No application menu: its default zoom shortcuts would zoom every window of the app at once (Chromium
+  // zooms per origin), overlay and dock included. Text size is the app's own setting instead.
+  Menu.setApplicationMenu(null);
   let closeAllowed = false;
   const main = createWindow('main', {
     width: 1320,

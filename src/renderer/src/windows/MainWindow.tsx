@@ -3,6 +3,7 @@ import type { SessionSummary } from '../../../shared/contracts';
 import { AskQuestionsContext, QuestionFlow, questionsKey } from '../components/QuestionFlow';
 import { AccountContext } from '../state/account';
 import { useAppState } from '../state/useAppState';
+import { useTextScale } from '../lib/textScale';
 import { TopBar, type ViewMode } from '../components/TopBar';
 import { StartDialog, type DialogKind } from '../components/StartDialogs';
 import { OverviewView } from '../views/OverviewView';
@@ -13,6 +14,7 @@ export function MainWindow() {
   const [view, setView] = useState<ViewMode>('overview');
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const [asking, setAsking] = useState<string | null>(null);
+  useTextScale(state?.settings.textScale);
   /** Question sets the user put off in this window; they are not offered again on their own. */
   const putOff = useRef(new Set<string>());
   const latest = useRef<SessionSummary[]>([]);
