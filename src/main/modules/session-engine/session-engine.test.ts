@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
-import { describeTool, splitCallouts, translate } from './index';
+import { describeTool, savedUserText, splitCallouts, translate } from './index';
 
 const sdk = (message: object): SDKMessage => message as SDKMessage;
 
@@ -106,5 +106,15 @@ describe('describeTool', () => {
     expect(describeTool('Read', { file_path: 'C:\\a.ts' })).toBe('C:\\a.ts');
     expect(describeTool('WebSearch', { query: 'electron' })).toBe('electron');
     expect(describeTool('Unknown', { x: 1 })).toBe('');
+  });
+});
+
+describe('savedUserText', () => {
+  it('shows what the user wrote as theirs, and Claude Code\'s own messages not', () => {
+    expect(savedUserText('s', 'Kör vidare')).toEqual([{ type: 'turn_started', sessionId: 's', prompt: 'Kör vidare' }]);
+    const notification = '<task-notification>\n<task-id>a1</task-id>\n<status>completed</status>\n<summary>Agent "B: K2-kanalerna rensbara" finished</summary>\n</task-notification>';
+    expect(savedUserText('s', notification)).toEqual([{ type: 'notice', sessionId: 's', text: 'Subagenten "B: K2-kanalerna rensbara" är klar.', level: 'info' }]);
+    expect(savedUserText('s', '<local-command-caveat>The command below was run directly</local-command-caveat>')).toEqual([]);
+    expect(savedUserText('s', '<system-reminder>x</system-reminder>')).toEqual([]);
   });
 });

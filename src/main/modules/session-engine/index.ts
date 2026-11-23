@@ -385,9 +385,23 @@ function historyEvents(sessionId: string, m: SessionMessage, questionIds: Set<st
   return [...(text.trim() ? savedUserText(sessionId, text) : []), ...results];
 }
 
-/** Saved user text also holds slash commands and their local output, wrapped in tags. */
-function savedUserText(sessionId: string, text: string): SessionEvent[] {
+/** Messages Claude Code itself saves in the user's place; they are never shown as the user's words. */
+const MACHINE_TAGS = ['local-command-caveat', 'system-reminder', 'local-command-stderr'];
+
+/**
+ * Saved user text also holds slash commands and their local output, and messages Claude Code adds
+ * itself (subagent notifications, reminders), wrapped in tags. Only what the user wrote becomes a user message.
+ */
+export function savedUserText(sessionId: string, text: string): SessionEvent[] {
   const tag = (name: string): string | null => text.match(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`))?.[1]?.trim() ?? null;
+  const opening = /^\s*<([a-z-]+)>/.exec(text)?.[1];
+  if (opening === 'task-notification') {
+    const summary = tag('summary') ?? '';
+    const agent = /^Agent "(.+)" (?:finished|completed)/.exec(summary)?.[1];
+    const notice = agent ? `Subagenten "${agent}" är klar.` : summary;
+    return notice ? [{ type: 'notice', sessionId, text: notice, level: 'info' }] : [];
+  }
+  if (opening && MACHINE_TAGS.includes(opening)) return [];
   const command = tag('command-name');
   if (command) return [{ type: 'turn_started', sessionId, prompt: [command, tag('command-args')].filter(Boolean).join(' ') }];
   const stdout = tag('local-command-stdout');
