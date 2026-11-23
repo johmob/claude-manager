@@ -33,6 +33,8 @@ export interface SessionModel {
   /** Short backgrounds for the questions of the set `questionsId` (ignored once that set is gone). */
   setQuestionBriefs(id: string, questionsId: string, briefs: string[]): void;
   setMapping(id: string, mapping: boolean): void;
+  /** Marks a session as stopped by the usage limit (from its saved record, after a restart). */
+  setLimit(id: string, resetsAt: string): void;
   summaries(): SessionSummary[];
   summary(id: string): SessionSummary | undefined;
   transcript(id: string): TranscriptEntry[];
@@ -366,6 +368,12 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     markSeen: (id) => {
       const s = states.get(id);
       if (s) s.unseenDone = false;
+    },
+    setLimit: (id, resetsAt) => {
+      const s = states.get(id);
+      if (!s) return;
+      s.limitResetsAt = resetsAt;
+      s.lastError = LIMIT_MESSAGE;
     },
     setMapping: (id, mapping) => {
       const s = states.get(id);

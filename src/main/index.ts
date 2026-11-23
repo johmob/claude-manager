@@ -181,6 +181,8 @@ function boot(): void {
     model.upsertRecord(record);
     todo.watch(record.id, record.cwd);
     loadSavedHistory(record);
+    // A session stopped by the usage limit before a restart still continues once it resets.
+    if (record.limitResetsAt !== null) model.setLimit(record.id, record.limitResetsAt);
   }
   notifier.setDoNotDisturb(settings.doNotDisturb);
   usage.start();
@@ -207,6 +209,7 @@ function boot(): void {
   // ---------- Event flow ----------
   function onSessionEvent(event: SessionEvent): void {
     for (const entry of model.apply(event)) windows.send('session:transcript-upsert', { id: event.sessionId, entry });
+    rememberLimit(event.sessionId);
     const record = findRecord(event.sessionId);
     switch (event.type) {
       case 'init':
@@ -454,6 +457,13 @@ function boot(): void {
     }
   }
 
+  /** Saves the usage-limit mark with the card when it changes, so it survives a restart. */
+  function rememberLimit(id: string): void {
+    const record = findRecord(id);
+    const limit = model.summary(id)?.limitResetsAt ?? null;
+    if (record && record.limitResetsAt !== limit) saveRecord({ ...record, limitResetsAt: limit });
+  }
+
   /** Moves a session into Fokus (others leave when there are too many). */
   function focus(id: string): void {
     saveRecords(bringIntoFocus(records, id));
@@ -514,6 +524,7 @@ function boot(): void {
       lastActiveAt: new Date().toISOString(),
       contextWindow: 'auto',
       tokensUsed: 0,
+      limitResetsAt: null,
     };
     saveRecord(record);
     focus(id);
@@ -543,6 +554,7 @@ function boot(): void {
       lastActiveAt: new Date(candidate.lastActivity).toISOString(),
       contextWindow: 'auto',
       tokensUsed: 0,
+      limitResetsAt: null,
     };
     saveRecord(record);
     todo.watch(record.id, record.cwd);
@@ -642,7 +654,7 @@ function boot(): void {
     const now = new Date().toISOString();
     model.upsertRecord({
       id: QUICK_ID, name: 'Snabbfråga', color: '#6a76b8', kind: 'quick', cwd, model: 'sonnet', effort: 'low', permissionMode: 'auto',
-      createdAt: now, archived: false, focused: false, lastActiveAt: now, contextWindow: 'auto', tokensUsed: 0,
+      createdAt: now, archived: false, focused: false, lastActiveAt: now, contextWindow: 'auto', tokensUsed: 0, limitResetsAt: null,
     });
     engine.start({ id: QUICK_ID, cwd, model: 'sonnet', effort: 'low', permissionMode: 'auto', contextWindow: 'auto', appendSystemPrompt: QUICK_PROMPT, initialPrompt: text });
   });
@@ -901,8 +913,9 @@ function validRecords(raw: unknown): SessionRecord[] | null {
     const lastActiveAt = typeof r['lastActiveAt'] === 'string' ? r['lastActiveAt'] : String(r['createdAt']);
     const contextWindow = CONTEXT_WINDOW_CHOICES.find((w) => w === r['contextWindow']) ?? 'auto';
     const tokensUsed = typeof r['tokensUsed'] === 'number' ? r['tokensUsed'] : 0;
+    const limitResetsAt = typeof r['limitResetsAt'] === 'string' ? r['limitResetsAt'] : null;
     // Sessions saved with the earlier bright colours get their muted counterparts.
     const color = currentColor(String(r['color']));
-    return [{ ...(r as unknown as SessionRecord), color, effort, focused, lastActiveAt, contextWindow, tokensUsed }];
+    return [{ ...(r as unknown as SessionRecord), color, effort, focused, lastActiveAt, contextWindow, tokensUsed, limitResetsAt }];
   });
 }

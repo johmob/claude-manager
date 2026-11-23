@@ -38,6 +38,8 @@ export interface SessionRecord {
   contextWindow: ContextWindowChoice;
   /** Tokens processed in this card's turns (input, output and cache), all turns added up. */
   tokensUsed: number;
+  /** Stopped by the usage limit: when it resets ('' unknown), kept across restarts so the session still continues; null otherwise. */
+  limitResetsAt: string | null;
 }
 
 /** Everything session-engine needs to start or resume one Claude Code session. */

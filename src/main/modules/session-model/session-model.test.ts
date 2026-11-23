@@ -17,6 +17,7 @@ const record: SessionRecord = {
   lastActiveAt: '2026-11-23T00:00:00Z',
   contextWindow: 'auto',
   tokensUsed: 0,
+  limitResetsAt: null,
 };
 
 type EventBody = SessionEvent extends infer E ? (E extends SessionEvent ? Omit<E, 'sessionId'> : never) : never;
@@ -307,5 +308,13 @@ describe('questions already answered', () => {
     apply({ type: 'text', text: 'Öppna frågor:\n1. Ska jag använda SPI-bussen för givaren? (besvarad)\n2. Vilken baudrate ska gälla' });
     apply(finish);
     expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Vilken baudrate ska gälla']);
+  });
+});
+
+describe('usage limit after a restart', () => {
+  it('a saved limit makes a session that is not running limited again', () => {
+    const { model } = setup();
+    model.setLimit('s1', '2026-11-23T17:30:00.000Z');
+    expect(model.summary('s1')).toMatchObject({ status: 'limited', limitResetsAt: '2026-11-23T17:30:00.000Z' });
   });
 });
