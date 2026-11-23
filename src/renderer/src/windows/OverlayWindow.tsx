@@ -104,6 +104,7 @@ export function OverlayWindow() {
           <UsageRow label="5h" window={state.usage.fiveHour} />
           <UsageRow label="V" window={state.usage.sevenDay} />
         </div>
+        <span className="ov-divider" />
         {state.sessions.map((s) => (
           <div
             key={s.id}

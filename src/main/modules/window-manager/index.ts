@@ -46,9 +46,9 @@ export interface WindowManager {
 const DOCK_CARD = { width: 204, height: 60, gap: 8, pad: 8 };
 const DOCK_VERTICAL_WIDTH = 220;
 const DOCK_HORIZONTAL_HEIGHT = 76;
-const OVERLAY_CELL = 78;
-const OVERLAY_USAGE_WIDTH = 132;
-const OVERLAY_HEIGHT = 88;
+const OVERLAY_CELL = 82;
+const OVERLAY_USAGE_WIDTH = 180;
+const OVERLAY_HEIGHT = 112;
 const OVERLAY_DETAIL_HEIGHT = 280;
 const OVERLAY_DETAIL_WIDTH = 284;
 const EDGE_MARGIN = 8;
