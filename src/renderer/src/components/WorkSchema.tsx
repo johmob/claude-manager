@@ -93,11 +93,12 @@ function Item({ node, track, trackOwner, ctx }: { node: TodoNode; track: TodoNod
 
 function Track({ track, ctx }: { track: TodoNode; ctx: ChartContext }) {
   return (
-    <div className="ws-track" data-todo={track.status} data-blocked={track.blocked ? 'true' : undefined}>
+    <div className="ws-track" data-todo={track.status} data-blocked={track.blocked ? 'true' : undefined} data-focus={track.focus ? 'true' : undefined}>
       <div className="ws-track-card ws-askable" data-selected={ctx.selectedId === track.id ? 'true' : undefined} {...pickHandlers(track.id, ctx)}>
         <div className="ws-track-head">
           <TodoIcon status={track.status} />
           <span className="ws-track-title">{track.title}</span>
+          {track.focus && <span className="ws-focus-badge">I fokus</span>}
         </div>
         <div className="ws-track-meta">
           {track.owner ? <span className="ws-owner">{track.owner}</span> : <span />}
@@ -181,6 +182,14 @@ function ItemDetail({ session, entry, index, onPick, onClose, onSent }: {
     send('session:send', { id: session.id, text: `${topicReference(entry)}\n\n${message}` });
     onSent(entry);
   };
+  /** Asks the agent to mark the track as focused (or no longer), so it glows here and gets worked on first. */
+  const toggleFocus = (): void => {
+    const request = node.focus
+      ? 'Avsluta fokus på det här spåret: ta bort "focus" från det i arbetsschemat.'
+      : 'Vi fokuserar på det här spåret nu. Markera det med "focus": true i arbetsschemat och prioritera det. Ta bort "focus" från andra spår om jag inte har sagt att de också ska vara i fokus.';
+    send('session:send', { id: session.id, text: `${topicReference(entry)}\n\n${request}` });
+    onSent(entry);
+  };
 
   return (
     <Modal title={isTrack ? `Spår ${node.id}` : `Punkt ${node.id}`} onClose={onClose}>
@@ -199,8 +208,14 @@ function ItemDetail({ session, entry, index, onPick, onClose, onSent }: {
         <div className="wd-facts">
           <span className="wd-status" data-todo={node.status}>{STATUS_TEXT[node.status]}</span>
           {node.blocked && <span className="ws-blocked">Väntar</span>}
+          {node.focus && <span className="ws-focus-badge">I fokus</span>}
           {owner && <span className="ws-owner">{owner}</span>}
           <span className="wd-progress"><Progress value={node.progress} /></span>
+          {isTrack && (
+            <button type="button" className={node.focus ? 'btn small' : 'btn small focus'} onClick={toggleFocus}>
+              {node.focus ? 'Avsluta fokus' : 'Fokusera på spåret'}
+            </button>
+          )}
         </div>
         {node.notes ? (
           <p className="wd-notes">{node.notes}</p>
@@ -282,6 +297,34 @@ function MapPanel({ session, onStarted }: { session: SessionSummary; onStarted: 
   );
 }
 
+/** The node without its finished parts; null when it is finished itself. */
+function withoutDone(node: TodoNode): TodoNode | null {
+  if (node.status === 'done') return null;
+  return { ...node, children: node.children.flatMap((c) => withoutDone(c) ?? []) };
+}
+
+const HIDE_DONE_KEY = 'ws-hide-done';
+
+/** "Dölj avklarade", remembered in this viewer's browser storage (and simply off when that is unavailable). */
+function useHideDone(): [boolean, (on: boolean) => void] {
+  const [on, setOn] = useState(() => {
+    try {
+      return localStorage.getItem(HIDE_DONE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const set = (value: boolean): void => {
+    setOn(value);
+    try {
+      localStorage.setItem(HIDE_DONE_KEY, value ? '1' : '0');
+    } catch {
+      // Not remembered; the choice still applies now.
+    }
+  };
+  return [on, set];
+}
+
 /** Width a track column needs to read comfortably, the gap between columns, and the modal's own margins. */
 const TRACK_WIDTH = 290;
 const TRACK_GAP = 16;
@@ -317,9 +360,11 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
   const [openId, setOpenId] = useState<string | null>(null);
   const [sent, setSent] = useState<Entry | null>(null);
   const [remapping, setRemapping] = useState(false);
+  const [hideDone, setHideDone] = useHideDone();
   const { todo } = session;
   // In its own window (from the overlay) the schema already has the whole screen; only the main window is widened.
-  useRoomForTracks(standalone ? 0 : (todo?.tracks.length ?? 0));
+  const tracks = !todo ? [] : hideDone ? todo.tracks.flatMap((t) => withoutDone(t) ?? []) : todo.tracks;
+  useRoomForTracks(standalone ? 0 : tracks.length);
   const index = todo ? indexSchema(todo) : new Map<string, Entry>();
   const open = openId ? index.get(openId) : undefined;
   const ctx: ChartContext = { titles: new Map([...index].map(([id, e]) => [id, e.node.title])), selectedId: openId, onPick: setOpenId };
@@ -331,6 +376,12 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
         <StatusChip status={session.status} />
         {session.startedAt !== null && <span className="muted">Tid sedan start {formatElapsed(now - session.startedAt)}</span>}
         {session.currentTask && <span className="ws-session-task">Just nu: {session.currentTask}</span>}
+        {todo && (
+          <label className="ws-toggle" title="Visa bara det som återstår">
+            <input type="checkbox" checked={hideDone} onChange={(e) => setHideDone(e.target.checked)} />
+            Dölj avklarade <span className="muted">({todo.doneItems})</span>
+          </label>
+        )}
         {todo && !session.mapping && (
           <button type="button" className="link-btn ws-remap" onClick={() => setRemapping(!remapping)}>Kartlägg om</button>
         )}
@@ -360,10 +411,11 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
           </div>
           <div
             className="ws-tracks"
-            data-single={todo.tracks.length === 1 ? 'true' : undefined}
-            style={{ '--tracks': todo.tracks.length, '--track-gap': `${TRACK_GAP}px` } as CSSProperties}
+            data-single={tracks.length === 1 ? 'true' : undefined}
+            style={{ '--tracks': tracks.length, '--track-gap': `${TRACK_GAP}px` } as CSSProperties}
           >
-            {todo.tracks.map((t) => <Track key={t.id} track={t} ctx={ctx} />)}
+            {tracks.map((t) => <Track key={t.id} track={t} ctx={ctx} />)}
+            {!tracks.length && <div className="ws-all-done">Allt är klart. Avklarade punkter är dolda.</div>}
           </div>
           <div className="ws-legend">
             <span><TodoIcon status="done" /> Klar</span>

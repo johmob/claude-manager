@@ -101,6 +101,7 @@ describe('session-model', () => {
       dependsOn: [],
       blocked: false,
       notes: '',
+      focus: false,
       children,
     });
     const tree: TodoTree = {

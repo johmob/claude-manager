@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-23T12:29:50Z",
+  "updated": "2026-11-23T12:35:43Z",
   "tracks": [
     {
       "id": "eng",
@@ -126,6 +126,11 @@
               "title": "Frågor i löptext räknas som väntan på svar",
               "status": "done",
               "notes": "Instruktionen säger AskUserQuestion eller [!QUESTION]. Som skyddsnät samlar appen frågetecken-rader i sista svaret till en frågeruta och sätter sessionen som väntande (blinkar, notis)."
+            },
+            {
+              "id": "plan.2.6",
+              "title": "Schemat som agentens minne för anmärkningar i chatten",
+              "status": "done"
             }
           ]
         },
@@ -255,6 +260,17 @@
             {
               "id": "ui.3.5",
               "title": "Kartläggningsläget släpps när schemat är skrivet",
+              "status": "done"
+            },
+            {
+              "id": "ui.3.6",
+              "title": "Spår i fokus lyser",
+              "status": "done",
+              "notes": "Agenten sätter \"focus\": true på spåret; knapp i spårets detaljruta ber den fokusera eller avsluta."
+            },
+            {
+              "id": "ui.3.7",
+              "title": "Dölj avklarade",
               "status": "done"
             }
           ]

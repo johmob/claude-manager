@@ -24,11 +24,18 @@ export function SchemaButton({ session, onOpen, compact }: { session: SessionSum
   }
 
   const left = todo.totalItems - todo.doneItems;
+  const focused = todo.tracks.filter((t) => t.focus).map((t) => t.title).join(', ');
   const headline = left === 0 ? 'Allt klart' : `${left} ${left === 1 ? 'punkt' : 'punkter'} kvar`;
   const title = `Arbetsschema: ${left} av ${todo.totalItems} punkter kvar, ${todo.inProgressItems} pågår, ${todo.tracks.length} spår. Klicka för att öppna.`;
   return (
     <button type="button" className={compact ? 'schema-btn compact' : 'schema-btn'} data-done={left === 0 ? 'true' : undefined} style={style} title={title} onClick={open}>
-      {!compact && <span className="schema-btn-label">Arbetsschema <span className="schema-btn-open">Öppna ›</span></span>}
+      {!compact && (
+        <span className="schema-btn-label">
+          Arbetsschema
+          {focused && <span className="schema-btn-focus" title={`I fokus: ${focused}`}>I fokus: {focused}</span>}
+          <span className="schema-btn-open">Öppna ›</span>
+        </span>
+      )}
       <span className="schema-btn-main">
         <strong>{headline}</strong>
         {!compact && todo.inProgressItems > 0 && <span className="schema-btn-detail">· {todo.inProgressItems} pågår</span>}

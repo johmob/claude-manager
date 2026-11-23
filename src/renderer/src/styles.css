@@ -466,7 +466,10 @@ textarea.input { resize: vertical; }
 .t-tools-caret { width: 9px; }
 .t-tools .t-tool-wrap { margin-left: 14px; }
 /* Mapping a project into its work schema */
+.ws-toggle { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; user-select: none; }
+.ws-toggle + .ws-remap { margin-left: 8px; }
 .ws-remap { margin-left: auto; }
+.ws-all-done { grid-column: 1 / -1; padding: 30px; text-align: center; color: var(--green); font-weight: 600; }
 .ws-mapping { display: flex; align-items: center; gap: 8px; margin: 4px 0 14px; padding: 10px 12px; border-radius: 8px; background: rgba(110,139,255,.10); color: var(--text); }
 .ws-map { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 16px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); }
 .ws-map-title { font-weight: 650; }
@@ -477,6 +480,7 @@ textarea.input { resize: vertical; }
 .schema-btn { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 7px 10px 8px; border-radius: 9px; border: 1px solid var(--border); border-left: 3px solid var(--accent); background: rgba(255,255,255,.03); color: var(--text); text-align: left; font: inherit; cursor: pointer; transition: background .12s, border-color .12s; }
 .schema-btn:hover { background: var(--bg-hover); border-color: #3a4150; border-left-color: var(--accent); }
 .schema-btn-label { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.schema-btn-focus { flex: 1; min-width: 0; margin: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: none; letter-spacing: 0; font-weight: 700; color: #fbbf24; }
 .schema-btn-open { color: var(--accent-ui); letter-spacing: 0; text-transform: none; font-weight: 600; font-size: 11px; }
 .schema-btn-main { display: flex; align-items: baseline; gap: 7px; min-width: 0; font-size: 12px; color: var(--muted); }
 .schema-btn-main strong { font-size: 15px; font-weight: 750; color: var(--text); white-space: nowrap; }
@@ -520,3 +524,12 @@ textarea.input { resize: vertical; }
 .wd-link-extra { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .wd-comment { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
 .wd-comment-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11.5px; }
+
+/* ---------- Focused track: the branch the user chose to work on, glowing ---------- */
+.ws-focus-badge { flex: none; margin-left: auto; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #1a1405; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,.6); }
+.ws-track[data-focus] .ws-track-card { border-color: rgba(251,191,36,.8); border-top-color: #fbbf24; animation: ws-focus-glow 2.4s ease-in-out infinite; }
+.ws-track[data-focus] > .ws-items { border-left-color: rgba(251,191,36,.55); }
+.ws-track[data-focus]::before { background: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,.7); }
+@keyframes ws-focus-glow { 0%, 100% { box-shadow: 0 0 0 1px rgba(251,191,36,.35), 0 0 10px rgba(251,191,36,.22); } 50% { box-shadow: 0 0 0 1px rgba(251,191,36,.75), 0 0 24px rgba(251,191,36,.5); } }
+.btn.small.focus { border-color: rgba(251,191,36,.6); color: #fbbf24; }
+.btn.small.focus:hover { background: rgba(251,191,36,.12); }

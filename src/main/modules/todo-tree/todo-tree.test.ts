@@ -55,7 +55,7 @@ describe('parseTodoTree', () => {
 
   it('is tolerant of odd input', () => {
     const tree = parseTodoTree(JSON.stringify({ tracks: [{ title: 'B', status: 'weird', progress: 400 }, { id: 2 }] }))!;
-    expect(tree.tracks).toEqual([{ id: '1', title: 'B', status: 'not_started', progress: 0, owner: '', dependsOn: [], blocked: false, notes: '', children: [] }]);
+    expect(tree.tracks).toEqual([{ id: '1', title: 'B', status: 'not_started', progress: 0, owner: '', dependsOn: [], blocked: false, notes: '', focus: false, children: [] }]);
   });
 
   it('rejects invalid JSON and wrong shapes', () => {
@@ -103,5 +103,7 @@ describe('notes', () => {
     expect(tree?.tracks[0]?.notes).toBe('Kvar: CRC.');
     expect(tree?.tracks[0]?.children[0]?.notes).toBe('');
     expect(tree?.inProgressItems).toBe(1);
+    expect(tree?.tracks[0]?.focus).toBe(false);
+    expect(parseTodoTree(JSON.stringify({ tracks: [{ id: 't', title: 'T', focus: true }] }))?.tracks[0]?.focus).toBe(true);
   });
 });

@@ -157,6 +157,8 @@ export interface TodoNode {
   blocked: boolean;
   /** The agent's short description: what the item covers, where it stands, what is left. May be empty. */
   notes: string;
+  /** The user chose to focus the work on this (usually a track); it is shown glowing. */
+  focus: boolean;
   children: TodoNode[];
 }
 
