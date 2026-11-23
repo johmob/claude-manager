@@ -13,6 +13,8 @@ const record: SessionRecord = {
   permissionMode: 'default',
   createdAt: '2026-11-23T00:00:00Z',
   archived: false,
+  focused: false,
+  lastActiveAt: '2026-11-23T00:00:00Z',
 };
 
 type EventBody = SessionEvent extends infer E ? (E extends SessionEvent ? Omit<E, 'sessionId'> : never) : never;

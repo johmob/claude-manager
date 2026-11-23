@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T10:30:51Z",
+  "updated": "2026-11-23T10:47:00Z",
   "tracks": [
     {
       "id": "1",
@@ -334,6 +334,39 @@
           "id": "10.6",
           "title": "Rebuild and reinstall",
           "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "title": "Fokus and writing from the overview",
+      "owner": "main",
+      "items": [
+        {
+          "id": "11.1",
+          "title": "Message box on every card",
+          "status": "done"
+        },
+        {
+          "id": "11.2",
+          "title": "Double-click a card to open it in Fokus",
+          "status": "done"
+        },
+        {
+          "id": "11.3",
+          "title": "Automatic Fokus: in on writing, out after 3 idle days",
+          "status": "done"
+        },
+        {
+          "id": "11.4",
+          "title": "Opus medium as default for new sessions",
+          "status": "done"
+        },
+        {
+          "id": "11.5",
+          "title": "Rebuild and reinstall",
+          "status": "in_progress",
+          "progress": 50
         }
       ]
     }

@@ -1,17 +1,15 @@
-import { useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
 import { formatCost, formatElapsed } from '../lib/format';
 import { send } from '../lib/api';
 import { useNow } from '../lib/useNow';
 import { AgentDots, IconButton, ModelEffortPicker, StatusChip } from './Atoms';
 import { CalloutBox } from './CalloutBox';
+import { ChatInput } from './ChatInput';
 import { PendingPanel } from './PendingPanel';
 
 interface SessionCardProps {
   session: SessionSummary;
-  selected: boolean;
-  selectDisabled: boolean;
-  onToggleSelect: () => void;
   onOpen: () => void;
 }
 
@@ -61,6 +59,25 @@ function CardActions({ session, onRename }: { session: SessionSummary; onRename:
   );
 }
 
+/** How long to wait for a second click before treating a click as a single click. */
+const DOUBLE_CLICK_MS = 250;
+
+/** Click handlers that run `single` on a click, or only `double` when a second click follows quickly. */
+function useSingleOrDoubleClick(single: () => void, double: () => void) {
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  return {
+    onClick: () => {
+      window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(single, DOUBLE_CLICK_MS);
+    },
+    onDoubleClick: () => {
+      window.clearTimeout(timer.current);
+      double();
+    },
+  };
+}
+
 /** What the latest turn tagged (suggestions stay in the transcript), until dismissed. */
 function CardCallouts({ session }: { session: SessionSummary }) {
   const shown = session.callouts.filter((c) => c.kind !== 'tip');
@@ -73,16 +90,17 @@ function CardCallouts({ session }: { session: SessionSummary }) {
   );
 }
 
-export function SessionCard({ session, selected, selectDisabled, onToggleSelect, onOpen }: SessionCardProps) {
+export function SessionCard({ session, onOpen }: SessionCardProps) {
   const [renaming, setRenaming] = useState(false);
   const working = session.status === 'working' && session.turnStartedAt !== null;
   const now = useNow(working);
   const { todo } = session;
+  const clicks = useSingleOrDoubleClick(onOpen, () => send('window:show-session', { id: session.id }));
 
   return (
     <article className="card" data-status={session.status} data-expanded={session.pending ? 'true' : 'false'} style={{ '--accent': session.color } as CSSProperties}>
       <div className="card-strip" />
-      <div className="card-main" onClick={onOpen}>
+      <div className="card-main" title="Klicka: arbetsschema · Dubbelklicka: öppna i Fokus" {...clicks}>
         <div className="card-top">
           <span className="name-dot" />
           {renaming ? <RenameField session={session} onDone={() => setRenaming(false)} /> : <span className="card-name" title={session.cwd}>{session.name}</span>}
@@ -105,9 +123,14 @@ export function SessionCard({ session, selected, selectDisabled, onToggleSelect,
       </div>
       <CardCallouts session={session} />
       <PendingPanel session={session} />
+      {!session.pending && (
+        <div className="card-input">
+          <ChatInput session={session} compact />
+        </div>
+      )}
       <div className="card-foot">
-        <label className="select-box" title={selectDisabled && !selected ? 'Max 6 i fokusläget' : 'Visa i Fokus'} onClick={(e) => e.stopPropagation()}>
-          <input type="checkbox" checked={selected} disabled={selectDisabled && !selected} onChange={onToggleSelect} />
+        <label className="select-box" title="Kommer med i Fokus automatiskt när du skriver till den, och lämnar efter några dagar utan arbete" onClick={(e) => e.stopPropagation()}>
+          <input type="checkbox" checked={session.focused} onChange={() => send('session:set-focus', { id: session.id, focused: !session.focused })} />
           <span>Fokus</span>
         </label>
         <button type="button" className="link-btn" onClick={onOpen}>Arbetsschema</button>

@@ -32,6 +32,7 @@ import { createWindowManager } from './modules/window-manager';
 import { createTray } from './modules/tray';
 import { importCandidates, liveTerminals } from './modules/terminal-sessions';
 import { probeAccount, UNVERIFIED_ACCOUNT } from './modules/account';
+import { bringIntoFocus, expireFocus } from './modules/focus-rules';
 
 const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: 'C:\\Kod',
@@ -41,15 +42,16 @@ const DEFAULT_SETTINGS: AppSettings = {
   dockVisible: false,
   dockEdge: 'right',
   overlayVisible: false,
-  defaultModel: 'default',
-  defaultEffort: 'default',
+  defaultModel: 'opus',
+  defaultEffort: 'medium',
   defaultPermissionMode: 'auto',
 };
 
 const SYNC_DELAY_MS = 80;
 
 // Same data folder in development and in the installed app (whose name would otherwise differ).
-app.setPath('userData', join(app.getPath('appData'), 'claude-manager'));
+// CLAUDE_MANAGER_DATA_DIR gives a test run its own folder, so it never touches (or locks out) the real app.
+app.setPath('userData', process.env['CLAUDE_MANAGER_DATA_DIR'] || join(app.getPath('appData'), 'claude-manager'));
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -104,6 +106,10 @@ function boot(): void {
   }
   notifier.setDoNotDisturb(settings.doNotDisturb);
   usage.start();
+  // Sessions without work for days leave Fokus: checked at start and then every hour.
+  const expireStale = (): void => saveRecords(expireFocus(records, Date.now()));
+  expireStale();
+  const focusTimer = setInterval(expireStale, 60 * 60 * 1000);
   let account = UNVERIFIED_ACCOUNT;
   probeAccount({ cwd: userData, ...claudeExecutable })
     .then((found) => {
@@ -124,6 +130,13 @@ function boot(): void {
       case 'init':
         if (record && record.claudeSessionId !== event.claudeSessionId) saveRecord({ ...record, claudeSessionId: event.claudeSessionId });
         break;
+      case 'turn_started':
+        // Writing to a session is working on it: it becomes active now and moves into Fokus.
+        if (record) {
+          saveRecord({ ...record, lastActiveAt: new Date().toISOString() });
+          focus(record.id);
+        }
+        break;
       case 'model_changed':
         if (record) saveRecord({ ...record, model: event.model });
         break;
@@ -143,6 +156,7 @@ function boot(): void {
         if (!model.summary(event.sessionId)?.pendingCount) notifier.clear(event.sessionId);
         break;
       case 'turn_finished': {
+        if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString() });
         const completed = !event.isError && !event.interrupted;
         if (settings.alertOnDone && completed) {
           notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} är klar`, body: event.result, urgent: false });
@@ -178,11 +192,25 @@ function boot(): void {
   }
 
   function saveRecord(record: SessionRecord): void {
-    records = [...records.filter((r) => r.id !== record.id), record];
+    saveRecords([record]);
+  }
+
+  /** Replaces the given records (keeping their order in the list), writes the file once and updates the cards. */
+  function saveRecords(changed: SessionRecord[]): void {
+    if (!changed.length) return;
+    const byId = new Map(changed.map((r) => [r.id, r]));
+    records = [...records.map((r) => byId.get(r.id) ?? r), ...changed.filter((c) => !records.some((r) => r.id === c.id))];
     recordStore.write(records);
-    if (record.archived) model.remove(record.id);
-    else model.upsertRecord(record);
+    for (const record of changed) {
+      if (record.archived) model.remove(record.id);
+      else model.upsertRecord(record);
+    }
     scheduleSync();
+  }
+
+  /** Moves a session into Fokus (others leave when there are too many). */
+  function focus(id: string): void {
+    saveRecords(bringIntoFocus(records, id));
   }
 
   function requireRecord(id: string): SessionRecord {
@@ -235,8 +263,11 @@ function boot(): void {
       permissionMode: options.permissionMode,
       createdAt: new Date().toISOString(),
       archived: false,
+      focused: false,
+      lastActiveAt: new Date().toISOString(),
     };
     saveRecord(record);
+    focus(id);
     todo.watch(id, cwd);
     run(record, options.prompt?.trim() || undefined);
     return id;
@@ -253,6 +284,7 @@ function boot(): void {
   }
 
   function showSession(id: string): void {
+    focus(id);
     windows.showMain();
     windows.send('ui:open-session', { id });
   }
@@ -284,6 +316,7 @@ function boot(): void {
   function quit(): void {
     if (quitting) return;
     quitting = true;
+    clearInterval(focusTimer);
     engine.stopAll();
     usage.stop();
     todo.close();
@@ -344,6 +377,8 @@ function boot(): void {
         claudeSessionId: candidate.claudeSessionId,
         createdAt: new Date().toISOString(),
         archived: false,
+        focused: false,
+        lastActiveAt: new Date(candidate.lastActivity).toISOString(),
       };
       saveRecord(record);
       todo.watch(record.id, record.cwd);
@@ -391,6 +426,11 @@ function boot(): void {
   handle('session:rename', (req) => {
     const name = req.name.trim();
     if (name) saveRecord({ ...requireRecord(req.id), name });
+  });
+
+  handle('session:set-focus', (req) => {
+    if (req.focused) focus(req.id);
+    else saveRecord({ ...requireRecord(req.id), focused: false });
   });
 
   handle('session:mark-seen', (req) => {
@@ -465,7 +505,7 @@ function validSettings(r: unknown): AppSettings | null {
   };
 }
 
-/** Keeps well-formed records; records saved before effort existed get the default effort. */
+/** Keeps well-formed records and fills in fields that older records lack. */
 function validRecords(raw: unknown): SessionRecord[] | null {
   if (!Array.isArray(raw)) return null;
   return raw.flatMap((r): SessionRecord[] => {
@@ -475,6 +515,9 @@ function validRecords(raw: unknown): SessionRecord[] | null {
       typeof r['archived'] === 'boolean';
     if (!valid) return [];
     const effort = EFFORT_CHOICES.find((e) => e === r['effort']) ?? 'default';
-    return [{ ...(r as unknown as SessionRecord), effort }];
+    // Records saved before these fields existed: default effort, not in Fokus, last active when created.
+    const focused = r['focused'] === true;
+    const lastActiveAt = typeof r['lastActiveAt'] === 'string' ? r['lastActiveAt'] : String(r['createdAt']);
+    return [{ ...(r as unknown as SessionRecord), effort, focused, lastActiveAt }];
   });
 }

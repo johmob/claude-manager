@@ -362,3 +362,6 @@ textarea.input { resize: vertical; }
 .badge-select option { background: var(--bg-elev); color: var(--text); }
 .tile-head .badge-select { color: rgba(255,255,255,.9); border-color: rgba(255,255,255,.4); }
 .usage-plan { display: block; font-size: 11px; font-weight: 400; color: var(--muted); margin-top: 1px; }
+/* One-line message box on overview cards. */
+.card-input .chat-input.compact { border-top: 0; padding: 0 12px 8px; }
+.card-input .chat-input.compact textarea { padding: 5px 8px; font-size: 12.5px; }

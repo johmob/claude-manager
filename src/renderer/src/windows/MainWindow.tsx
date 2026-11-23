@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AccountContext } from '../state/account';
 import { useAppState } from '../state/useAppState';
-import { useSelection } from '../state/useSelection';
 import { TopBar, type ViewMode } from '../components/TopBar';
 import { StartDialog, type DialogKind } from '../components/StartDialogs';
 import { OverviewView } from '../views/OverviewView';
@@ -9,23 +8,19 @@ import { FocusView } from '../views/FocusView';
 
 export function MainWindow() {
   const state = useAppState();
-  const selection = useSelection();
   const [view, setView] = useState<ViewMode>('overview');
   const [dialog, setDialog] = useState<DialogKind | null>(null);
-  const { select } = selection;
 
   useEffect(
     () =>
-      window.cm.on('ui:open-session', ({ id }) => {
-        select(id);
-        setView('focus');
-      }),
-    [select],
+      // Main has already put the session in Fokus; just show that view.
+      window.cm.on('ui:open-session', () => setView('focus')),
+    [],
   );
 
   if (!state) return <div className="loading">Laddar…</div>;
   const { sessions, usage, settings, account } = state;
-  const focused = selection.selected.flatMap((id) => sessions.filter((s) => s.id === id));
+  const focused = sessions.filter((s) => s.focused);
 
   return (
     <AccountContext.Provider value={account}>
@@ -33,7 +28,7 @@ export function MainWindow() {
       <TopBar settings={settings} view={view} onView={setView} onDialog={setDialog} />
       <main className="main-content">
         {view === 'overview' ? (
-          <OverviewView sessions={sessions} usage={usage} selection={selection} onDialog={setDialog} />
+          <OverviewView sessions={sessions} usage={usage} onDialog={setDialog} />
         ) : (
           <FocusView sessions={focused} />
         )}

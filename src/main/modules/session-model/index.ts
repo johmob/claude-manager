@@ -240,6 +240,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       costUsd: s.costUsd,
       todo: s.todo,
       resumable: !s.running,
+      focused: record.focused,
+      lastActiveAt: record.lastActiveAt,
       slashCommands: s.slashCommands,
     };
   }

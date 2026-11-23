@@ -27,6 +27,10 @@ export interface SessionRecord {
   claudeSessionId?: string;
   createdAt: string;
   archived: boolean;
+  /** Shown in Fokus. Set when the user writes to it or opens it; cleared after days without work. */
+  focused: boolean;
+  /** ISO time of the last message or finished turn. */
+  lastActiveAt: string;
 }
 
 /** Everything session-engine needs to start or resume one Claude Code session. */
@@ -252,6 +256,8 @@ export interface SessionSummary {
   todo: TodoTree | null;
   /** True when the session is not running but can be resumed. */
   resumable: boolean;
+  focused: boolean;
+  lastActiveAt: string;
   slashCommands: string[];
 }
 
@@ -335,6 +341,7 @@ export interface IpcInvokeMap {
   'session:rename': { req: { id: string; name: string }; res: void };
   'session:transcript': { req: { id: string }; res: TranscriptEntry[] };
   'session:mark-seen': { req: { id: string }; res: void };
+  'session:set-focus': { req: { id: string; focused: boolean }; res: void };
   'session:dismiss-callouts': { req: { id: string }; res: void };
   'ground-rules:edit': { req: { instructions: string }; res: string };
   'settings:update': { req: Partial<AppSettings>; res: AppSettings };

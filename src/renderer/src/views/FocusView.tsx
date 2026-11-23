@@ -23,7 +23,9 @@ export function FocusView({ sessions }: { sessions: SessionSummary[] }) {
         <button type="button" className="btn small" onClick={() => send('window:snap', { mode: 'full' })}>Helskärm</button>
       </div>
       {sessions.length === 0 ? (
-        <div className="empty-state"><p>Inga sessioner valda. Bocka i sessioner under Översikt för att visa dem här.</p></div>
+        <div className="empty-state">
+          <p>Inget i Fokus just nu. En session kommer hit av sig själv när du skriver till den (eller dubbelklickar på kortet), och lämnar efter några dagar utan arbete.</p>
+        </div>
       ) : (
         <div className="tile-grid" style={style}>
           {sessions.map((s) => <SessionTile key={s.id} session={s} />)}

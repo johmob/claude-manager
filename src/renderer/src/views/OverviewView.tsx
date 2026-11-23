@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { SessionSummary, UsageSnapshot } from '../../../shared/contracts';
 import { send } from '../lib/api';
-import { MAX_FOCUS, type Selection } from '../state/useSelection';
 import { SessionCard } from '../components/SessionCard';
 import { WorkSchema } from '../components/WorkSchema';
 import { UsagePanel } from '../components/UsagePanel';
@@ -10,7 +9,6 @@ import type { DialogKind } from '../components/StartDialogs';
 interface OverviewViewProps {
   sessions: SessionSummary[];
   usage: UsageSnapshot;
-  selection: Selection;
   onDialog: (k: DialogKind) => void;
 }
 
@@ -28,10 +26,9 @@ function EmptyState({ onDialog }: { onDialog: (k: DialogKind) => void }) {
   );
 }
 
-export function OverviewView({ sessions, usage, selection, onDialog }: OverviewViewProps) {
+export function OverviewView({ sessions, usage, onDialog }: OverviewViewProps) {
   const [openId, setOpenId] = useState<string | null>(null);
   const openSession = sessions.find((s) => s.id === openId) ?? null;
-  const selectedCount = sessions.filter((s) => selection.selected.includes(s.id)).length;
 
   const open = (s: SessionSummary): void => {
     setOpenId(s.id);
@@ -49,9 +46,6 @@ export function OverviewView({ sessions, usage, selection, onDialog }: OverviewV
               <SessionCard
                 key={s.id}
                 session={s}
-                selected={selection.selected.includes(s.id)}
-                selectDisabled={selectedCount >= MAX_FOCUS}
-                onToggleSelect={() => selection.toggle(s.id)}
                 onOpen={() => open(s)}
               />
             ))}

@@ -39,8 +39,11 @@ function normalizeCommand(c: string): string {
   return c.startsWith('/') ? c : `/${c}`;
 }
 
-/** Message box with slash-command suggestions and a small actions menu. */
-export function ChatInput({ session }: { session: SessionSummary }) {
+/**
+ * Message box with slash-command suggestions. The full version (Fokus) also has the actions menu;
+ * the compact one-line version sits on overview cards.
+ */
+export function ChatInput({ session, compact = false }: { session: SessionSummary; compact?: boolean }) {
   const [text, setText] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -63,7 +66,7 @@ export function ChatInput({ session }: { session: SessionSummary }) {
   };
 
   return (
-    <div className="chat-input">
+    <div className={compact ? 'chat-input compact' : 'chat-input'}>
       {suggestions.length > 0 && (
         <div className="suggestions">
           {suggestions.map((c) => (
@@ -72,16 +75,18 @@ export function ChatInput({ session }: { session: SessionSummary }) {
         </div>
       )}
       <textarea
-        rows={2}
+        rows={compact ? 1 : 2}
         value={text}
-        placeholder="Skriv till agenten… (Enter skickar, Skift+Enter ny rad)"
+        placeholder={compact ? 'Skriv till agenten… (Enter skickar)' : 'Skriv till agenten… (Enter skickar, Skift+Enter ny rad)'}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKey}
       />
-      <div className="chat-input-side">
-        <button type="button" className="icon-btn" title="Kommandon" aria-label="Kommandon" onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
-        {menuOpen && <ActionsMenu session={session} onClose={() => setMenuOpen(false)} />}
-      </div>
+      {!compact && (
+        <div className="chat-input-side">
+          <button type="button" className="icon-btn" title="Kommandon" aria-label="Kommandon" onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
+          {menuOpen && <ActionsMenu session={session} onClose={() => setMenuOpen(false)} />}
+        </div>
+      )}
     </div>
   );
 }
