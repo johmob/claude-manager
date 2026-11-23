@@ -226,9 +226,10 @@ textarea.input { resize: vertical; }
 .tile .pending-wrap { flex: none; max-height: 45%; overflow-y: auto; }
 
 .transcript { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
-/* Your own messages: on the left like the agent's, on yellow so they stand out when scrolling. */
+/* Your own messages: on the left like the agent's, a faint yellow surface and label so they are easy to find. */
 .t-user { display: flex; justify-content: flex-start; }
-.bubble { max-width: 92%; background: #f3d36b; color: #1d1a0e; border-radius: 4px 12px 12px 12px; padding: 8px 12px; font-size: 14px; line-height: 1.5; font-weight: 500; white-space: pre-wrap; word-break: break-word; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.bubble { max-width: 92%; background: rgba(250,204,21,.06); border: 1px solid rgba(250,204,21,.2); color: #ece7d6; border-radius: 12px; padding: 8px 13px 10px; font-size: 14px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.bubble::before { content: "Du"; display: block; margin-bottom: 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #facc15; }
 .t-assistant { display: flex; gap: 6px; align-items: flex-start; }
 .md { min-width: 0; flex: 1; word-break: break-word; }
 .md > :first-child { margin-top: 0; }
