@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
 import { formatElapsed } from '../lib/format';
 import { send } from '../lib/api';
@@ -8,12 +8,28 @@ import { CalloutBox } from './CalloutBox';
 import { ChatInput } from './ChatInput';
 import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
+import { MarkdownText } from './MarkdownText';
+import { useTranscript } from '../state/useTranscript';
 import { QuestionsButton } from './QuestionFlow';
 import { SchemaButton } from './SchemaButton';
 
 interface SessionCardProps {
   session: SessionSummary;
   onOpen: () => void;
+  /** Few cards share the window: show the latest answer and a larger message box. */
+  roomy?: boolean;
+}
+
+/** The main agent's latest answer, for a card with room to show it. */
+function LatestAnswer({ sessionId }: { sessionId: string }) {
+  const entries = useTranscript(sessionId);
+  const latest = [...entries].reverse().find((e) => e.kind === 'assistant' && !e.agentId && e.text.trim());
+  if (!latest || latest.kind !== 'assistant') return <div className="card-latest card-latest-empty">Inget svar ännu.</div>;
+  return (
+    <div className="card-latest">
+      <MarkdownText text={latest.text} />
+    </div>
+  );
 }
 
 function RenameField({ session, onDone }: { session: SessionSummary; onDone: () => void }) {
@@ -69,25 +85,6 @@ function limitNote(session: SessionSummary): string {
   return at ? ` Fortsätter ${at.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}.` : ' Fortsätter när gränsen har återställts.';
 }
 
-/** How long to wait for a second click before treating a click as a single click. */
-const DOUBLE_CLICK_MS = 250;
-
-/** Click handlers that run `single` on a click, or only `double` when a second click follows quickly. */
-function useSingleOrDoubleClick(single: () => void, double: () => void) {
-  const timer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(timer.current), []);
-  return {
-    onClick: () => {
-      window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(single, DOUBLE_CLICK_MS);
-    },
-    onDoubleClick: () => {
-      window.clearTimeout(timer.current);
-      double();
-    },
-  };
-}
-
 /** What the latest turn tagged (suggestions stay in the transcript), until dismissed. */
 function CardCallouts({ session }: { session: SessionSummary }) {
   // Questions and assumptions are answered in the question flow (the button above), so they are not repeated here.
@@ -101,16 +98,15 @@ function CardCallouts({ session }: { session: SessionSummary }) {
   );
 }
 
-export function SessionCard({ session, onOpen }: SessionCardProps) {
+export function SessionCard({ session, onOpen, roomy = false }: SessionCardProps) {
   const [renaming, setRenaming] = useState(false);
   const working = session.status === 'working' && session.turnStartedAt !== null;
   const now = useNow(working);
-  const clicks = useSingleOrDoubleClick(onOpen, () => send('window:show-session', { id: session.id }));
 
   return (
-    <article className="card" data-status={session.status} data-expanded={session.pending ? 'true' : 'false'} style={{ '--accent': session.color } as CSSProperties}>
+    <article className={roomy ? 'card roomy' : 'card'} data-status={session.status} data-expanded={session.pending ? 'true' : 'false'} style={{ '--accent': session.color } as CSSProperties}>
       <div className="card-strip" />
-      <div className="card-main" title="Klicka: arbetsschema · Dubbelklicka: öppna i Fokus" {...clicks}>
+      <div className="card-main">
         <div className="card-top">
           <span className="name-dot" />
           {renaming ? <RenameField session={session} onDone={() => setRenaming(false)} /> : <span className="card-name" title={session.cwd}>{session.name}</span>}
@@ -126,15 +122,17 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
         <ContextMeter session={session} />
         {session.lastError && <div className="card-error">{session.lastError}{limitNote(session)}</div>}
       </div>
+      {roomy && <LatestAnswer sessionId={session.id} />}
       <QuestionsButton session={session} />
       <CardCallouts session={session} />
       <PendingPanel session={session} />
       {!session.pending && (
         <div className="card-input">
-          <ChatInput session={session} compact />
+          <ChatInput session={session} compact={!roomy} />
         </div>
       )}
       <div className="card-foot">
+        <button type="button" className="btn small card-open" onClick={() => send('window:show-session', { id: session.id })}>Öppna chatten</button>
         <CardActions session={session} onRename={() => setRenaming(true)} />
       </div>
     </article>

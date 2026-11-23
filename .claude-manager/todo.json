@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-23T14:01:18Z",
+  "updated": "2026-11-23T23:49:11Z",
   "tracks": [
     {
       "id": "eng",
@@ -210,6 +210,12 @@
               "title": "Schemaknapp som visar vad som återstår",
               "status": "done",
               "notes": "På kortet och i Fokus: \"12 punkter kvar\", projektet X % klart, antal som pågår."
+            },
+            {
+              "status": "done",
+              "id": "ui.1.6",
+              "title": "Korten fyller fönstret och har knappen Öppna chatten",
+              "notes": "Med högst sex kort fyller de fönstret (upp till tre kolumner) och visar senaste svaret stort. Knappen Öppna chatten ersätter dubbelklick. Klart, inte släppt än."
             }
           ]
         },
@@ -303,6 +309,12 @@
               "id": "ui.4.5",
               "title": "Högerklick i overlay: arbetsschema som modal utan att appen kommer fram",
               "status": "done"
+            },
+            {
+              "status": "done",
+              "id": "ui.4.6",
+              "title": "Knappar i hovringspanelen i stället för högerklick",
+              "notes": "Svara, Öppna och Arbetsschema i overlayens hovringspanel; högerklicksmenyn är borttagen. Klart, inte släppt än."
             }
           ]
         },
@@ -319,6 +331,12 @@
               "id": "ui.5.2",
               "title": "Befintligt projekt: fortsätt senaste samtal",
               "status": "done"
+            },
+            {
+              "status": "done",
+              "id": "ui.5.3",
+              "title": "Håll vaken-knapp bredvid Stör ej",
+              "notes": "Hindrar viloläge och skärmsläckning (powerSaveBlocker). Rår inte på lås som företagets policy tvingar fram. Klart, inte släppt än."
             }
           ]
         },
@@ -351,6 +369,12 @@
               "id": "ui.6.5",
               "title": "Texten runt frågan och hela svaret visas i flödet",
               "status": "done"
+            },
+            {
+              "status": "done",
+              "id": "ui.6.6",
+              "title": "Haiku taggar frågor och viktiga meddelanden",
+              "notes": "Efter varje tur märker Haiku frågor (med alternativ och bakgrund) och meddelanden som måste synas; bilder, länkar och filmer viks aldrig in. Bilder öppnas stort med ett klick. Klart, inte släppt än."
             }
           ]
         }
@@ -400,6 +424,12 @@
               "id": "life.2.3",
               "title": "Standard Opus/medium",
               "status": "done"
+            },
+            {
+              "status": "done",
+              "id": "life.2.4",
+              "title": "Gränsen: rätt status och fortsätt bara avbrutet arbete",
+              "notes": "Sessioner som arbetar när användningen når 100 % märks som stoppade av gränsen (sparas över omstart). Efter återställning fortsätter bara avbrutet arbete; väntande sessioner väcks inte. Klart, inte släppt än."
             }
           ]
         },
@@ -426,6 +456,12 @@
               "id": "life.3.4",
               "title": "Startar med Windows i systemfältet, overlay på som standard",
               "status": "done"
+            },
+            {
+              "status": "done",
+              "id": "life.3.5",
+              "title": "Uppdatering installeras bara efter 10 minuters tystnad",
+              "notes": "Kräver att inget arbetar, väntar eller har subagenter igång. Det tidigare villkoret startade om appen mitt under subagenter. Klart, inte släppt än."
             }
           ]
         }

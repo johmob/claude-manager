@@ -24,7 +24,7 @@ export function FocusView({ sessions }: { sessions: SessionSummary[] }) {
       </div>
       {sessions.length === 0 ? (
         <div className="empty-state">
-          <p>Inget i Fokus just nu. En session kommer hit av sig själv när du skriver till den (eller dubbelklickar på kortet), och lämnar efter några dagar utan arbete.</p>
+          <p>Inget i Fokus just nu. En session kommer hit av sig själv när du skriver till den (eller klickar på Öppna chatten på kortet), och lämnar efter några dagar utan arbete.</p>
         </div>
       ) : (
         <div className="tile-grid" style={style}>

@@ -800,3 +800,17 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .icon-toggle { padding: 4px 9px; }
 .icon-toggle .icon { width: 16px; height: 16px; }
 .icon-toggle.on { color: var(--accent-ui); }
+
+/* ---------- Overview: a few cards share the window ---------- */
+.overview-main:has(.card-grid[data-fill]) { display: flex; flex-direction: column; }
+.card-grid[data-fill] { flex: 1; min-height: 0; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); align-items: stretch; }
+.card.roomy { display: flex; flex-direction: column; min-height: 0; }
+.card.roomy .card-latest { flex: 1; min-height: 80px; overflow-y: auto; margin: 0 12px 8px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,.025); border: 1px solid var(--border); }
+.card-latest .md { font-size: 0.85rem; line-height: 1.6; color: #d6dce6; }
+.card-latest-empty { color: var(--muted); font-size: 0.8rem; display: grid; place-items: center; }
+.card.roomy .card-input textarea { min-height: 64px; }
+.card-foot .card-open { margin-right: auto; }
+
+/* Overlay hover panel: actions instead of right-click */
+.ov-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); }
+.card-main { cursor: default; }

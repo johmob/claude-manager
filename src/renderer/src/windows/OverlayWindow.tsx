@@ -73,7 +73,7 @@ function AgentCount({ session }: { session: SessionSummary }) {
 /**
  * Click-through strip at the top of the screen: usage first, then one icon per session with its
  * status, and how many of its agents are working. Hovering shows details below. Icons take clicks while hovered
- * (click answers its questions if it has any, otherwise opens the session; right-click shows its work schema);
+ * (click answers its questions if it has any, otherwise opens the session; the hover panel has buttons for answering, opening and the work schema);
  * everything else stays click-through.
  */
 export function OverlayWindow() {
@@ -116,7 +116,7 @@ export function OverlayWindow() {
   return (
     <div
       className="overlay"
-      onMouseMove={(e: MouseEvent) => chatOpen || setInteractive(e.ctrlKey || (e.target instanceof Element && !!e.target.closest('.ov-cell, .ov-q')))}
+      onMouseMove={(e: MouseEvent) => chatOpen || setInteractive(e.ctrlKey || (e.target instanceof Element && !!e.target.closest('.ov-cell, .ov-detail')))}
       onMouseLeave={() => {
         if (chatOpen) return;
         setInteractive(false);
@@ -160,11 +160,6 @@ export function OverlayWindow() {
             style={{ '--accent': s.color } as CSSProperties}
             onMouseEnter={() => setHovered(s.id)}
             onClick={() => (s.questions.length ? send('popup:open', { kind: 'questions', id: s.id }) : send('window:show-session', { id: s.id }))}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setHovered(null);
-              send('popup:open', { kind: 'schema', id: s.id });
-            }}
           >
             <span className="ov-icon">
               <span className="ov-ring" />
@@ -189,7 +184,19 @@ export function OverlayWindow() {
           ) : (
             session && <SessionInfo session={session} account={state.account} />
           )}
-          <div className="ov-hint">{hovered === 'usage' ? 'Uppdateras automatiskt' : session?.questions.length ? 'Klicka: svara på frågorna · Högerklicka: arbetsschema' : 'Klicka: öppna i appen · Högerklicka: arbetsschema'}</div>
+          {hovered === 'usage' ? (
+            <div className="ov-hint">Uppdateras automatiskt</div>
+          ) : (
+            session && (
+              <div className="ov-actions">
+                {session.questions.length > 0 && (
+                  <button type="button" className="btn small primary" onClick={() => send('popup:open', { kind: 'questions', id: session.id })}>Svara</button>
+                )}
+                <button type="button" className="btn small" onClick={() => send('window:show-session', { id: session.id })}>Öppna</button>
+                <button type="button" className="btn small" onClick={() => send('popup:open', { kind: 'schema', id: session.id })}>Arbetsschema</button>
+              </div>
+            )
+          )}
         </div>
       )}
     </div>
