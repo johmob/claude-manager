@@ -100,6 +100,7 @@ describe('session-model', () => {
       owner: '',
       dependsOn: [],
       blocked: false,
+      notes: '',
       children,
     });
     const tree: TodoTree = {
@@ -107,6 +108,7 @@ describe('session-model', () => {
       updated: '',
       progress: 0,
       doneItems: 0,
+      inProgressItems: 0,
       totalItems: 3,
       tracks: [
         item('cad', 'CAD', 'done'),

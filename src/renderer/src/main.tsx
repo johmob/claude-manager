@@ -4,6 +4,7 @@ import './styles.css';
 import { MainWindow } from './windows/MainWindow';
 import { DockWindow } from './windows/DockWindow';
 import { OverlayWindow } from './windows/OverlayWindow';
+import { SchemaWindow } from './windows/SchemaWindow';
 
 function pickWindow(): { name: string; element: ReactElement } {
   switch (location.hash) {
@@ -11,6 +12,8 @@ function pickWindow(): { name: string; element: ReactElement } {
       return { name: 'dock', element: <DockWindow /> };
     case '#overlay':
       return { name: 'overlay', element: <OverlayWindow /> };
+    case '#schema':
+      return { name: 'schema', element: <SchemaWindow /> };
     default:
       return { name: 'main', element: <MainWindow /> };
   }

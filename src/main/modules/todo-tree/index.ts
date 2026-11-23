@@ -14,6 +14,7 @@ Keep a work schema for the project in \`${TODO_RELATIVE_PATH}\` in the project r
 - Give each track an owner: the subagent that works on it, or "main" for yourself. A track is a natural unit to hand to a subagent.
 - Organise tracks by area of the project, never by phase or chronology. Give the tree depth: split each item into sub-items for its parts (usually 2-3 levels), so the schema shows the project's structure, not one flat list. Use ids like "fw-a.2" and "fw-a.2.1".
 - Set "status" ("not_started", "in_progress", "done") on the lowest-level items, and "progress" (0-100) on items in progress. The app computes tracks and parents from their items.
+- Give items and tracks "notes" (one to three sentences) whenever there is more to know than the title: what it covers, where it stands, what is left, open questions or risks. The user reads them when clicking the item, so keep them current like the status.
 - When an item needs other items finished first, list their ids in "dependsOn", also across tracks.
 - Notice when the work moves into a new area or phase that no existing track covers (for example a new device, a test campaign, documentation, or a change of direction). Before working on it, ask the user with the AskUserQuestion tool whether to open a new track for it: propose its title and owner, and offer adding it under an existing track as the alternative. Small sub-items inside an existing track need no question.
 - Exact format:
@@ -23,7 +24,7 @@ Keep a work schema for the project in \`${TODO_RELATIVE_PATH}\` in the project r
   "tracks": [
     { "id": "fw-a", "title": "Firmware – controller", "owner": "firmware-a", "items": [
       { "id": "fw-a.1", "title": "SPI driver", "status": "done" },
-      { "id": "fw-a.2", "title": "Data protocol", "status": "in_progress", "progress": 40 } ] },
+      { "id": "fw-a.2", "title": "Data protocol", "status": "in_progress", "progress": 40, "notes": "Framing and CRC work on the bench. Retries and versioning are left." } ] },
     { "id": "web", "title": "Web – result pages", "owner": "main", "items": [
       { "id": "web.1", "title": "Live chart", "status": "not_started", "dependsOn": ["fw-a.2"] } ] }
   ]
@@ -77,6 +78,7 @@ function parseNode(raw: unknown, fallbackId: string): TodoNode | null {
     owner: typeof raw['owner'] === 'string' ? raw['owner'].trim() : '',
     dependsOn: Array.isArray(raw['dependsOn']) ? raw['dependsOn'].map(String) : [],
     blocked: false,
+    notes: typeof raw['notes'] === 'string' ? raw['notes'].trim() : '',
     children,
   };
 }
@@ -125,6 +127,7 @@ export function parseTodoTree(raw: string): TodoTree | null {
     tracks,
     progress: Math.round(average(tracks.map((t) => t.progress))),
     doneItems: leaves.filter((n) => n.status === 'done').length,
+    inProgressItems: leaves.filter((n) => n.status === 'in_progress').length,
     totalItems: leaves.length,
   };
 }

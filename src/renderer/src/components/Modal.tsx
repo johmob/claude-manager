@@ -1,4 +1,7 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+
+/** Open modals, innermost last: Esc closes only the topmost one. */
+const openModals: object[] = [];
 
 interface ModalProps {
   title: string;
@@ -8,15 +11,22 @@ interface ModalProps {
   size?: 'full';
 }
 
-/** Centered dialog; Esc or a click on the backdrop closes it. */
+/** Centered dialog; Esc or a click on the backdrop closes it. Modals may open on top of each other. */
 export function Modal({ title, onClose, children, size }: ModalProps) {
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
+    const me = {};
+    openModals.push(me);
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && openModals[openModals.length - 1] === me) close.current();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+    return () => {
+      openModals.splice(openModals.indexOf(me), 1);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, []);
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>

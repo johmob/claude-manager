@@ -8,6 +8,7 @@ import { CalloutBox } from './CalloutBox';
 import { ChatInput } from './ChatInput';
 import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
+import { SchemaButton } from './SchemaButton';
 
 interface SessionCardProps {
   session: SessionSummary;
@@ -95,7 +96,6 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
   const [renaming, setRenaming] = useState(false);
   const working = session.status === 'working' && session.turnStartedAt !== null;
   const now = useNow(working);
-  const { todo } = session;
   const clicks = useSingleOrDoubleClick(onOpen, () => send('window:show-session', { id: session.id }));
 
   return (
@@ -113,11 +113,7 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
           {working && session.turnStartedAt !== null && <span className="elapsed">{formatElapsed(now - session.turnStartedAt)}</span>}
         </div>
         <div className="card-task">{session.mapping ? <><Spinner small /> Kartlägger projektet…</> : session.currentTask || " "}</div>
-        {todo && (
-          <div className="thin-bar" title={`${todo.progress} % · ${todo.doneItems} av ${todo.totalItems} punkter · ${todo.tracks.length} spår`}>
-            <div style={{ width: `${todo.progress}%`, background: session.color }} />
-          </div>
-        )}
+        <SchemaButton session={session} onOpen={onOpen} />
         <ContextMeter session={session} />
         {session.lastError && <div className="card-error">{session.lastError}</div>}
       </div>
@@ -129,7 +125,6 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
         </div>
       )}
       <div className="card-foot">
-        <button type="button" className="link-btn" onClick={onOpen}>Arbetsschema</button>
         <CardActions session={session} onRename={() => setRenaming(true)} />
       </div>
     </article>

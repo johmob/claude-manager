@@ -101,6 +101,9 @@ function boot(): void {
   const structuredQuery = createStructuredQuery(claudeExecutable);
   const todo = createTodoWatcher((id, tree) => {
     model.setTodo(id, tree);
+    // The map is done once the agent has written it, even if its turn goes on: the card and schema stop
+    // saying "Kartlägger". The model switch back and the held first message still wait for the turn's end.
+    if (tree && mappingTurn(id)) model.setMapping(id, false);
     scheduleSync();
   });
   const usage = createUsageMonitor({
@@ -653,6 +656,9 @@ function boot(): void {
   handle('window:show-session', (req) => showSession(req.id));
   handle('overlay:set-interactive', (req) => windows.setOverlayInteractive(req.interactive));
   handle('overlay:set-detail', (req) => windows.setOverlayDetail(req.open));
+  handle('overlay:open-schema', (req) => windows.openSchema(req.id));
+  handle('schema:close', () => windows.closeSchema());
+  handle('schema:current', () => windows.schemaSession());
 }
 
 // ---------- Pure helpers ----------

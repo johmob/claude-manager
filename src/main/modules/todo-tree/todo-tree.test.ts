@@ -28,7 +28,7 @@ describe('parseTodoTree', () => {
     const [fw, web] = tree.tracks;
     expect(fw).toMatchObject({ id: 'fw-a', owner: 'firmware-a', status: 'in_progress', progress: 70 });
     expect(web).toMatchObject({ status: 'not_started', progress: 0 });
-    expect(tree).toMatchObject({ progress: 35, doneItems: 1, totalItems: 3 });
+    expect(tree).toMatchObject({ progress: 35, doneItems: 1, inProgressItems: 1, totalItems: 3 });
   });
 
   it('marks items blocked by unfinished dependencies, also across tracks', () => {
@@ -55,7 +55,7 @@ describe('parseTodoTree', () => {
 
   it('is tolerant of odd input', () => {
     const tree = parseTodoTree(JSON.stringify({ tracks: [{ title: 'B', status: 'weird', progress: 400 }, { id: 2 }] }))!;
-    expect(tree.tracks).toEqual([{ id: '1', title: 'B', status: 'not_started', progress: 0, owner: '', dependsOn: [], blocked: false, children: [] }]);
+    expect(tree.tracks).toEqual([{ id: '1', title: 'B', status: 'not_started', progress: 0, owner: '', dependsOn: [], blocked: false, notes: '', children: [] }]);
   });
 
   it('rejects invalid JSON and wrong shapes', () => {
@@ -92,5 +92,14 @@ describe('mappingRequest', () => {
 
   it("adds the user's description of the structure", () => {
     expect(mappingRequest('  CAD med 30 delar  ')).toMatch(/Struktur att utgå från.*\nCAD med 30 delar$/s);
+  });
+});
+
+describe('notes', () => {
+  it('reads the agent description of an item, trimmed', () => {
+    const tree = parseTodoTree(JSON.stringify({ tracks: [{ id: 't', title: 'T', notes: '  Kvar: CRC.  ', items: [{ id: 't.1', title: 'A', status: 'in_progress' }] }] }));
+    expect(tree?.tracks[0]?.notes).toBe('Kvar: CRC.');
+    expect(tree?.tracks[0]?.children[0]?.notes).toBe('');
+    expect(tree?.inProgressItems).toBe(1);
   });
 });

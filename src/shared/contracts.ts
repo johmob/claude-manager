@@ -155,6 +155,8 @@ export interface TodoNode {
   dependsOn: string[];
   /** True when some dependency is not done yet. */
   blocked: boolean;
+  /** The agent's short description: what the item covers, where it stands, what is left. May be empty. */
+  notes: string;
   children: TodoNode[];
 }
 
@@ -166,6 +168,8 @@ export interface TodoTree {
   /** Overall 0–100, the average of the tracks. */
   progress: number;
   doneItems: number;
+  /** Lowest-level items in progress. */
+  inProgressItems: number;
   totalItems: number;
 }
 
@@ -373,6 +377,11 @@ export interface IpcInvokeMap {
   'overlay:set-interactive': { req: { interactive: boolean }; res: void };
   /** Grows the overlay to show details under the icons (while hovered), or shrinks it back. */
   'overlay:set-detail': { req: { open: boolean }; res: void };
+  /** Shows a session's work schema in its own window over the screen, without bringing the main window forward. */
+  'overlay:open-schema': { req: { id: string }; res: void };
+  'schema:close': { req: void; res: void };
+  /** The session the schema window shows (asked once when the window has loaded). */
+  'schema:current': { req: void; res: string | null };
 }
 
 /** Main -> renderer pushes. */
@@ -385,6 +394,8 @@ export interface IpcEventMap {
   /** Replaces a whole transcript, e.g. after saved history was loaded in front of it. */
   'session:transcript-reset': { id: string; entries: TranscriptEntry[] };
   'ui:open-session': { id: string };
+  /** Tells the schema window which session to show. */
+  'schema:show': { id: string };
 }
 
 export type IpcInvokeChannel = keyof IpcInvokeMap;

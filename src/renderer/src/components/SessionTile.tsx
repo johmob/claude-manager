@@ -5,6 +5,7 @@ import { AgentDots, ModelEffortPicker, StatusChip } from './Atoms';
 import { ChatInput } from './ChatInput';
 import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
+import { SchemaButton } from './SchemaButton';
 import { TranscriptView } from './TranscriptView';
 import { WorkSchema } from './WorkSchema';
 
@@ -19,9 +20,7 @@ export function SessionTile({ session }: { session: SessionSummary }) {
         <StatusChip status={session.status} />
         <ModelEffortPicker session={session} />
         <AgentDots count={session.activeAgents} color="#fff" />
-        <button type="button" className="tile-schema-btn" onClick={() => setSchemaOpen(true)}>
-          Arbetsschema{session.todo ? ` · ${session.todo.progress} %` : ''}
-        </button>
+        <SchemaButton session={session} onOpen={() => setSchemaOpen(true)} compact />
       </header>
       <div className="tile-context">
         <ContextMeter session={session} />
