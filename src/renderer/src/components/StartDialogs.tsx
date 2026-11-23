@@ -18,6 +18,17 @@ import { Spinner } from './Atoms';
 
 export type DialogKind = 'chat' | 'project' | 'existing' | 'rules';
 
+/** "Projektmapp: <folder> · Byt…": where new projects go and where existing ones are looked for. */
+export function ProjectsRootLine({ settings }: { settings: AppSettings }) {
+  return (
+    <div className="projects-root">
+      <span className="muted">Projektmapp:</span>
+      <span className="projects-root-path">{settings.projectsRoot || 'inte vald'}</span>
+      <button type="button" className="link-btn" onClick={() => void window.cm.invoke('settings:choose-projects-root', undefined)}>Byt…</button>
+    </div>
+  );
+}
+
 interface DialogProps {
   settings: AppSettings;
   onClose: () => void;
@@ -167,6 +178,7 @@ function NewProjectDialog({ settings, onClose }: DialogProps) {
         await window.cm.invoke('session:new-project', { ...toSessionOptions(options), name: name.trim(), createGitRepo });
       }}
     >
+      <ProjectsRootLine settings={settings} />
       <Field label="Projektnamn">
         <input className="input" autoFocus value={name} onChange={(e) => setName(e.target.value)} />
       </Field>
@@ -279,6 +291,7 @@ function ExistingProjectDialog({ settings, onClose }: DialogProps) {
   return (
     <Modal title="Befintligt projekt" onClose={onClose}>
       <div className="form">
+        <ProjectsRootLine settings={settings} />
         <Field label="Beskriv projektet med egna ord" hint="Appen hittar mappen och fortsätter det senaste samtalet där.">
           <textarea className="input" rows={3} autoFocus value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>

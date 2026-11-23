@@ -6,6 +6,18 @@ The requirements are in [claude-code-manager-spec.md](claude-code-manager-spec.m
 
 ## Install
 
+1. Download `Claude Manager Setup x.y.z.exe` from the latest [release](https://github.com/johmob/claude-manager/releases/latest) and run it. The installer is not signed, so Windows SmartScreen may warn: choose *More info* → *Run anyway*.
+2. The app uses your Claude subscription through Claude Code's login. If you have not used Claude Code on this computer, install it and run `claude` once in a terminal to log in.
+3. On first start, choose the folder where your projects live. You can change it later under *Nytt projekt* or *Befintligt projekt*.
+
+The app updates itself. It checks this repo's releases, downloads a new version in the background and installs it once no session is working or waiting for you. Turn this off with **Auto-uppdatera** in the top bar, or click **Installera nu** to install at once.
+
+## Releasing
+
+Commit and push, then run `npm run release`. It bumps the patch version, tags it and pushes. GitHub Actions builds the installer and publishes the release, and installed apps pick it up.
+
+## Build from source
+
 ```powershell
 npm install
 npm run dist          # -> dist\Claude Manager Setup <version>.exe
@@ -32,7 +44,7 @@ To drive a running app from scripts (screenshots, clicks):
 | Where | What |
 |---|---|
 | **Ny chatt** | A plain conversation in its own folder under `%APPDATA%\claude-manager\chats`. |
-| **Nytt projekt** | Creates `C:\Kod\<name>` and starts there. **Skapa Git-repo** makes the agent's first task a local repo plus a private GitHub repo (`gh`). |
+| **Nytt projekt** | Creates `<projects folder>\<name>` and starts there. **Skapa Git-repo** makes the agent's first task a local repo plus a private GitHub repo (`gh`). |
 | **Befintligt projekt** | One place to get back to existing work. Either pick recent conversations from the list (the same list as `/resume`, including ones still open in a terminal) and open them as cards, or describe the project: Haiku finds the folder under `C:Kod`, and its latest conversation is preselected to continue, with "Nytt samtal i mappen" as the alternative. If the folder already has a card, you can open that instead. A conversation still running in a terminal opens with its history but continues only after the terminal window is closed. |
 | **Grundregler** | Starts an agent whose only job is to merge your instructions into the base CLAUDE.md that every session gets. |
 | **Översikt** | One card per session: status, model and effort (change them right on the card; only models your account has are offered), current task, agent dots, overall progress. A context meter shows how full the conversation is and the tokens used so far, lets you set the window size (when the conversation is compacted automatically) and has a Komprimera button. Write to the agent in the card's message box, and answer questions or approve actions right there. Click a card for its work schema, double-click to open it in Fokus. New sessions start on Opus with medium effort. |

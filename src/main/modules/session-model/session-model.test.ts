@@ -181,7 +181,7 @@ describe('questions left for the user', () => {
       '2. **Ska jag köra B först?**',
       '',
       'Antaganden, rätta om fel:',
-      '- Kortet är rev C6',
+      '- Kortet är rev B',
       '- Displayen är urkopplad',
       'Sammanfattningsvis gick allt bra.',
       '- En vanlig punkt',
@@ -190,13 +190,20 @@ describe('questions left for the user', () => {
       '```',
       'Vill du att jag fortsätter?',
     ].join('\n');
-    expect(findOpenQuestions(text)).toEqual([
+    expect(findOpenQuestions(text).map(({ kind, text: t, context }) => ({ kind, text: t, context }))).toEqual([
       { kind: 'question', text: 'Vilken baudrate ska gälla', context: 'Öppna frågor' },
       { kind: 'question', text: 'Ska jag köra B först?', context: 'Öppna frågor' },
-      { kind: 'assumption', text: 'Kortet är rev C6', context: 'Antaganden, rätta om fel' },
+      { kind: 'assumption', text: 'Kortet är rev B', context: 'Antaganden, rätta om fel' },
       { kind: 'assumption', text: 'Displayen är urkopplad', context: 'Antaganden, rätta om fel' },
       { kind: 'question', text: 'Vill du att jag fortsätter?', context: '' },
     ]);
+  });
+
+  it('gives a question the text around it, so options it names come with it', () => {
+    const text = ['## Bakgrund', 'Allt byggdes.', '', '## Val', 'Jag ser två vägar:', '- A: snabbt men dyrt', '- B: billigt men långsamt', '', 'Vill du ha A eller B?', '', '## Sist', 'Klart.'].join('\n');
+    const [question] = findOpenQuestions(text);
+    expect(question).toMatchObject({ kind: 'question', text: 'Vill du ha A eller B?' });
+    expect(question?.detail).toBe('Jag ser två vägar:\n- A: snabbt men dyrt\n- B: billigt men långsamt');
   });
 
   it('waits for the user when the final answer leaves questions, until the next message', () => {
@@ -204,11 +211,11 @@ describe('questions left for the user', () => {
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'kör' });
     apply({ type: 'text', text: 'Är det rätt fil?' }); // an earlier text is not the final answer
-    apply({ type: 'text', text: 'Jag har två frågor:\n1. Ska jag byta till rev C7?\n2. Behåller vi 115 200 baud' });
+    apply({ type: 'text', text: 'Jag har två frågor:\n1. Ska jag byta till rev C?\n2. Behåller vi 9600 baud' });
     apply(finish);
     const summary = model.summary('s1');
     expect(summary).toMatchObject({ status: 'waiting', questionsId: '1000' });
-    expect(summary?.questions.map((q) => q.text)).toEqual(['Ska jag byta till rev C7?', 'Behåller vi 115 200 baud']);
+    expect(summary?.questions.map((q) => q.text)).toEqual(['Ska jag byta till rev C?', 'Behåller vi 9600 baud']);
     expect(summary?.callouts[0]).toMatchObject({ kind: 'question', title: '2 frågor till dig' });
     apply({ type: 'turn_started', prompt: 'ja, och ja' });
     expect(model.summary('s1')).toMatchObject({ status: 'working', questions: [] });
@@ -223,12 +230,12 @@ describe('questions left for the user', () => {
     apply(finish);
     expect(model.summary('s1')?.status).toBe('done');
     apply({ type: 'turn_started', prompt: 'nästa' });
-    apply({ type: 'callout', callout: { kind: 'question', title: 'Rev', text: 'C7 eller C6?' } });
+    apply({ type: 'callout', callout: { kind: 'question', title: 'Rev', text: 'B eller C?' } });
     apply({ type: 'callout', callout: { kind: 'note', title: '', text: 'Displayen är urkopplad.' } });
     apply(finish);
     expect(model.summary('s1')?.questions).toEqual([
-      { kind: 'question', text: 'Rev: C7 eller C6?', context: '' },
-      { kind: 'assumption', text: 'Displayen är urkopplad.', context: '' },
+      { kind: 'question', text: 'Rev: B eller C?', context: '', detail: '' },
+      { kind: 'assumption', text: 'Displayen är urkopplad.', context: '', detail: '' },
     ]);
     expect(model.summary('s1')?.status).toBe('waiting');
     model.dismissCallouts('s1');

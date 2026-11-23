@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { AccountSnapshot, AppSettings, SessionSummary, UsageSnapshot } from '../../../shared/contracts';
+import type { AccountSnapshot, AppSettings, SessionSummary, UpdateStatus, UsageSnapshot } from '../../../shared/contracts';
 
 export interface AppState {
   sessions: SessionSummary[];
   usage: UsageSnapshot;
   settings: AppSettings;
   account: AccountSnapshot;
+  update: UpdateStatus;
 }
 
 /** Loads the initial app state and keeps it in sync with main-process pushes. Null until loaded. */
@@ -14,7 +15,7 @@ export function useAppState(): AppState | null {
 
   useEffect(() => {
     let alive = true;
-    const pushed = { sessions: false, usage: false, settings: false, account: false };
+    const pushed = { sessions: false, usage: false, settings: false, account: false, update: false };
     const patch = (p: Partial<AppState>): void => setState((prev) => (prev ? { ...prev, ...p } : prev));
     // Pushes that arrive before the initial snapshot are buffered and applied on top of it.
     const buffer: Partial<AppState> = {};
@@ -40,6 +41,11 @@ export function useAppState(): AppState | null {
         buffer.account = account;
         patch({ account });
       }),
+      window.cm.on('state:update', (update) => {
+        pushed.update = true;
+        buffer.update = update;
+        patch({ update });
+      }),
     ];
 
     window.cm
@@ -51,6 +57,7 @@ export function useAppState(): AppState | null {
           usage: pushed.usage && buffer.usage ? buffer.usage : initial.usage,
           settings: pushed.settings && buffer.settings ? buffer.settings : initial.settings,
           account: pushed.account && buffer.account ? buffer.account : initial.account,
+          update: pushed.update && buffer.update ? buffer.update : initial.update,
         });
       })
       .catch((e: unknown) => console.error('app:get-state', e));

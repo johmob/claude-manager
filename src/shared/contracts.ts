@@ -250,6 +250,22 @@ export interface OpenQuestion {
   text: string;
   /** The heading it was listed under, e.g. "Antaganden, rätta om fel"; empty when none. */
   context: string;
+  /** The text around it in the answer (its section), e.g. what options A and B are; empty when it stands alone. */
+  detail: string;
+}
+
+/** The app's own updates from GitHub releases. "off" in development, where there is nothing to update. */
+export interface UpdateStatus {
+  state: 'off' | 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'error';
+  /** The running version. */
+  version: string;
+  /** The newer version found, if any. */
+  available: string | null;
+  /** 0–100 while downloading. */
+  progress: number;
+  auto: boolean;
+  /** Why the last check failed, when state is "error". */
+  message: string;
 }
 
 /** What the popup window over the screen shows: a session's work schema or its questions. */
@@ -288,6 +304,8 @@ export interface SessionSummary {
   questions: OpenQuestion[];
   /** Changes with every turn that leaves new questions, so a set put off can be told from a new one. */
   questionsId: string;
+  /** The agent's whole final answer the questions come from, for reading them in context; empty without questions. */
+  questionsAnswer: string;
   tokensUsed: number;
   /** How full the context window is, measured after the latest turn; null before the first one. */
   context: ContextUsage | null;
@@ -316,6 +334,7 @@ export type DockEdge = 'right' | 'bottom' | 'center';
 export const DOCK_EDGES: readonly DockEdge[] = ['right', 'bottom', 'center'];
 
 export interface AppSettings {
+  /** Where the user's projects live; empty until chosen (the app then asks, and uses ~/Kod meanwhile). */
   projectsRoot: string;
   doNotDisturb: boolean;
   alertOnDone: boolean;
@@ -326,6 +345,8 @@ export interface AppSettings {
   launchAtLogin: boolean;
   /** Text size in the main window and popups, 1 = 16 px root (Ctrl + plus/minus/0). */
   textScale: number;
+  /** Install new versions from GitHub on their own once no session is busy. */
+  autoUpdate: boolean;
   defaultModel: ModelChoice;
   defaultEffort: EffortChoice;
   defaultPermissionMode: PermissionChoice;
@@ -365,7 +386,11 @@ export interface ImportCandidate {
 
 /** Renderer -> main requests. `req` is the argument, `res` the resolved value. */
 export interface IpcInvokeMap {
-  'app:get-state': { req: void; res: { sessions: SessionSummary[]; usage: UsageSnapshot; settings: AppSettings; account: AccountSnapshot } };
+  'app:get-state': { req: void; res: { sessions: SessionSummary[]; usage: UsageSnapshot; settings: AppSettings; account: AccountSnapshot; update: UpdateStatus } };
+  /** Lets the user pick the projects folder; the updated settings, or null when cancelled. */
+  'settings:choose-projects-root': { req: void; res: AppSettings | null };
+  /** Installs the newer version now (fetching it first if needed); the app restarts. */
+  'update:install': { req: void; res: void };
   'session:new-chat': { req: NewSessionOptions & { name?: string }; res: string };
   'session:new-project': { req: NewSessionOptions & { name: string; createGitRepo: boolean }; res: string };
   'session:locate-project': { req: { description: string }; res: LocateResult };
@@ -414,6 +439,7 @@ export interface IpcEventMap {
   'state:usage': UsageSnapshot;
   'state:settings': AppSettings;
   'state:account': AccountSnapshot;
+  'state:update': UpdateStatus;
   'session:transcript-upsert': { id: string; entry: TranscriptEntry };
   /** Replaces a whole transcript, e.g. after saved history was loaded in front of it. */
   'session:transcript-reset': { id: string; entries: TranscriptEntry[] };

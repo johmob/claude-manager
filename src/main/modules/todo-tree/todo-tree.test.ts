@@ -7,7 +7,7 @@ import { createTodoWatcher, mappingRequest, parseTodoTree, TODO_RELATIVE_PATH } 
 
 describe('parseTodoTree', () => {
   const schema = {
-    title: 'Demonstrator',
+    title: 'Demo',
     updated: 'u',
     tracks: [
       {

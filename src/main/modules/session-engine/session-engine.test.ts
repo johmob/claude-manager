@@ -112,8 +112,8 @@ describe('describeTool', () => {
 describe('savedUserText', () => {
   it('shows what the user wrote as theirs, and Claude Code\'s own messages not', () => {
     expect(savedUserText('s', 'Kör vidare')).toEqual([{ type: 'turn_started', sessionId: 's', prompt: 'Kör vidare' }]);
-    const notification = '<task-notification>\n<task-id>a1</task-id>\n<status>completed</status>\n<summary>Agent "B: K2-kanalerna rensbara" finished</summary>\n</task-notification>';
-    expect(savedUserText('s', notification)).toEqual([{ type: 'notice', sessionId: 's', text: 'Subagenten "B: K2-kanalerna rensbara" är klar.', level: 'info' }]);
+    const notification = '<task-notification>\n<task-id>a1</task-id>\n<status>completed</status>\n<summary>Agent "B: Sensordrivrutin" finished</summary>\n</task-notification>';
+    expect(savedUserText('s', notification)).toEqual([{ type: 'notice', sessionId: 's', text: 'Subagenten "B: Sensordrivrutin" är klar.', level: 'info' }]);
     expect(savedUserText('s', '<local-command-caveat>The command below was run directly</local-command-caveat>')).toEqual([]);
     expect(savedUserText('s', '<system-reminder>x</system-reminder>')).toEqual([]);
   });

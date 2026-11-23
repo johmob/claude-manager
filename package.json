@@ -10,12 +10,14 @@
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
-    "dist": "electron-vite build && electron-builder --win"
+    "dist": "electron-vite build && electron-builder --win",
+    "release": "npm version patch && git push --follow-tags"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "0.3.330",
     "@anthropic-ai/sdk": "^1.12.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "electron-updater": "^6.8.11",
     "zod": "^4.0.0"
   },
   "devDependencies": {
@@ -58,6 +60,18 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "johmob",
+        "repo": "claude-manager",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/johmob/claude-manager.git"
   }
 }

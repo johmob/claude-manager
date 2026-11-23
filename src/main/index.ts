@@ -10,6 +10,7 @@ import { CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERM
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
+  UpdateStatus,
   EffortChoice,
   ImportCandidate,
   ModelChoice,
@@ -35,9 +36,10 @@ import { createTray } from './modules/tray';
 import { importCandidates, liveTerminals } from './modules/terminal-sessions';
 import { probeAccount, UNVERIFIED_ACCOUNT } from './modules/account';
 import { bringIntoFocus, expireFocus } from './modules/focus-rules';
+import { createUpdater } from './modules/updater';
 
 const DEFAULT_SETTINGS: AppSettings = {
-  projectsRoot: 'C:\\Kod',
+  projectsRoot: '',
   doNotDisturb: false,
   alertOnDone: false,
   dockVisible: false,
@@ -45,6 +47,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   overlayVisible: true,
   launchAtLogin: true,
   textScale: 1.1,
+  autoUpdate: true,
   defaultModel: 'opus',
   defaultEffort: 'medium',
   defaultPermissionMode: 'auto',
@@ -92,7 +95,9 @@ function boot(): void {
   let settings = settingsStore.read();
   let records = recordStore.read();
   const groundRules = createGroundRules(join(userData, 'base-CLAUDE.md'));
-  const projects = createProjects(() => settings.projectsRoot);
+  /** The chosen projects folder, or ~/Kod until the user has chosen one. */
+  const projectsRoot = (): string => settings.projectsRoot || join(homedir(), 'Kod');
+  const projects = createProjects(projectsRoot);
 
   // ---------- Modules ----------
   const model = createSessionModel();
@@ -128,6 +133,17 @@ function boot(): void {
     onLaunchAtLogin: (on) => updateSettings({ launchAtLogin: on }),
   });
   applyLaunchAtLogin();
+  // Only the installed app updates itself; a development run has nothing to install.
+  const updater = app.isPackaged
+    ? createUpdater({
+        version: app.getVersion(),
+        auto: settings.autoUpdate,
+        isIdle: () => mappingActive === null && model.summaries().every((s) => s.status !== 'working' && !s.pendingCount && !s.questions.length),
+        onStatus: (status) => windows.send('state:update', status),
+      })
+    : null;
+  const updateStatus = (): UpdateStatus =>
+    updater?.current() ?? { state: 'off', version: app.getVersion(), available: null, progress: 0, auto: settings.autoUpdate, message: 'Uppdateringar finns bara i den installerade appen.' };
 
   for (const record of activeRecords()) {
     model.upsertRecord(record);
@@ -463,6 +479,7 @@ function boot(): void {
     notifier.setDoNotDisturb(settings.doNotDisturb);
     applyLaunchAtLogin();
     tray.setLaunchAtLogin(settings.launchAtLogin);
+    if (changes.autoUpdate !== undefined) updater?.setAuto(settings.autoUpdate);
     windows.send('state:settings', settings);
     scheduleSync();
     return settings;
@@ -501,6 +518,7 @@ function boot(): void {
     if (quitting) return;
     quitting = true;
     clearInterval(focusTimer);
+    updater?.stop();
     engine.stopAll();
     usage.stop();
     todo.close();
@@ -518,7 +536,8 @@ function boot(): void {
     ipcMain.handle(channel, (_event, req: IpcInvokeMap[K]['req']) => fn(req));
   }
 
-  handle('app:get-state', () => ({ sessions: model.summaries(), usage: usage.current(), settings, account }));
+  handle('app:get-state', () => ({ sessions: model.summaries(), usage: usage.current(), settings, account, update: updateStatus() }));
+  handle('update:install', () => updater?.installNow());
 
   handle('session:new-chat', (req) => {
     const id = randomUUID();
@@ -537,7 +556,7 @@ function boot(): void {
 
   handle('session:locate-project', async (req) => {
     const candidates = projects.list();
-    const found = await locateProject(settings.projectsRoot, req.description, candidates, structuredQuery);
+    const found = await locateProject(projectsRoot(), req.description, candidates, structuredQuery);
     return { ...found, candidates };
   });
 
@@ -658,6 +677,16 @@ function boot(): void {
 
   handle('settings:update', (req) => updateSettings(req));
 
+  handle('settings:choose-projects-root', async () => {
+    const picked = await dialog.showOpenDialog({
+      title: 'Välj mappen där dina projekt ligger',
+      defaultPath: projectsRoot(),
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    const folder = picked.canceled ? undefined : picked.filePaths[0];
+    return folder ? updateSettings({ projectsRoot: folder }) : null;
+  });
+
   handle('usage:refresh', () => usage.refreshNow());
   handle('window:snap', (req) => windows.snap(req.mode));
   handle('window:ensure-width', (req) => windows.ensureWidth(req.width));
@@ -700,13 +729,14 @@ function validSettings(r: unknown): AppSettings | null {
   const bool = (value: unknown, fallback: boolean): boolean => (typeof value === 'boolean' ? value : fallback);
   const d = DEFAULT_SETTINGS;
   return {
-    projectsRoot: typeof r['projectsRoot'] === 'string' && r['projectsRoot'] ? r['projectsRoot'] : d.projectsRoot,
+    projectsRoot: typeof r['projectsRoot'] === 'string' ? r['projectsRoot'] : d.projectsRoot,
     doNotDisturb: bool(r['doNotDisturb'], d.doNotDisturb),
     alertOnDone: bool(r['alertOnDone'], d.alertOnDone),
     dockVisible: bool(r['dockVisible'], d.dockVisible),
     dockEdge: pick(r['dockEdge'], DOCK_EDGES, d.dockEdge),
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),
     launchAtLogin: bool(r['launchAtLogin'], d.launchAtLogin),
+    autoUpdate: bool(r['autoUpdate'], d.autoUpdate),
     textScale: typeof r['textScale'] === 'number' && Number.isFinite(r['textScale']) ? clampScale(r['textScale']) : d.textScale,
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),
     defaultEffort: pick(r['defaultEffort'], EFFORT_CHOICES, d.defaultEffort),

@@ -6,6 +6,7 @@ import { useAppState } from '../state/useAppState';
 import { useTextScale } from '../lib/textScale';
 import { TopBar, type ViewMode } from '../components/TopBar';
 import { StartDialog, type DialogKind } from '../components/StartDialogs';
+import { Welcome } from '../components/Welcome';
 import { OverviewView } from '../views/OverviewView';
 import { FocusView } from '../views/FocusView';
 
@@ -14,6 +15,7 @@ export function MainWindow() {
   const [view, setView] = useState<ViewMode>('overview');
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const [asking, setAsking] = useState<string | null>(null);
+  const [welcomeLater, setWelcomeLater] = useState(false);
   useTextScale(state?.settings.textScale);
   /** Question sets the user put off in this window; they are not offered again on their own. */
   const putOff = useRef(new Set<string>());
@@ -54,14 +56,14 @@ export function MainWindow() {
   }, [asking, loaded, askingSession]);
 
   if (!state) return <div className="loading">Laddar…</div>;
-  const { sessions, usage, settings, account } = state;
+  const { sessions, usage, settings, account, update } = state;
   const focused = sessions.filter((s) => s.focused);
 
   return (
     <AccountContext.Provider value={account}>
     <AskQuestionsContext.Provider value={setAsking}>
     <div className="main-window">
-      <TopBar settings={settings} view={view} onView={setView} onDialog={setDialog} />
+      <TopBar settings={settings} update={update} view={view} onView={setView} onDialog={setDialog} />
       <main className="main-content">
         {view === 'overview' ? (
           <OverviewView sessions={sessions} usage={usage} onDialog={setDialog} />
@@ -70,6 +72,7 @@ export function MainWindow() {
         )}
       </main>
       {dialog && <StartDialog kind={dialog} settings={settings} onClose={() => setDialog(null)} />}
+      {!settings.projectsRoot && !welcomeLater && !dialog && <Welcome onLater={() => setWelcomeLater(true)} />}
       {askingSession && (
         <QuestionFlow
           key={questionsKey(askingSession)}

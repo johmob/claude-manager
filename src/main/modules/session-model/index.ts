@@ -57,6 +57,7 @@ interface SessionState {
   /** What the last turn left for the user to answer or confirm; the session waits while there are any. */
   questions: OpenQuestion[];
   questionsId: string;
+  questionsAnswer: string;
   mapping: boolean;
   context: ContextUsage | null;
   todo: TodoTree | null;
@@ -93,6 +94,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       turnText: '',
       questions: [],
       questionsId: '',
+      questionsAnswer: '',
       mapping: false,
       context: null,
       todo: null,
@@ -143,12 +145,13 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
      */
     const collectQuestions = (): TranscriptEntry[] => {
       const tagged = s.callouts.flatMap((c): OpenQuestion[] =>
-        c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), context: '' }] : [],
+        c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), context: '', detail: '' }] : [],
       );
       const found = findOpenQuestions(s.turnText);
       const seen = new Set<string>();
       s.questions = [...tagged, ...found].filter((q) => !seen.has(q.text) && seen.add(q.text)).slice(0, MAX_QUESTIONS);
       s.questionsId = s.questions.length ? String(at) : '';
+      s.questionsAnswer = s.questions.length ? s.turnText : '';
       if (!found.length) return [];
       const assumptions = found.filter((q) => q.kind === 'assumption').length;
       const callout: Callout = {
@@ -180,6 +183,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.turnText = '';
         s.questions = [];
         s.questionsId = '';
+        s.questionsAnswer = '';
         return add({ kind: 'user', text: event.prompt });
       case 'thinking':
         markActive('Tänker…');
@@ -294,6 +298,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
       questions: s.questions,
       questionsId: s.questionsId,
+      questionsAnswer: s.questionsAnswer,
       tokensUsed: record.tokensUsed,
       context: s.context,
       contextWindow: record.contextWindow,
@@ -340,6 +345,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.callouts = [];
         s.questions = [];
         s.questionsId = '';
+        s.questionsAnswer = '';
       }
     },
     summaries: () => [...states.values()].map(summarize),
@@ -383,39 +389,73 @@ function headingText(raw: string): string | null {
   return match ? clean(match[1]!).replace(/:$/, '').trim() : null;
 }
 
-/**
- * What an answer asks of the user: lines ending in a question mark, and every item listed under a
- * heading about questions ("Öppna frågor") or assumptions ("Antaganden, rätta om fel"). Code blocks are
- * skipped; a paragraph or another heading ends a list.
- */
-export function findOpenQuestions(text: string): OpenQuestion[] {
-  const found: OpenQuestion[] = [];
+const MAX_DETAIL = 3000;
+
+interface AnswerLine {
+  raw: string;
+  /** Inside a code block (or a fence line itself). */
+  code: boolean;
+  heading: string | null;
+  /** A real heading (# or a bold line): sections for the text around a question end here, unlike "Two ways:" lines. */
+  boundary: boolean;
+}
+
+function classifyLines(text: string): AnswerLine[] {
   let inFence = false;
-  let section: { kind: OpenQuestion['kind']; context: string } | null = null;
-  for (const raw of text.split(/\r?\n/)) {
+  return text.split(/\r?\n/).map((raw) => {
     if (/^\s*(```|~~~)/.test(raw)) {
       inFence = !inFence;
-      continue;
+      return { raw, code: true, heading: null, boundary: false };
     }
-    if (inFence || !raw.trim()) continue;
-    const heading = headingText(raw);
-    if (heading !== null && !QUESTION_END.test(heading)) {
-      section = ASSUMPTION_HEADING.test(heading)
-        ? { kind: 'assumption', context: heading }
-        : QUESTION_HEADING.test(heading)
-          ? { kind: 'question', context: heading }
+    const boundary = !inFence && (/^\s*#{1,6}\s/.test(raw) || /^\s*(?:\*\*|__).+(?:\*\*|__)\s*:?\s*$/.test(raw));
+    return { raw, code: inFence, heading: inFence ? null : headingText(raw), boundary };
+  });
+}
+
+/** The section a line sits in (between the headings around it), without the line itself: what the user needs to answer it. */
+function sectionAround(lines: AnswerLine[], at: number): string {
+  let start = at;
+  while (start > 0 && !lines[start - 1]!.boundary) start--;
+  let end = at + 1;
+  while (end < lines.length && !lines[end]!.boundary) end++;
+  const detail = lines
+    .slice(start, end)
+    .filter((_, k) => start + k !== at)
+    .map((l) => l.raw)
+    .join('\n')
+    .trim();
+  return detail.length > MAX_DETAIL ? `${detail.slice(0, MAX_DETAIL)}…` : detail;
+}
+
+/**
+ * What an answer asks of the user: lines ending in a question mark (with the section around them, so
+ * "A or B?" comes with what A and B are), and every item listed under a heading about questions
+ * ("Öppna frågor") or assumptions ("Antaganden, rätta om fel"). Code blocks are skipped; a paragraph or
+ * another heading ends a list.
+ */
+export function findOpenQuestions(text: string): OpenQuestion[] {
+  const lines = classifyLines(text);
+  const found: OpenQuestion[] = [];
+  let section: { kind: OpenQuestion['kind']; context: string } | null = null;
+  lines.forEach((l, i) => {
+    if (l.code || !l.raw.trim()) return;
+    if (l.heading !== null && !QUESTION_END.test(l.heading)) {
+      section = ASSUMPTION_HEADING.test(l.heading)
+        ? { kind: 'assumption', context: l.heading }
+        : QUESTION_HEADING.test(l.heading)
+          ? { kind: 'question', context: l.heading }
           : null;
-      continue;
+      return;
     }
-    const item = LIST_ITEM.exec(raw);
-    const line = clean(item ? item[1]! : raw);
+    const item = LIST_ITEM.exec(l.raw);
+    const line = clean(item ? item[1]! : l.raw);
     if (item && section) {
-      if (line) found.push({ kind: section.kind, text: line, context: section.context });
-      continue;
+      if (line) found.push({ kind: section.kind, text: line, context: section.context, detail: '' });
+      return;
     }
-    if (!item && !/^\s/.test(raw)) section = null;
-    if (line.length >= 6 && QUESTION_END.test(line)) found.push({ kind: 'question', text: line, context: '' });
-  }
+    if (!item && !/^\s/.test(l.raw)) section = null;
+    if (line.length >= 6 && QUESTION_END.test(line)) found.push({ kind: 'question', text: line, context: '', detail: sectionAround(lines, i) });
+  });
   return found;
 }
 

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type CSSProperties } from 'react';
 import type { OpenQuestion, SessionSummary } from '../../../shared/contracts';
 import { send } from '../lib/api';
+import { MarkdownText } from './MarkdownText';
 import { Modal } from './Modal';
 
 /** Opens the question flow for a session; provided by the window that shows it. */
@@ -136,6 +137,19 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
               </div>
               {q.context && <div className="qf-context">{q.context}</div>}
               <div className="qf-question">{q.text}</div>
+              {q.detail && (
+                <div className="qf-detail">
+                  <MarkdownText text={q.detail} />
+                </div>
+              )}
+              {session.questionsAnswer.trim().length > q.detail.length + 40 && (
+                <details className="qf-full">
+                  <summary>Visa hela svaret från agenten</summary>
+                  <div className="qf-detail">
+                    <MarkdownText text={session.questionsAnswer} />
+                  </div>
+                </details>
+              )}
               <textarea
                 key={index}
                 className="input qf-answer"

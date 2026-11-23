@@ -607,3 +607,24 @@ textarea.input { resize: vertical; }
 .transcript .t-assistant:not([data-final]) .md :is(h1, h2, h3, h4, h5) { font-size: 0.8125rem; margin: .4em 0 .2em; padding: 0; border: 0; color: #bcc4d1; }
 .transcript .t-assistant:not([data-final]) .md strong { color: #bcc4d1; }
 .transcript .t-assistant:not([data-final]) .md li::marker { color: #5b6476; }
+
+/* ---------- A new version of the app ---------- */
+.update-pill { padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(62,207,142,.6); background: rgba(62,207,142,.12); color: var(--green); font: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.update-pill:hover:not(:disabled) { background: rgba(62,207,142,.2); }
+.update-pill:disabled { cursor: default; opacity: .8; }
+
+/* ---------- Projects folder and first start ---------- */
+.projects-root { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-size: 0.8125rem; }
+.projects-root-path { font-family: var(--mono); font-size: 0.78rem; overflow-wrap: anywhere; }
+.welcome { display: flex; flex-direction: column; gap: 12px; line-height: 1.55; }
+.welcome p { margin: 0; }
+
+/* The text around a question (what options A and B are), and the agent's whole answer on demand. */
+.qf-detail { max-height: 34vh; overflow: auto; padding: 10px 14px; border-radius: 10px; background: rgba(255,255,255,.035); border-left: 3px solid #3a4150; }
+.qf-detail .md { font-size: 0.9rem; line-height: 1.6; color: #d6dce6; }
+.qf-detail .md strong, .qf-detail .md :is(h1, h2, h3, h4) { color: #fff; }
+.qf-detail .md :is(h1, h2, h3, h4) { font-size: 0.95rem; margin: .8em 0 .3em; }
+.qf-detail .md ul, .qf-detail .md ol { margin: .3em 0; padding-left: 1.4em; }
+.qf-detail .md li { margin: .2em 0; }
+.qf-full summary { cursor: pointer; color: var(--accent-ui); font-size: 0.8125rem; margin-bottom: 8px; }
+.qf-full[open] .qf-detail { max-height: 45vh; }

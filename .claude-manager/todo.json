@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-23T12:46:51Z",
+  "updated": "2026-11-23T13:23:17Z",
   "tracks": [
     {
       "id": "eng",
@@ -346,6 +346,11 @@
               "id": "ui.6.4",
               "title": "Alla svar skickas som ett meddelande",
               "status": "done"
+            },
+            {
+              "id": "ui.6.5",
+              "title": "Texten runt frågan och hela svaret visas i flödet",
+              "status": "done"
             }
           ]
         }
@@ -461,6 +466,59 @@
           "id": "ship.4",
           "title": "Dokumentation (README, DECISIONS)",
           "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "dist",
+      "title": "Spridning och uppdateringar",
+      "owner": "main",
+      "notes": "Publikt repo, releaser via GitHub Actions och appar som uppdaterar sig själva, så att appen kan delas med kollegor.",
+      "items": [
+        {
+          "id": "dist.1",
+          "title": "Genomgång av personlig information i repot",
+          "status": "done",
+          "notes": "Testdata och referenser rensade. Kvar: författaruppgifter i git-historiken (beslut från användaren)."
+        },
+        {
+          "id": "dist.2",
+          "title": "Automatisk uppdatering (electron-updater) med knapp Auto-uppdatera",
+          "status": "done"
+        },
+        {
+          "id": "dist.3",
+          "title": "Release-flöde: npm run release och GitHub Actions",
+          "status": "done"
+        },
+        {
+          "id": "dist.4",
+          "title": "Välj projektmapp vid första start och i projektdialogerna",
+          "status": "done"
+        },
+        {
+          "id": "dist.5",
+          "title": "Skriv om git-historiken till anonym e-post",
+          "status": "not_started",
+          "dependsOn": [
+            "dist.1"
+          ]
+        },
+        {
+          "id": "dist.6",
+          "title": "Gör repot publikt och välj licens",
+          "status": "not_started",
+          "dependsOn": [
+            "dist.5"
+          ]
+        },
+        {
+          "id": "dist.7",
+          "title": "Första releasen och installation av den hos användaren",
+          "status": "not_started",
+          "dependsOn": [
+            "dist.6"
+          ]
         }
       ]
     }

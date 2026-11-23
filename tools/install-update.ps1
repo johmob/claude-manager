@@ -3,7 +3,7 @@
 # Start it detached, with a parent outside the app, so it survives closing the app; this also works
 # when the agent that starts it runs inside the app (its turn has time to finish during the delay):
 #   Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{
-#     CommandLine = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Kod\Claude manager\tools\install-update.ps1"' }
+#     CommandLine = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "<repo>\tools\install-update.ps1"' }
 # Progress is written to %TEMP%\claude-manager-update.log.
 param([int]$DelaySeconds = 20)
 
