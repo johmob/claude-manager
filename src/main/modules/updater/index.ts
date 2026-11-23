@@ -25,9 +25,9 @@ export interface Updater {
   stop(): void;
 }
 
-// A new release reaches running apps within minutes; a check is one small request to GitHub.
+// Regular checks are rare; a new release nudges a running app to check at once (see CHECK_UPDATE_ARG).
 const FIRST_CHECK_MS = 30 * 1000;
-const CHECK_EVERY_MS = 10 * 60 * 1000;
+const CHECK_EVERY_MS = 3 * 60 * 60 * 1000;
 const IDLE_POLL_MS = 60 * 1000;
 
 export function createUpdater(opts: UpdaterOptions): Updater {

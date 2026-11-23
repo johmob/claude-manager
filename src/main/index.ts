@@ -59,6 +59,12 @@ const SYNC_DELAY_MS = 80;
 /** Given to the app when Windows starts it at login, so it starts in the tray instead of opening its window. */
 const AUTOSTART_ARG = '--autostart';
 
+/**
+ * Starting the app again with this while it runs makes the running app look for a new version at once
+ * (tools/release.mjs does it after publishing); the new process exits, as the app allows one instance.
+ */
+const CHECK_UPDATE_ARG = '--check-update';
+
 /** A project waiting to be mapped by its session's main agent, with the user's first message held until then. */
 interface MappingJob {
   id: string;
@@ -166,7 +172,10 @@ function boot(): void {
     .catch((error: unknown) => console.warn('Kontot kunde inte läsas; alla modeller visas', error));
   scheduleSync();
 
-  app.on('second-instance', () => windows.showMain());
+  app.on('second-instance', (_event, argv) => {
+    if (argv.includes(CHECK_UPDATE_ARG)) updater?.checkNow();
+    else windows.showMain();
+  });
   app.on('before-quit', quit);
 
   // ---------- Event flow ----------
