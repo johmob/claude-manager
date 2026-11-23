@@ -40,7 +40,8 @@ To drive a running app from scripts (screenshots, clicks):
 | **Docka** | Always-on-top strip at the right edge, the bottom, or the centre of the screen. A card bounces red when its session needs you. Click it to open the session. |
 | **Overlay** | Tiny icons at the top centre. Clicks pass through to the window below; hold **Ctrl** to click an icon. |
 | **Stör ej** | No notifications or taskbar flashing; cards, dock and overlay still turn red. |
-| **Bra att veta** | After a turn with real work, a small Haiku review flags one thing you might miss (a failed command the answer glosses over, a secret in plain text, a deleted file). It shows as a yellow box on the card; × dismisses it. The toggle turns the review off. |
+| **Callouts** | Agents tag what matters with markdown alerts: **Risk** (red), **Varning** (amber), **Bra att veta** (purple), **Antagande** (blue), **Förslag** (green). The card shows the latest turn's tags until you dismiss them (×), the dock shows the most severe icon, and the transcript shows each one in place. |
+| **Granskning** | Optional, off by default: after a turn with real work, a small independent Haiku review adds one tag the agent itself missed. It costs a little quota. |
 
 Closing the window while sessions run asks whether to minimise to the tray (sessions keep running) or stop them. After a restart every session comes back as a card; send a message or press ▶ to resume it with its full history.
 
@@ -50,11 +51,11 @@ Closing the window while sessions run asks whether to minimise to the tray (sess
 src/shared/          contracts.ts (types + constants), guards.ts (JSON type guards)
 src/main/index.ts    composition root: wires modules, persistence, IPC
 src/main/modules/    self-contained modules; none imports another
-  session-engine     Agent SDK wrapper -> labelled SessionEvents
+  session-engine     Agent SDK wrapper -> labelled SessionEvents (incl. callout tags)
   session-model      events -> cards (SessionSummary) and transcripts
   usage-monitor      5-hour / weekly usage via Claude Code's OAuth token
   todo-tree          .claude-manager/todo.json format, parser, watcher
-  heads-up           "Bra att veta": stateless Haiku review of a finished turn
+  turn-review        optional stateless Haiku review of a finished turn
   structured-query   one-shot Claude call returning schema-checked JSON (injected by the root)
   json-store, palette, ground-rules, projects, notifier, window-manager, tray
 src/preload/         typed IPC bridge (window.cm)

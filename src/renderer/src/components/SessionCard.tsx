@@ -4,6 +4,7 @@ import { formatCost, formatElapsed, todoProgress } from '../lib/format';
 import { send } from '../lib/api';
 import { useNow } from '../lib/useNow';
 import { AgentDots, IconButton, ModelBadge, StatusChip } from './Atoms';
+import { CalloutBox } from './CalloutBox';
 import { PendingPanel } from './PendingPanel';
 
 interface SessionCardProps {
@@ -60,16 +61,14 @@ function CardActions({ session, onRename }: { session: SessionSummary; onRename:
   );
 }
 
-function HeadsUpBox({ session }: { session: SessionSummary }) {
-  if (!session.headsUp) return null;
+/** What the latest turn tagged (suggestions stay in the transcript), until dismissed. */
+function CardCallouts({ session }: { session: SessionSummary }) {
+  const shown = session.callouts.filter((c) => c.kind !== 'tip');
+  if (!shown.length) return null;
   return (
-    <div className="heads-up" role="note">
-      <div className="heads-up-top">
-        <span className="heads-up-label">Bra att veta</span>
-        <IconButton title="Avfärda" onClick={() => send('session:dismiss-heads-up', { id: session.id })}>×</IconButton>
-      </div>
-      <strong>{session.headsUp.title}</strong>
-      <p>{session.headsUp.text}</p>
+    <div className="card-callouts">
+      <IconButton title="Avfärda" onClick={() => send('session:dismiss-callouts', { id: session.id })}>×</IconButton>
+      {shown.map((callout, i) => <CalloutBox key={i} callout={callout} />)}
     </div>
   );
 }
@@ -105,7 +104,7 @@ export function SessionCard({ session, selected, selectDisabled, onToggleSelect,
         )}
         {session.lastError && <div className="card-error">{session.lastError}</div>}
       </div>
-      <HeadsUpBox session={session} />
+      <CardCallouts session={session} />
       <PendingPanel session={session} />
       <div className="card-foot">
         <label className="select-box" title={selectDisabled && !selected ? 'Max 6 i fokusläget' : 'Visa i Fokus'} onClick={(e) => e.stopPropagation()}>

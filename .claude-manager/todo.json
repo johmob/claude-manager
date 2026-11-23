@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T08:58:48Z",
+  "updated": "2026-11-23T09:13:43Z",
   "blocks": [
     {
       "id": "1",
@@ -201,6 +201,38 @@
           "id": "6.4",
           "title": "Rebuild installer",
           "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "7",
+      "title": "Callouts: agents tag what matters",
+      "status": "in_progress",
+      "steps": [
+        {
+          "id": "7.1",
+          "title": "Test tagging with Haiku and Sonnet (8/8 correct)",
+          "status": "done"
+        },
+        {
+          "id": "7.2",
+          "title": "Callout protocol and parser in session-engine",
+          "status": "done"
+        },
+        {
+          "id": "7.3",
+          "title": "Card, transcript and dock styling per kind",
+          "status": "done"
+        },
+        {
+          "id": "7.4",
+          "title": "Haiku review becomes optional Granskning",
+          "status": "done"
+        },
+        {
+          "id": "7.5",
+          "title": "Rebuild installer",
+          "status": "in_progress"
         }
       ]
     }

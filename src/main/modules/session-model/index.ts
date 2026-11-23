@@ -1,7 +1,8 @@
 // session-model: pure state. Folds SessionEvents, records and todo trees into the
 // SessionSummary cards and TranscriptEntry lists the UI shows. No I/O, no timers.
+import { CALLOUT_KINDS } from '../../../shared/contracts';
 import type {
-  HeadsUpNote,
+  Callout,
   PendingInput,
   SessionEvent,
   SessionRecord,
@@ -25,7 +26,7 @@ export interface SessionModel {
   setTodo(id: string, tree: TodoTree | null): void;
   /** The user has looked at a finished turn: `done` becomes `idle`. */
   markSeen(id: string): void;
-  dismissHeadsUp(id: string): void;
+  dismissCallouts(id: string): void;
   summaries(): SessionSummary[];
   summary(id: string): SessionSummary | undefined;
   transcript(id: string): TranscriptEntry[];
@@ -44,7 +45,7 @@ interface SessionState {
   startedAt: number | null;
   lastActivity: string;
   lastError: string | null;
-  headsUp: HeadsUpNote | null;
+  callouts: Callout[];
   costUsd: number;
   todo: TodoTree | null;
   slashCommands: string[];
@@ -75,7 +76,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       startedAt: null,
       lastActivity: '',
       lastError: null,
-      headsUp: null,
+      callouts: [],
       costUsd: 0,
       todo: null,
       slashCommands: [],
@@ -133,6 +134,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.unseenDone = false;
         s.lastError = null;
         s.lastActivity = '';
+        s.callouts = [];
         return add({ kind: 'user', text: event.prompt });
       case 'thinking':
         markActive('Tänker…');
@@ -190,9 +192,9 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         const leftover = thinking ? add({ kind: 'assistant', text: '', thinking }) : [];
         return event.isError ? [...leftover, ...system(event.result, 'error')] : leftover;
       }
-      case 'heads_up':
-        s.headsUp = event.note;
-        return system(`Bra att veta: ${event.note.title} – ${event.note.text}`, 'warning');
+      case 'callout':
+        s.callouts.push(event.callout);
+        return add({ kind: 'callout', callout: event.callout });
       case 'rate_limit':
         if (!event.rejected) return [];
         s.lastError = 'Användningsgränsen är nådd.';
@@ -229,7 +231,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       turnStartedAt: s.turnStartedAt,
       startedAt: s.startedAt,
       lastError: s.lastError,
-      headsUp: s.headsUp,
+      callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
       costUsd: s.costUsd,
       todo: s.todo,
       resumable: !s.running,
@@ -261,9 +263,9 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       const s = states.get(id);
       if (s) s.unseenDone = false;
     },
-    dismissHeadsUp: (id) => {
+    dismissCallouts: (id) => {
       const s = states.get(id);
-      if (s) s.headsUp = null;
+      if (s) s.callouts = [];
     },
     summaries: () => [...states.values()].map(summarize),
     summary: (id) => {

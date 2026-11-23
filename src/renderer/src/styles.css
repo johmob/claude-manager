@@ -11,6 +11,12 @@
   --red: #f0524f;
   --green: #3ecf8e;
   --blue-grey: #7d8aa6;
+  /* Callout kinds, GitHub alert colours tuned for the dark UI */
+  --c-caution: #f85149;
+  --c-warning: #e3a43a;
+  --c-important: #ab7df8;
+  --c-note: #4c9bf8;
+  --c-tip: #3fb950;
   --radius: 10px;
   --font: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   --mono: "Cascadia Mono", Consolas, monospace;
@@ -101,10 +107,32 @@ textarea.input { resize: vertical; }
 .elapsed { font-variant-numeric: tabular-nums; color: var(--orange); font-size: 12px; }
 .card-task { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-error { color: var(--red); font-size: 12px; }
-.heads-up { margin: 0 12px 10px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(245,165,36,.45); background: rgba(245,165,36,.09); font-size: 12.5px; }
-.heads-up-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
-.heads-up-label { color: var(--orange); font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-.heads-up p { margin: 2px 0 0; color: var(--muted); line-height: 1.4; }
+
+/* ---------- Callouts (agent-tagged: risk, varning, bra att veta, antagande, förslag) ---------- */
+.callout { --c: var(--c-note); display: flex; gap: 9px; padding: 8px 10px 8px 9px; border-left: 3px solid var(--c); border-radius: 0 8px 8px 0; background: color-mix(in srgb, var(--c) 9%, transparent); margin: 6px 0; }
+.callout[data-kind="caution"] { --c: var(--c-caution); background: color-mix(in srgb, var(--c) 14%, transparent); }
+.callout[data-kind="warning"] { --c: var(--c-warning); }
+.callout[data-kind="important"] { --c: var(--c-important); }
+.callout[data-kind="tip"] { --c: var(--c-tip); background: transparent; }
+.callout-icon { flex: none; width: 16px; height: 16px; color: var(--c); margin-top: 1px; }
+.callout-body { min-width: 0; flex: 1; }
+.callout-head { display: flex; align-items: center; gap: 6px; }
+.callout-label { color: var(--c); font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.callout-source { font-size: 10px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+.callout-title { font-weight: 650; font-size: 13.5px; margin-top: 1px; }
+.callout[data-kind="caution"] .callout-title { font-size: 15px; }
+.callout[data-kind="tip"] .callout-title, .callout[data-kind="note"] .callout-title { font-weight: 600; }
+.callout-text { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.callout-text p { margin: 2px 0 0; }
+.card-callouts { position: relative; margin: 0 12px 8px; }
+.card-callouts > .icon-btn { position: absolute; top: 2px; right: 0; z-index: 1; }
+.card-callouts .callout { margin: 0 0 6px; padding-right: 26px; }
+.card-callouts .callout-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.dock-callout { display: inline-flex; color: var(--c-note); }
+.dock-callout[data-kind="caution"] { color: var(--c-caution); }
+.dock-callout[data-kind="warning"] { color: var(--c-warning); }
+.dock-callout[data-kind="important"] { color: var(--c-important); }
+.dock-callout .callout-icon { width: 14px; height: 14px; margin: 0; }
 .card-foot { display: flex; align-items: center; justify-content: space-between; padding: 2px 8px 8px 12px; }
 .select-box { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; cursor: pointer; }
 .card-actions { display: flex; align-items: center; gap: 2px; }

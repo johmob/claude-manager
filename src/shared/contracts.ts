@@ -138,10 +138,19 @@ export interface StructuredRequest {
 /** A stateless Claude call returning JSON matching the schema, or null. Created by the root and handed to modules that need one. */
 export type StructuredQuery = (request: StructuredRequest) => Promise<unknown>;
 
-/** "Bra att veta": one thing from a finished turn the user should know but might miss. */
-export interface HeadsUpNote {
+// ---------- Callouts: what the agent tags as worth attention ----------
+
+/** GitHub alert kinds (`> [!WARNING]` …), most severe first. */
+export type CalloutKind = 'caution' | 'warning' | 'important' | 'note' | 'tip';
+export const CALLOUT_KINDS: readonly CalloutKind[] = ['caution', 'warning', 'important', 'note', 'tip'];
+
+export interface Callout {
+  kind: CalloutKind;
+  /** Short bold title; may be empty. */
   title: string;
   text: string;
+  /** Tagged by the working agent itself, or by the optional Haiku review. */
+  source: 'agent' | 'review';
 }
 
 // ---------- Events from session-engine (normalised, labelled) ----------
@@ -170,7 +179,7 @@ export type SessionEvent =
   | { type: 'model_changed'; sessionId: string; model: ModelChoice }
   | { type: 'turn_finished'; sessionId: string; result: string; isError: boolean; costUsd: number; durationMs: number }
   | { type: 'rate_limit'; sessionId: string; windows: UsageWindows; rejected: boolean }
-  | { type: 'heads_up'; sessionId: string; note: HeadsUpNote }
+  | { type: 'callout'; sessionId: string; callout: Callout; agentId?: string }
   | { type: 'error'; sessionId: string; message: string }
   | { type: 'exited'; sessionId: string };
 
@@ -199,8 +208,8 @@ export interface SessionSummary {
   /** ms epoch when the session was started or resumed in this app run. */
   startedAt: number | null;
   lastError: string | null;
-  /** Latest "Bra att veta" note, until dismissed. */
-  headsUp: HeadsUpNote | null;
+  /** Callouts from the latest turn, most severe first, until dismissed or the next turn starts. */
+  callouts: Callout[];
   costUsd: number;
   todo: TodoTree | null;
   /** True when the session is not running but can be resumed. */
@@ -213,6 +222,7 @@ export type TranscriptEntry =
   | { id: string; kind: 'assistant'; text: string; thinking: string; agentId?: string; at: number }
   | { id: string; kind: 'tool'; name: string; summary: string; status: 'running' | 'ok' | 'error'; thinking: string; agentId?: string; at: number }
   | { id: string; kind: 'question'; text: string; answer: string | null; at: number }
+  | { id: string; kind: 'callout'; callout: Callout; at: number }
   | { id: string; kind: 'system'; text: string; level: 'info' | 'warning' | 'error'; at: number };
 
 // ---------- Settings ----------
@@ -224,8 +234,8 @@ export interface AppSettings {
   projectsRoot: string;
   doNotDisturb: boolean;
   alertOnDone: boolean;
-  /** Review finished turns with a small Haiku call and flag what is worth knowing. */
-  headsUpEnabled: boolean;
+  /** Extra, independent Haiku review of finished turns (the agent tags callouts itself regardless). */
+  reviewEnabled: boolean;
   dockVisible: boolean;
   dockEdge: DockEdge;
   overlayVisible: boolean;
@@ -268,7 +278,7 @@ export interface IpcInvokeMap {
   'session:rename': { req: { id: string; name: string }; res: void };
   'session:transcript': { req: { id: string }; res: TranscriptEntry[] };
   'session:mark-seen': { req: { id: string }; res: void };
-  'session:dismiss-heads-up': { req: { id: string }; res: void };
+  'session:dismiss-callouts': { req: { id: string }; res: void };
   'ground-rules:edit': { req: { instructions: string }; res: string };
   'settings:update': { req: Partial<AppSettings>; res: AppSettings };
   'usage:refresh': { req: void; res: void };

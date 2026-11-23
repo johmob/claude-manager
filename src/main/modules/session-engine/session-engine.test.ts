@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
-import { describeTool, translate } from './index';
+import { describeTool, splitCallouts, translate } from './index';
 
 const sdk = (message: object): SDKMessage => message as SDKMessage;
 
@@ -63,6 +63,41 @@ describe('translate', () => {
         sevenDay: { utilization: 1, resetsAt: new Date(1795791600 * 1000).toISOString() },
       },
     });
+  });
+});
+
+describe('splitCallouts', () => {
+  it('separates GitHub alert blocks from the answer', () => {
+    const text = [
+      'Done',
+      '',
+      '> [!WARNING]',
+      '> **Steg 2 misslyckades.** `settings-prod.json` finns inte.',
+      '',
+      '> [!NOTE]',
+      '> **Filen skapades från grunden:** den innehåller bara `port`.',
+    ].join('\n');
+    expect(splitCallouts(text)).toEqual({
+      text: 'Done',
+      callouts: [
+        { kind: 'warning', title: 'Steg 2 misslyckades', text: '`settings-prod.json` finns inte.', source: 'agent' },
+        { kind: 'note', title: 'Filen skapades från grunden', text: 'den innehåller bara `port`.', source: 'agent' },
+      ],
+    });
+  });
+
+  it('accepts text on the marker line and blocks without a bold title', () => {
+    expect(splitCallouts('> [!CAUTION] Lösenordet loggas.').callouts).toEqual([{ kind: 'caution', title: '', text: 'Lösenordet loggas.', source: 'agent' }]);
+  });
+
+  it('ignores alert syntax inside code fences and plain quotes', () => {
+    const text = ['```md', '> [!TIP]', '> exempel', '```', '> bara ett citat'].join('\n');
+    expect(splitCallouts(text)).toEqual({ text, callouts: [] });
+  });
+
+  it('turns tagged assistant text into text plus callout events', () => {
+    const events = translate('s', sdk({ type: 'assistant', parent_tool_use_id: null, message: { content: [{ type: 'text', text: 'Klart.\n\n> [!TIP]\n> **Nästa steg:** kör testerna.' }] } }));
+    expect(events.map((e) => e.type)).toEqual(['text', 'callout']);
   });
 });
 

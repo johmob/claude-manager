@@ -4,6 +4,8 @@
 import { getSessionMessages, query } from '@anthropic-ai/claude-agent-sdk';
 import type { PermissionResult, Query, SDKMessage, SDKUserMessage, SessionMessage } from '@anthropic-ai/claude-agent-sdk';
 import type {
+  Callout,
+  CalloutKind,
   ContextUsage,
   ModelChoice,
   PermissionDecision,
@@ -239,6 +241,67 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
   };
 }
 
+// ---------- Callouts ----------
+
+/** Appended to every session's system prompt. Tested on Haiku and Sonnet: tags failures, risks and assumptions; leaves routine success untagged. */
+export const CALLOUT_PROTOCOL = `# Tagging what matters
+The user skims your final message in an app that renders GitHub alert blocks as coloured callouts.
+When something in this turn deserves attention, put it in its own alert block at the end of your final message:
+> [!CAUTION]   risky, destructive or irreversible actions; secrets or security problems
+> [!WARNING]   something failed, was skipped, or did not work as intended
+> [!IMPORTANT] something the user should know but could easily miss
+> [!NOTE]      an assumption you made on the user's behalf
+> [!TIP]       a suggested next step
+Format: the marker line, then one line starting with "> " holding a short bold title and one sentence. Write the text in Swedish.
+Use at most three blocks per message, only when they add something; never tag routine success.`;
+
+const ALERT_LINE = /^\s*>\s*\[!(CAUTION|WARNING|IMPORTANT|NOTE|TIP)\]\s*(.*)$/i;
+const FENCE_LINE = /^\s*(```|~~~)/;
+const BOLD_TITLE = /^\*\*(.+?)\*\*[\s:.–—-]*([\s\S]*)$/;
+
+/** Splits agent text into plain text and the GitHub alert blocks it tagged (ignoring code fences). */
+export function splitCallouts(text: string): { text: string; callouts: Callout[] } {
+  const kept: string[] = [];
+  const callouts: Callout[] = [];
+  let inFence = false;
+  let open: { kind: CalloutKind; lines: string[] } | null = null;
+  const close = (): void => {
+    if (open) callouts.push(toCallout(open.kind, open.lines));
+    open = null;
+  };
+  for (const line of text.split(/\r?\n/)) {
+    if (!open && FENCE_LINE.test(line)) inFence = !inFence;
+    const alert = inFence ? null : ALERT_LINE.exec(line);
+    if (alert) {
+      close();
+      open = { kind: alert[1]!.toLowerCase() as CalloutKind, lines: alert[2] ? [alert[2]] : [] };
+    } else if (open && /^\s*>/.test(line)) {
+      open.lines.push(line.replace(/^\s*>\s?/, ''));
+    } else {
+      close();
+      kept.push(line);
+    }
+  }
+  close();
+  return { text: kept.join('\n').trim(), callouts };
+}
+
+function toCallout(kind: CalloutKind, lines: string[]): Callout {
+  const body = lines.join('\n').trim();
+  const titled = BOLD_TITLE.exec(body);
+  return titled
+    ? { kind, title: titled[1]!.replace(/[:.]$/, '').trim(), text: titled[2]!.trim(), source: 'agent' }
+    : { kind, title: '', text: body, source: 'agent' };
+}
+
+function textEvents(sessionId: string, text: string, agentId: string | undefined): SessionEvent[] {
+  const split = splitCallouts(text);
+  return [
+    ...(split.text ? [{ type: 'text', sessionId, text: split.text, agentId } as const] : []),
+    ...split.callouts.map((callout) => ({ type: 'callout', sessionId, callout, agentId }) as const),
+  ];
+}
+
 // ---------- Saved history ----------
 
 const HISTORY_LIMIT = 400;
@@ -312,7 +375,7 @@ export function translate(sessionId: string, m: SDKMessage): SessionEvent[] {
       const agentId = m.parent_tool_use_id ?? undefined;
       return m.message.content.flatMap((block): SessionEvent[] => {
         if (block.type === 'thinking' && block.thinking.trim()) return [{ type: 'thinking', sessionId, text: block.thinking, agentId }];
-        if (block.type === 'text' && block.text.trim()) return [{ type: 'text', sessionId, text: block.text, agentId }];
+        if (block.type === 'text') return textEvents(sessionId, block.text, agentId);
         if (block.type === 'tool_use') {
           const summary = describeTool(block.name, asRecord(block.input));
           return [{ type: 'tool_use', sessionId, toolUseId: block.id, name: block.name, summary: firstLine(summary), agentId }];

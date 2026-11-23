@@ -1,4 +1,12 @@
-import type { ModelChoice, PermissionChoice, SessionStatus, TodoTree } from '../../../shared/contracts';
+import type { CalloutKind, ModelChoice, PermissionChoice, SessionStatus, TodoTree } from '../../../shared/contracts';
+
+export const CALLOUT_LABEL: Record<CalloutKind, string> = {
+  caution: 'Risk',
+  warning: 'Varning',
+  important: 'Bra att veta',
+  note: 'Antagande',
+  tip: 'Förslag',
+};
 
 export const STATUS_LABEL: Record<SessionStatus, string> = {
   starting: 'Startar',

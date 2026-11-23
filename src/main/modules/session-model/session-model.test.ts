@@ -103,13 +103,18 @@ describe('session-model', () => {
     expect(model.summary('s1')).toMatchObject({ status: 'working', activeAgents: 1 });
   });
 
-  it('shows a heads-up until it is dismissed', () => {
+  it('keeps the latest turn\'s callouts, most severe first, until dismissed or the next turn', () => {
     const { model, apply } = setup();
-    const [entry] = apply({ type: 'heads_up', note: { title: 'Lösenord i klartext', text: 'config.json innehåller dbPassword.' } });
-    expect(entry).toMatchObject({ kind: 'system', level: 'warning', text: 'Bra att veta: Lösenord i klartext – config.json innehåller dbPassword.' });
-    expect(model.summary('s1')?.headsUp?.title).toBe('Lösenord i klartext');
-    model.dismissHeadsUp('s1');
-    expect(model.summary('s1')?.headsUp).toBeNull();
+    apply({ type: 'turn_started', prompt: 'bygg' });
+    const [entry] = apply({ type: 'callout', callout: { kind: 'note', title: 'Antog port 80', text: 'Ingen port angavs.', source: 'agent' } });
+    apply({ type: 'callout', callout: { kind: 'caution', title: 'Lösenord i klartext', text: 'config.json.', source: 'agent' } });
+    expect(entry).toMatchObject({ kind: 'callout', callout: { kind: 'note' } });
+    expect(model.summary('s1')?.callouts.map((c) => c.kind)).toEqual(['caution', 'note']);
+    model.dismissCallouts('s1');
+    expect(model.summary('s1')?.callouts).toEqual([]);
+    apply({ type: 'callout', callout: { kind: 'tip', title: 'Nästa steg', text: 'Lägg till tester.', source: 'agent' } });
+    apply({ type: 'turn_started', prompt: 'nästa' });
+    expect(model.summary('s1')?.callouts).toEqual([]);
   });
 
   it('marks errors and clears everything on exit', () => {

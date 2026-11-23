@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { StatusChip } from '../components/Atoms';
+import { CalloutIcon } from '../components/CalloutBox';
 import { send } from '../lib/api';
 import { useAppState } from '../state/useAppState';
 
@@ -22,6 +23,11 @@ export function DockWindow() {
           <span className="dock-body">
             <span className="dock-top">
               <span className="dock-name">{s.name}</span>
+              {s.callouts[0] && s.callouts[0].kind !== 'tip' && (
+                <span className="dock-callout" data-kind={s.callouts[0].kind} title={s.callouts[0].title}>
+                  <CalloutIcon kind={s.callouts[0].kind} />
+                </span>
+              )}
               <StatusChip status={s.status} />
             </span>
             <span className="dock-task">{s.currentTask || ' '}</span>

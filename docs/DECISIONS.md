@@ -43,18 +43,30 @@ Run `node tools/verify-sdk.mjs <workDir> <logFile>` to repeat. Results:
 | Rate limits in stream | Yes | `rate_limit_event` carries `unifiedWindows.five_hour/seven_day` (utilization 0–1). Used as a live supplement to the OAuth poll. |
 | `TodoWrite` | **No** | Not in the SDK session's tool list. Irrelevant: the todo tree is a file the agent writes (see below). |
 | `session_state_changed` | **Not emitted** | Status is derived from turn start/result and pending input instead. |
-| "You Should Know" plugin | **Loads, but notes do not reach the stream** | It is built into Claude Code as `cc-plugin-you-should-know` (off by default, so no plugin list shows it). An SDK session can enable it with `settings: { enabledPlugins: { 'cc-plugin-you-should-know@builtin': true } }` and `system/init.plugins` then lists it. Its notes are drawn by the terminal UI ("above the prompt", via the plugin `ui.render` surface); the public SDK has no message or callback for that surface. Two test runs (`tools/verify-ysk.mjs`: Haiku with 5 tool calls, then Sonnet with 12 tool calls and the session held open 90 s) produced no note in the stream, and the plugin never wrote its state file (`~/.claude/plugins/store/`), so it does not activate in SDK sessions. Replaced by the app's own "Bra att veta" (below), with the user's approval. |
+| "You Should Know" plugin | **Loads, but notes do not reach the stream** | It is built into Claude Code as `cc-plugin-you-should-know` (off by default, so no plugin list shows it). An SDK session can enable it with `settings: { enabledPlugins: { 'cc-plugin-you-should-know@builtin': true } }` and `system/init.plugins` then lists it. Its notes are drawn by the terminal UI ("above the prompt", via the plugin `ui.render` surface); the public SDK has no message or callback for that surface. Two test runs (`tools/verify-ysk.mjs`: Haiku with 5 tool calls, then Sonnet with 12 tool calls and the session held open 90 s) produced no note in the stream, and the plugin never wrote its state file (`~/.claude/plugins/store/`), so it does not activate in SDK sessions. Replaced by callouts the agent tags itself (below), with the user's approval. |
 
 ## Usage panel
 
 Ported from `johmob/claude-usage-trafficmonitor`:
 `GET https://api.anthropic.com/api/oauth/usage` with `Authorization: Bearer <claudeAiOauth.accessToken>` from `%USERPROFILE%\.claude\.credentials.json` (or `%CLAUDE_CONFIG_DIR%`) and header `anthropic-beta: oauth-2025-04-20`. Fields `five_hour` / `seven_day` → `utilization` (percent) and `resets_at`. Poll every 180 s. Never refresh the token (that could log Claude Code out). Thresholds same as the plugin: orange from 70 % used, red from 90 % used.
 
-## "Bra att veta" (replacement for the You Should Know plugin)
+## Callouts: the agent tags what matters (replacement for the You Should Know plugin)
 
-After each finished turn with at least 3 tool calls, module `heads-up` sends one stateless Haiku request (`structured-query`, no tools, `persistSession: false`, nothing accumulated between calls, as spec §3 requires). The request holds a compact log of only that turn: the request, tool calls with status, agent text and system notes, capped at 8,000 characters. Haiku returns either nothing or one note (title of at most 8 words, at most 2 sentences, in Swedish). The note shows as a yellow box on the card until dismissed, and as a line in the transcript. It is skipped for ground-rules sessions and when the turn ended in an error (that already shows). The **Bra att veta** toggle in the top bar turns it off.
+Every session's system prompt includes `CALLOUT_PROTOCOL` (in session-engine). It asks the agent to end a message with GitHub alert blocks when something deserves attention:
 
-Verified: a turn that only did what was asked gave no note (Haiku: the final answer already covered it). A turn whose final answer said "Done" while one command had failed gave "Misslyckad läsning av settings-prod.json…".
+| Marker | Shown as | Used for |
+|---|---|---|
+| `> [!CAUTION]` | **Risk**, red, larger title | risky, destructive or irreversible actions; secrets and security |
+| `> [!WARNING]` | **Varning**, amber | something failed, was skipped or did not work |
+| `> [!IMPORTANT]` | **Bra att veta**, purple | easy to miss |
+| `> [!NOTE]` | **Antagande**, blue | an assumption made on the user's behalf |
+| `> [!TIP]` | **Förslag**, green, subdued | a suggested next step (transcript only, not on the card) |
+
+The format is plain markdown, so it also reads well in a terminal. session-engine splits each text block into a `text` event and labelled `callout` events, ignoring code fences. Saved history goes through the same path. The card shows the latest turn's callouts, most severe first, until dismissed (×) or the next turn starts. The dock shows the icon of the most severe one, and the transcript shows each one where it was written.
+
+Why the working agent tags its own callouts: it costs nothing extra, it knows its own assumptions and skipped steps, and the tag stays in the answer. Tested before building (Haiku and Sonnet, 4 scenarios each): a glossed-over failure, a missing file, routine success and a logged password were tagged WARNING, WARNING/NOTE, nothing and CAUTION respectively, 8 out of 8 correct. The weakness is self-assessment: in long runs the agent cannot flag what it does not notice.
+
+**Granskning (optional, off by default).** For that weakness, module `turn-review` can send one stateless Haiku request after each turn with at least 3 tool calls (`structured-query`, no tools, `persistSession: false`, nothing accumulated, as spec §3 requires). The request holds a log of only that turn, capped at 8,000 characters, including the callouts the agent already gave. It returns at most one extra callout, marked "granskning". Verified: a turn that only did what was asked gave nothing; a turn answering "Done" over a failed command gave a correct warning. The toggle is **Granskning** in the top bar.
 
 `structured-query` is also what the project locator uses. The root passes the function into both modules, so neither imports the other.
 

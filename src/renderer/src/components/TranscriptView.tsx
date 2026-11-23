@@ -1,13 +1,8 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { TranscriptEntry } from '../../../shared/contracts';
 import { Spinner } from './Atoms';
-
-const markdownComponents = {
-  // Links open nothing: render them as plain text.
-  a: ({ children }: { children?: ReactNode }) => <span className="md-link">{children}</span>,
-};
+import { CalloutBox } from './CalloutBox';
+import { MarkdownText } from './MarkdownText';
 
 function Thinking({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -35,11 +30,11 @@ function Entry({ entry }: { entry: TranscriptEntry }) {
       return (
         <div className="t-assistant">
           <Thinking text={entry.thinking} />
-          <div className="md">
-            <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{entry.text}</Markdown>
-          </div>
+          <MarkdownText text={entry.text} />
         </div>
       );
+    case 'callout':
+      return <CalloutBox callout={entry.callout} />;
     case 'tool':
       return (
         <div className="t-tool-wrap">

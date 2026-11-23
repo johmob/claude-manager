@@ -40,12 +40,12 @@ describe('reviewTurn', () => {
 
   it('asks Haiku without tools and returns the note', async () => {
     let request: StructuredRequest | null = null;
-    const note = await reviewTurn(digestTurn(entries), async (r) => ((request = r), { worthKnowing: true, title: 'notes.txt raderades', text: 'Filen togs bort med rm.' }), 'C:\\x');
-    expect(note).toEqual({ title: 'notes.txt raderades', text: 'Filen togs bort med rm.' });
+    const note = await reviewTurn(digestTurn(entries), async (r) => ((request = r), { worthKnowing: true, kind: 'caution', title: 'notes.txt raderades', text: 'Filen togs bort med rm.' }), 'C:\\x');
+    expect(note).toEqual({ kind: 'caution', title: 'notes.txt raderades', text: 'Filen togs bort med rm.', source: 'review' });
     expect(request).toMatchObject({ model: 'haiku', tools: [], cwd: 'C:\\x' });
   });
 
   it('returns null when nothing is worth knowing', async () => {
-    expect(await reviewTurn(digestTurn(entries), async () => ({ worthKnowing: false, title: '', text: '' }), 'C:\\')).toBeNull();
+    expect(await reviewTurn(digestTurn(entries), async () => ({ worthKnowing: false, kind: 'note', title: '', text: '' }), 'C:\\')).toBeNull();
   });
 });

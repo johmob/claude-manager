@@ -17,9 +17,9 @@ const EDGES: { value: DockEdge; label: string }[] = [
   { value: 'center', label: 'Mitten' },
 ];
 
-function Toggle(props: { label: string; on: boolean; onChange: (on: boolean) => void }) {
+function Toggle(props: { label: string; on: boolean; onChange: (on: boolean) => void; title?: string }) {
   return (
-    <button type="button" className={props.on ? 'toggle on' : 'toggle'} aria-pressed={props.on} onClick={() => props.onChange(!props.on)}>
+    <button type="button" title={props.title} className={props.on ? 'toggle on' : 'toggle'} aria-pressed={props.on} onClick={() => props.onChange(!props.on)}>
       <span className="toggle-dot" />
       {props.label}
     </button>
@@ -43,7 +43,12 @@ export function TopBar({ settings, view, onView, onDialog }: TopBarProps) {
       <span className="spacer" />
       <div className="topbar-group">
         <Toggle label="Stör ej" on={settings.doNotDisturb} onChange={(doNotDisturb) => send('settings:update', { doNotDisturb })} />
-        <Toggle label="Bra att veta" on={settings.headsUpEnabled} onChange={(headsUpEnabled) => send('settings:update', { headsUpEnabled })} />
+        <Toggle
+          label="Granskning"
+          title="Extra, oberoende granskning av varje avslutad tur med Haiku (kostar lite kvot). Agenterna taggar viktiga saker själva ändå."
+          on={settings.reviewEnabled}
+          onChange={(reviewEnabled) => send('settings:update', { reviewEnabled })}
+        />
         <Toggle label="Docka" on={settings.dockVisible} onChange={(dockVisible) => send('settings:update', { dockVisible })} />
         <select
           className="input compact"

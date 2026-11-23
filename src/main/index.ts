@@ -16,7 +16,7 @@ import type {
   SessionKind,
   SessionRecord,
 } from '../shared/contracts';
-import { createSessionEngine, loadHistory } from './modules/session-engine';
+import { CALLOUT_PROTOCOL, createSessionEngine, loadHistory } from './modules/session-engine';
 import { createSessionModel } from './modules/session-model';
 import { createUsageMonitor } from './modules/usage-monitor';
 import { createTodoWatcher, TODO_PROTOCOL } from './modules/todo-tree';
@@ -25,7 +25,7 @@ import { pickColor } from './modules/palette';
 import { createGroundRules, groundRulesEditorPrompt } from './modules/ground-rules';
 import { createProjects, locateProject } from './modules/projects';
 import { structuredQuery } from './modules/structured-query';
-import { digestTurn, reviewTurn } from './modules/heads-up';
+import { digestTurn, reviewTurn } from './modules/turn-review';
 import { createNotifier } from './modules/notifier';
 import { createWindowManager } from './modules/window-manager';
 import { createTray } from './modules/tray';
@@ -34,7 +34,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: 'C:\\Kod',
   doNotDisturb: false,
   alertOnDone: false,
-  headsUpEnabled: true,
+  reviewEnabled: false,
   dockVisible: false,
   dockEdge: 'right',
   overlayVisible: false,
@@ -129,7 +129,7 @@ function boot(): void {
         if (settings.alertOnDone && !event.isError) {
           notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} är klar`, body: event.result, urgent: false });
         }
-        if (settings.headsUpEnabled && !event.isError && record && record.kind !== 'ground-rules') void reviewForHeadsUp(record);
+        if (settings.reviewEnabled && !event.isError && record && record.kind !== 'ground-rules') void reviewFinishedTurn(record);
         break;
       case 'rate_limit':
         usage.ingest(event.windows);
@@ -173,7 +173,7 @@ function boot(): void {
   }
 
   function composeAppend(): string {
-    return `${groundRules.read().trim()}\n\n${TODO_PROTOCOL}`;
+    return [groundRules.read().trim(), TODO_PROTOCOL, CALLOUT_PROTOCOL].join('\n\n');
   }
 
   function run(record: SessionRecord, prompt: string | undefined): void {
@@ -206,13 +206,13 @@ function boot(): void {
     return id;
   }
 
-  async function reviewForHeadsUp(record: SessionRecord): Promise<void> {
+  async function reviewFinishedTurn(record: SessionRecord): Promise<void> {
     try {
-      const note = await reviewTurn(digestTurn(model.transcript(record.id)), structuredQuery, record.cwd);
-      if (note) onSessionEvent({ type: 'heads_up', sessionId: record.id, note });
+      const callout = await reviewTurn(digestTurn(model.transcript(record.id)), structuredQuery, record.cwd);
+      if (callout) onSessionEvent({ type: 'callout', sessionId: record.id, callout });
     } catch (error) {
       // An optional extra: a failed review must never disturb the session itself.
-      console.warn('Bra att veta: granskningen misslyckades', error);
+      console.warn('Granskning av turen misslyckades', error);
     }
   }
 
@@ -330,8 +330,8 @@ function boot(): void {
     scheduleSync();
   });
 
-  handle('session:dismiss-heads-up', (req) => {
-    model.dismissHeadsUp(req.id);
+  handle('session:dismiss-callouts', (req) => {
+    model.dismissCallouts(req.id);
     scheduleSync();
   });
 
@@ -385,7 +385,7 @@ function validSettings(r: unknown): AppSettings | null {
     projectsRoot: typeof r['projectsRoot'] === 'string' && r['projectsRoot'] ? r['projectsRoot'] : d.projectsRoot,
     doNotDisturb: bool(r['doNotDisturb'], d.doNotDisturb),
     alertOnDone: bool(r['alertOnDone'], d.alertOnDone),
-    headsUpEnabled: bool(r['headsUpEnabled'], d.headsUpEnabled),
+    reviewEnabled: bool(r['reviewEnabled'], d.reviewEnabled),
     dockVisible: bool(r['dockVisible'], d.dockVisible),
     dockEdge: pick(r['dockEdge'], DOCK_EDGES, d.dockEdge),
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),
