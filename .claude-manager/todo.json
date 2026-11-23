@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-23T12:35:43Z",
+  "updated": "2026-11-23T12:46:51Z",
   "tracks": [
     {
       "id": "eng",
@@ -318,6 +318,33 @@
             {
               "id": "ui.5.2",
               "title": "Befintligt projekt: fortsätt senaste samtal",
+              "status": "done"
+            }
+          ]
+        },
+        {
+          "id": "ui.6",
+          "title": "Frågeflöde",
+          "notes": "Frågor och antaganden från agentens tur besvaras en i taget i helskärm och skickas tillbaka som ett meddelande.",
+          "items": [
+            {
+              "id": "ui.6.1",
+              "title": "Hitta frågor och antaganden (rubriker, frågetecken, QUESTION/NOTE)",
+              "status": "done"
+            },
+            {
+              "id": "ui.6.2",
+              "title": "Helskärmsflöde, en fråga i taget med eget svarsfält",
+              "status": "done"
+            },
+            {
+              "id": "ui.6.3",
+              "title": "Öppnas från overlay, när appen kommer fram och från kortets knapp",
+              "status": "done"
+            },
+            {
+              "id": "ui.6.4",
+              "title": "Alla svar skickas som ett meddelande",
               "status": "done"
             }
           ]

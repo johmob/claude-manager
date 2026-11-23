@@ -286,11 +286,11 @@ When something in this turn deserves attention, put it in its own alert block at
 > [!WARNING]   something failed, was skipped, or did not work as intended
 > [!QUESTION]  a question for the user that does not block your work
 > [!IMPORTANT] something the user should know but could easily miss
-> [!NOTE]      an assumption you made on the user's behalf
+> [!NOTE]      an assumption the user should confirm or correct
 > [!TIP]       a suggested next step
 Format: the marker line, then one line starting with "> " holding a short bold title and one sentence. Write the text in Swedish.
 Use at most three blocks per message, only when they add something; never tag routine success.
-Questions are the exception: never bury a question to the user in running text. Ask it with the AskUserQuestion tool when you need the answer before you continue; otherwise give each question its own [!QUESTION] block. When you end a turn with several questions, ask them with AskUserQuestion (up to four at a time) rather than as a list in your answer. The app shows exactly these two forms as waiting for the user: it alerts them and highlights the questions. A question written only as plain text is easy to miss.`;
+Questions are the exception: never bury a question to the user in running text. Ask it with the AskUserQuestion tool when you need the answer before you continue; otherwise give each question its own [!QUESTION] block. When you end a turn with several questions, ask them with AskUserQuestion (up to four at a time) rather than as a list in your answer. Assumptions the user should confirm or correct count as questions too: give each its own [!NOTE] block instead of a list under a heading. The app collects the questions and assumptions a turn ends with, asks the user one at a time and sends all the answers back to you in one message.`;
 
 const ALERT_LINE = /^\s*>\s*\[!(CAUTION|WARNING|QUESTION|IMPORTANT|NOTE|TIP)\]\s*(.*)$/i;
 const FENCE_LINE = /^\s*(```|~~~)/;

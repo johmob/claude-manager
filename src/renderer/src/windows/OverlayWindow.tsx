@@ -70,7 +70,8 @@ function AgentCount({ session }: { session: SessionSummary }) {
 /**
  * Click-through strip at the top of the screen: usage first, then one icon per session with its
  * status, and how many of its agents are working. Hovering shows details below. Icons take clicks while hovered
- * (click opens the session, right-click shows its work schema); everything else stays click-through.
+ * (click answers its questions if it has any, otherwise opens the session; right-click shows its work schema);
+ * everything else stays click-through.
  */
 export function OverlayWindow() {
   const state = useAppState();
@@ -112,11 +113,11 @@ export function OverlayWindow() {
             data-status={s.status}
             style={{ '--accent': s.color } as CSSProperties}
             onMouseEnter={() => setHovered(s.id)}
-            onClick={() => send('window:show-session', { id: s.id })}
+            onClick={() => (s.questions.length ? send('popup:open', { kind: 'questions', id: s.id }) : send('window:show-session', { id: s.id }))}
             onContextMenu={(e) => {
               e.preventDefault();
               setHovered(null);
-              send('overlay:open-schema', { id: s.id });
+              send('popup:open', { kind: 'schema', id: s.id });
             }}
           >
             <span className="ov-icon">
@@ -132,7 +133,7 @@ export function OverlayWindow() {
       {detailOpen && (
         <div className="ov-detail">
           {hovered === 'usage' ? <UsageDetail usage={state.usage} /> : session && <SessionInfo session={session} account={state.account} />}
-          <div className="ov-hint">{hovered === 'usage' ? 'Uppdateras automatiskt' : 'Klicka: öppna i appen · Högerklicka: arbetsschema'}</div>
+          <div className="ov-hint">{hovered === 'usage' ? 'Uppdateras automatiskt' : session?.questions.length ? 'Klicka: svara på frågorna · Högerklicka: arbetsschema' : 'Klicka: öppna i appen · Högerklicka: arbetsschema'}</div>
         </div>
       )}
     </div>

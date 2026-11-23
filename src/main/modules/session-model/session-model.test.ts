@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionEvent, SessionRecord, TodoNode, TodoTree } from '../../../shared/contracts';
-import { createSessionModel, findQuestions } from './index';
+import { createSessionModel, findOpenQuestions } from './index';
 
 const record: SessionRecord = {
   id: 's1',
@@ -172,25 +172,49 @@ describe('session-model', () => {
 describe('questions left for the user', () => {
   const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
 
-  it('finds questions in an answer, outside code and without list markers', () => {
-    const text = ['Klart med steg 1.', '', '1. **Ska jag köra B först?**', '- Vilken port gäller (COM3)?', '```', 'if (x?) y', '```', 'Säg till.'].join('\n');
-    expect(findQuestions(text)).toEqual(['Ska jag köra B först?', 'Vilken port gäller (COM3)?']);
+  it('finds questions, and items listed under question or assumption headings', () => {
+    const text = [
+      'Klart med steg 1.',
+      '',
+      '**Öppna frågor**',
+      '1. Vilken baudrate ska gälla',
+      '2. **Ska jag köra B först?**',
+      '',
+      'Antaganden, rätta om fel:',
+      '- Kortet är rev C6',
+      '- Displayen är urkopplad',
+      'Sammanfattningsvis gick allt bra.',
+      '- En vanlig punkt',
+      '```',
+      'if (x?) y',
+      '```',
+      'Vill du att jag fortsätter?',
+    ].join('\n');
+    expect(findOpenQuestions(text)).toEqual([
+      { kind: 'question', text: 'Vilken baudrate ska gälla', context: 'Öppna frågor' },
+      { kind: 'question', text: 'Ska jag köra B först?', context: 'Öppna frågor' },
+      { kind: 'assumption', text: 'Kortet är rev C6', context: 'Antaganden, rätta om fel' },
+      { kind: 'assumption', text: 'Displayen är urkopplad', context: 'Antaganden, rätta om fel' },
+      { kind: 'question', text: 'Vill du att jag fortsätter?', context: '' },
+    ]);
   });
 
-  it('waits for the user when the final answer ends with questions, until the next message', () => {
+  it('waits for the user when the final answer leaves questions, until the next message', () => {
     const { model, apply } = setup();
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'kör' });
     apply({ type: 'text', text: 'Är det rätt fil?' }); // an earlier text is not the final answer
-    apply({ type: 'text', text: 'Jag har två frågor:\n1. Ska jag byta till rev C7?\n2. Behåller vi 115 200 baud?' });
+    apply({ type: 'text', text: 'Jag har två frågor:\n1. Ska jag byta till rev C7?\n2. Behåller vi 115 200 baud' });
     apply(finish);
-    expect(model.summary('s1')).toMatchObject({ status: 'waiting' });
-    expect(model.summary('s1')?.callouts[0]).toMatchObject({ kind: 'question', title: '2 frågor till dig' });
+    const summary = model.summary('s1');
+    expect(summary).toMatchObject({ status: 'waiting', questionsId: '1000' });
+    expect(summary?.questions.map((q) => q.text)).toEqual(['Ska jag byta till rev C7?', 'Behåller vi 115 200 baud']);
+    expect(summary?.callouts[0]).toMatchObject({ kind: 'question', title: '2 frågor till dig' });
     apply({ type: 'turn_started', prompt: 'ja, och ja' });
-    expect(model.summary('s1')?.status).toBe('working');
+    expect(model.summary('s1')).toMatchObject({ status: 'working', questions: [] });
   });
 
-  it('counts a tagged question and ignores subagent text; dismissing ends the wait', () => {
+  it('counts tagged questions and assumption notes, ignores subagent text; dismissing ends the wait', () => {
     const { model, apply } = setup();
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'kör' });
@@ -199,8 +223,13 @@ describe('questions left for the user', () => {
     apply(finish);
     expect(model.summary('s1')?.status).toBe('done');
     apply({ type: 'turn_started', prompt: 'nästa' });
-    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'Rev C7?' } });
+    apply({ type: 'callout', callout: { kind: 'question', title: 'Rev', text: 'C7 eller C6?' } });
+    apply({ type: 'callout', callout: { kind: 'note', title: '', text: 'Displayen är urkopplad.' } });
     apply(finish);
+    expect(model.summary('s1')?.questions).toEqual([
+      { kind: 'question', text: 'Rev: C7 eller C6?', context: '' },
+      { kind: 'assumption', text: 'Displayen är urkopplad.', context: '' },
+    ]);
     expect(model.summary('s1')?.status).toBe('waiting');
     model.dismissCallouts('s1');
     expect(model.summary('s1')?.status).toBe('done');

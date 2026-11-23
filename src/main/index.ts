@@ -194,8 +194,8 @@ function boot(): void {
         const asks = model.summary(event.sessionId);
         if (completed && asks?.status === 'waiting' && !asks.pendingCount) {
           // The turn ended with questions: as urgent as a question asked with the tool.
-          const question = asks.callouts.find((c) => c.kind === 'question');
-          notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} har frågor till dig`, body: question?.text ?? event.result, urgent: true });
+          const body = asks.questions.slice(0, 3).map((q) => q.text).join('\n');
+          notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} har ${asks.questions.length} frågor till dig`, body, urgent: true });
         } else if (settings.alertOnDone && completed) {
           notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} är klar`, body: event.result, urgent: false });
         }
@@ -663,9 +663,9 @@ function boot(): void {
   handle('window:show-session', (req) => showSession(req.id));
   handle('overlay:set-interactive', (req) => windows.setOverlayInteractive(req.interactive));
   handle('overlay:set-detail', (req) => windows.setOverlayDetail(req.open));
-  handle('overlay:open-schema', (req) => windows.openSchema(req.id));
-  handle('schema:close', () => windows.closeSchema());
-  handle('schema:current', () => windows.schemaSession());
+  handle('popup:open', (req) => windows.openPopup(req));
+  handle('popup:close', () => windows.closePopup());
+  handle('popup:current', () => windows.popupView());
 }
 
 // ---------- Pure helpers ----------

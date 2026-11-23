@@ -242,6 +242,22 @@ export type SessionEvent =
 
 export type SessionStatus = 'starting' | 'working' | 'waiting' | 'done' | 'idle' | 'error' | 'stopped';
 
+export type OpenQuestionKind = 'question' | 'assumption';
+
+/** Something the agent asked, or assumed and wants confirmed, at the end of a turn. */
+export interface OpenQuestion {
+  kind: OpenQuestionKind;
+  text: string;
+  /** The heading it was listed under, e.g. "Antaganden, rätta om fel"; empty when none. */
+  context: string;
+}
+
+/** What the popup window over the screen shows: a session's work schema or its questions. */
+export interface PopupView {
+  kind: 'schema' | 'questions';
+  id: string;
+}
+
 export interface SessionSummary {
   id: string;
   name: string;
@@ -268,6 +284,10 @@ export interface SessionSummary {
   lastError: string | null;
   /** Callouts from the latest turn, most severe first, until dismissed or the next turn starts. */
   callouts: Callout[];
+  /** Questions and assumptions the latest turn left for the user; empty once answered or dismissed. */
+  questions: OpenQuestion[];
+  /** Changes with every turn that leaves new questions, so a set put off can be told from a new one. */
+  questionsId: string;
   tokensUsed: number;
   /** How full the context window is, measured after the latest turn; null before the first one. */
   context: ContextUsage | null;
@@ -379,11 +399,11 @@ export interface IpcInvokeMap {
   'overlay:set-interactive': { req: { interactive: boolean }; res: void };
   /** Grows the overlay to show details under the icons (while hovered), or shrinks it back. */
   'overlay:set-detail': { req: { open: boolean }; res: void };
-  /** Shows a session's work schema in its own window over the screen, without bringing the main window forward. */
-  'overlay:open-schema': { req: { id: string }; res: void };
-  'schema:close': { req: void; res: void };
-  /** The session the schema window shows (asked once when the window has loaded). */
-  'schema:current': { req: void; res: string | null };
+  /** Shows a session's work schema or questions in the popup window over the screen, without the main window. */
+  'popup:open': { req: PopupView; res: void };
+  'popup:close': { req: void; res: void };
+  /** What the popup window shows (asked once when the window has loaded). */
+  'popup:current': { req: void; res: PopupView | null };
 }
 
 /** Main -> renderer pushes. */
@@ -396,8 +416,8 @@ export interface IpcEventMap {
   /** Replaces a whole transcript, e.g. after saved history was loaded in front of it. */
   'session:transcript-reset': { id: string; entries: TranscriptEntry[] };
   'ui:open-session': { id: string };
-  /** Tells the schema window which session to show. */
-  'schema:show': { id: string };
+  /** Tells the popup window what to show. */
+  'popup:show': PopupView;
 }
 
 export type IpcInvokeChannel = keyof IpcInvokeMap;

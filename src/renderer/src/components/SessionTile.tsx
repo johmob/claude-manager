@@ -5,6 +5,7 @@ import { AgentDots, ModelEffortPicker, StatusChip } from './Atoms';
 import { ChatInput } from './ChatInput';
 import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
+import { QuestionsButton } from './QuestionFlow';
 import { SchemaButton } from './SchemaButton';
 import { TranscriptView } from './TranscriptView';
 import { WorkSchema } from './WorkSchema';
@@ -26,6 +27,7 @@ export function SessionTile({ session }: { session: SessionSummary }) {
         <ContextMeter session={session} />
       </div>
       <TranscriptView entries={entries} sessionId={session.id} />
+      <QuestionsButton session={session} />
       <PendingPanel session={session} />
       <ChatInput session={session} />
       {schemaOpen && <WorkSchema session={session} onClose={() => setSchemaOpen(false)} />}

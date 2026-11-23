@@ -2,6 +2,7 @@
 // SessionSummary cards and TranscriptEntry lists the UI shows. No I/O, no timers.
 import { CALLOUT_KINDS } from '../../../shared/contracts';
 import type {
+  OpenQuestion,
   Callout,
   ContextUsage,
   PendingInput,
@@ -53,8 +54,9 @@ interface SessionState {
   callouts: Callout[];
   /** The main agent's latest text in the current turn; its questions are checked when the turn ends. */
   turnText: string;
-  /** The turn ended with questions to the user (a [!QUESTION] block or questions in its final answer). */
-  awaitingAnswer: boolean;
+  /** What the last turn left for the user to answer or confirm; the session waits while there are any. */
+  questions: OpenQuestion[];
+  questionsId: string;
   mapping: boolean;
   context: ContextUsage | null;
   todo: TodoTree | null;
@@ -89,7 +91,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       lastError: null,
       callouts: [],
       turnText: '',
-      awaitingAnswer: false,
+      questions: [],
+      questionsId: '',
       mapping: false,
       context: null,
       todo: null,
@@ -133,22 +136,25 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     };
     const system = (text: string, level: 'info' | 'warning' | 'error'): TranscriptEntry[] => add({ kind: 'system', text, level });
     /**
-     * A finished turn that leaves questions for the user waits for an answer. Questions the agent tagged
-     * ([!QUESTION]) count as they are; questions left as plain text in its final answer are collected into
-     * one question box, so they stand out on the card and in the transcript.
+     * A finished turn that leaves questions or assumptions for the user waits for an answer. Tagged ones
+     * ([!QUESTION], and [!NOTE] for assumptions) count as they are; those left as plain text in the final
+     * answer (lines ending in "?", lists under question or assumption headings) are also gathered into
+     * one box, so they stand out in the transcript. The user answers them all in the question flow.
      */
     const collectQuestions = (): TranscriptEntry[] => {
-      if (s.callouts.some((c) => c.kind === 'question')) {
-        s.awaitingAnswer = true;
-        return [];
-      }
-      const found = findQuestions(s.turnText);
+      const tagged = s.callouts.flatMap((c): OpenQuestion[] =>
+        c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), context: '' }] : [],
+      );
+      const found = findOpenQuestions(s.turnText);
+      const seen = new Set<string>();
+      s.questions = [...tagged, ...found].filter((q) => !seen.has(q.text) && seen.add(q.text)).slice(0, MAX_QUESTIONS);
+      s.questionsId = s.questions.length ? String(at) : '';
       if (!found.length) return [];
-      s.awaitingAnswer = true;
+      const assumptions = found.filter((q) => q.kind === 'assumption').length;
       const callout: Callout = {
         kind: 'question',
-        title: found.length === 1 ? 'Fråga till dig' : `${found.length} frågor till dig`,
-        text: found.map((q) => `- ${q}`).join('\n'),
+        title: assumptions === found.length ? 'Antaganden att bekräfta' : found.length === 1 ? 'Fråga till dig' : `${found.length} frågor till dig`,
+        text: found.map((q) => `- ${q.kind === 'assumption' && assumptions < found.length ? 'Antagande: ' : ''}${q.text}`).join('\n'),
       };
       s.callouts.push(callout);
       return add({ kind: 'callout', callout });
@@ -172,7 +178,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.lastActivity = '';
         s.callouts = [];
         s.turnText = '';
-        s.awaitingAnswer = false;
+        s.questions = [];
+        s.questionsId = '';
         return add({ kind: 'user', text: event.prompt });
       case 'thinking':
         markActive('Tänker…');
@@ -285,6 +292,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       startedAt: s.startedAt,
       lastError: s.lastError,
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
+      questions: s.questions,
+      questionsId: s.questionsId,
       tokensUsed: record.tokensUsed,
       context: s.context,
       contextWindow: record.contextWindow,
@@ -329,7 +338,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       const s = states.get(id);
       if (s) {
         s.callouts = [];
-        s.awaitingAnswer = false;
+        s.questions = [];
+        s.questionsId = '';
       }
     },
     summaries: () => [...states.values()].map(summarize),
@@ -342,37 +352,71 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
 }
 
 function statusOf(s: SessionState): SessionStatus {
-  if (!s.running) return s.lastError ? 'error' : s.awaitingAnswer ? 'waiting' : 'stopped';
+  if (!s.running) return s.lastError ? 'error' : s.questions.length ? 'waiting' : 'stopped';
   if (s.pending.length) return 'waiting';
   if (s.turnActive) return 'working';
-  if (s.awaitingAnswer) return 'waiting';
+  if (s.questions.length) return 'waiting';
   if (s.lastError) return 'error';
   return s.unseenDone ? 'done' : 'idle';
 }
 
-const MAX_QUESTIONS = 12;
+const MAX_QUESTIONS = 20;
 const QUESTION_END = /\?["”'»)]*$/;
+const QUESTION_HEADING = /fråg|question/i;
+const ASSUMPTION_HEADING = /antag|assum|rätta|bekräfta|stämmer det/i;
+const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+(.*)$/;
+
+function clean(text: string): string {
+  return text.replace(/^\s*>\s?/, '').replace(/\*\*|__|`/g, '').trim();
+}
+
+function calloutText(c: Callout): string {
+  return c.title && c.text ? `${c.title}: ${c.text}` : c.title || c.text;
+}
+
+/** The text of a heading line: "## Frågor", "**Antaganden:**" or a short line ending in a colon. */
+function headingText(raw: string): string | null {
+  const match =
+    /^\s*#{1,6}\s+(.+?)\s*#*\s*$/.exec(raw) ??
+    /^\s*(?:\*\*|__)(.+?)(?:\*\*|__)\s*:?\s*$/.exec(raw) ??
+    /^\s*(?![-*+]\s|\d+[.)]\s|>)(.{2,80}):\s*$/.exec(raw);
+  return match ? clean(match[1]!).replace(/:$/, '').trim() : null;
+}
 
 /**
- * Questions to the user in an answer: lines that end with a question mark, outside code blocks, without
- * list markers and emphasis. A turn's final answer that ends this way is asking the user something.
+ * What an answer asks of the user: lines ending in a question mark, and every item listed under a
+ * heading about questions ("Öppna frågor") or assumptions ("Antaganden, rätta om fel"). Code blocks are
+ * skipped; a paragraph or another heading ends a list.
  */
-export function findQuestions(text: string): string[] {
-  const found: string[] = [];
+export function findOpenQuestions(text: string): OpenQuestion[] {
+  const found: OpenQuestion[] = [];
   let inFence = false;
+  let section: { kind: OpenQuestion['kind']; context: string } | null = null;
   for (const raw of text.split(/\r?\n/)) {
     if (/^\s*(```|~~~)/.test(raw)) {
       inFence = !inFence;
       continue;
     }
-    if (inFence) continue;
-    const line = raw
-      .replace(/^\s*(?:>\s*)?(?:#{1,6}\s+)?(?:[-*+]\s+|\d+[.)]\s+)?/, '')
-      .replace(/\*\*|__|`/g, '')
-      .trim();
-    if (line.length >= 6 && QUESTION_END.test(line)) found.push(line);
+    if (inFence || !raw.trim()) continue;
+    const heading = headingText(raw);
+    if (heading !== null && !QUESTION_END.test(heading)) {
+      section = ASSUMPTION_HEADING.test(heading)
+        ? { kind: 'assumption', context: heading }
+        : QUESTION_HEADING.test(heading)
+          ? { kind: 'question', context: heading }
+          : null;
+      continue;
+    }
+    const item = LIST_ITEM.exec(raw);
+    const line = clean(item ? item[1]! : raw);
+    if (item && section) {
+      if (line) found.push({ kind: section.kind, text: line, context: section.context });
+      continue;
+    }
+    if (!item && !/^\s/.test(raw)) section = null;
+    if (line.length >= 6 && QUESTION_END.test(line)) found.push({ kind: 'question', text: line, context: '' });
   }
-  return found.slice(0, MAX_QUESTIONS);
+  return found;
 }
 
 /**

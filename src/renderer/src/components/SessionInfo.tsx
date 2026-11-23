@@ -9,11 +9,10 @@ import { StatusChip } from './Atoms';
 function waitingFor(session: SessionSummary): string | null {
   const p = session.pending;
   if (p) return p.kind === 'question' ? p.questions.map((q) => q.question).join(' · ') : `Behörighet: ${p.summary}`;
-  if (session.status !== 'waiting') return null;
-  const asked = session.callouts.filter((c) => c.kind === 'question');
-  const lines = asked.flatMap((c) => c.text.split('\n')).map((l) => l.replace(/^\s*[-*]\s+/, '').trim()).filter(Boolean);
-  if (!lines.length) return null;
-  return lines.length > 3 ? `${lines.slice(0, 3).join(' · ')} · +${lines.length - 3} till` : lines.join(' · ');
+  const { questions } = session;
+  if (!questions.length) return null;
+  const first = questions[0]!.text;
+  return questions.length === 1 ? first : `${questions.length} frågor. Första: ${first}`;
 }
 
 /** A labelled row: muted label on the left, the value on the right. */

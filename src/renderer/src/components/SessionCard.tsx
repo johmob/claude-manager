@@ -8,6 +8,7 @@ import { CalloutBox } from './CalloutBox';
 import { ChatInput } from './ChatInput';
 import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
+import { QuestionsButton } from './QuestionFlow';
 import { SchemaButton } from './SchemaButton';
 
 interface SessionCardProps {
@@ -82,7 +83,8 @@ function useSingleOrDoubleClick(single: () => void, double: () => void) {
 
 /** What the latest turn tagged (suggestions stay in the transcript), until dismissed. */
 function CardCallouts({ session }: { session: SessionSummary }) {
-  const shown = session.callouts.filter((c) => c.kind !== 'tip');
+  // Questions and assumptions are answered in the question flow (the button above), so they are not repeated here.
+  const shown = session.callouts.filter((c) => c.kind !== 'tip' && !(session.questions.length && (c.kind === 'question' || c.kind === 'note')));
   if (!shown.length) return null;
   return (
     <div className="card-callouts">
@@ -117,6 +119,7 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
         <ContextMeter session={session} />
         {session.lastError && <div className="card-error">{session.lastError}</div>}
       </div>
+      <QuestionsButton session={session} />
       <CardCallouts session={session} />
       <PendingPanel session={session} />
       {!session.pending && (

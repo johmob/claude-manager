@@ -1,8 +1,8 @@
-// window-manager: creates and positions the app's windows (main, dock, overlay, and the schema window).
+// window-manager: creates and positions the app's windows (main, dock, overlay, and the popup over the screen).
 // Knows nothing about sessions beyond how many cards the dock and overlay must fit.
 import { BrowserWindow, screen } from 'electron';
 import type { NativeImage, Rectangle } from 'electron';
-import type { DockEdge, IpcEventChannel, IpcEventMap, IpcInvokeMap } from '../../../shared/contracts';
+import type { DockEdge, IpcEventChannel, IpcEventMap, IpcInvokeMap, PopupView } from '../../../shared/contracts';
 
 type SnapMode = IpcInvokeMap['window:snap']['req']['mode'];
 
@@ -29,11 +29,11 @@ export interface WindowManager {
   /** Shows or hides the detail area under the overlay icons. */
   setOverlayDetail(open: boolean): void;
   setOverlayInteractive(interactive: boolean): void;
-  /** Shows a session's work schema in a transparent window over the primary screen, focused but without the main window. */
-  openSchema(sessionId: string): void;
-  closeSchema(): void;
-  /** The session the schema window shows, or null. */
-  schemaSession(): string | null;
+  /** Shows a session's work schema or questions in a transparent window over the primary screen, focused, without the main window. */
+  openPopup(view: PopupView): void;
+  closePopup(): void;
+  /** What the popup shows, or null. */
+  popupView(): PopupView | null;
   /** Left or right half, maximised, or back from maximised. */
   snap(mode: SnapMode): void;
   /** Maximises the main window when its content is narrower than `width`; true when it did. */
@@ -53,7 +53,7 @@ const OVERLAY_DETAIL_HEIGHT = 280;
 const OVERLAY_DETAIL_WIDTH = 284;
 const EDGE_MARGIN = 8;
 
-type Route = 'main' | 'dock' | 'overlay' | 'schema';
+type Route = 'main' | 'dock' | 'overlay' | 'popup';
 
 export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   let closeAllowed = false;
@@ -80,8 +80,8 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   let overlayInteractive = false;
   let overlayDetail = false;
   let overlayCount = 0;
-  let schema: BrowserWindow | null = null;
-  let schemaSessionId: string | null = null;
+  let popup: BrowserWindow | null = null;
+  let popupShows: PopupView | null = null;
 
   function createWindow(route: Route, options: Electron.BrowserWindowConstructorOptions): BrowserWindow {
     const win = new BrowserWindow({
@@ -168,20 +168,20 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     else overlay.setIgnoreMouseEvents(true, { forward: true });
   }
 
-  function openSchema(sessionId: string): void {
-    schemaSessionId = sessionId;
+  function openPopup(view: PopupView): void {
+    popupShows = view;
     const area = screen.getPrimaryDisplay().workArea;
     const reveal = (win: BrowserWindow): void => {
       win.setBounds(area);
-      win.webContents.send('schema:show', { id: sessionId });
+      win.webContents.send('popup:show', view);
       win.show();
       win.focus();
     };
-    if (schema && !schema.isDestroyed()) {
-      reveal(schema);
+    if (popup && !popup.isDestroyed()) {
+      reveal(popup);
       return;
     }
-    const win = createWindow('schema', {
+    const win = createWindow('popup', {
       show: false,
       frame: false,
       transparent: true,
@@ -194,16 +194,16 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
       hasShadow: false,
       alwaysOnTop: true,
       backgroundColor: '#00000000',
-      title: 'Arbetsschema',
+      title: 'Claude Manager',
     });
     win.setAlwaysOnTop(true, 'floating');
     win.once('ready-to-show', () => reveal(win));
-    schema = win;
+    popup = win;
   }
 
-  function closeSchema(): void {
-    schemaSessionId = null;
-    if (schema && !schema.isDestroyed()) schema.hide();
+  function closePopup(): void {
+    popupShows = null;
+    if (popup && !popup.isDestroyed()) popup.hide();
   }
 
   function snap(mode: SnapMode): void {
@@ -238,19 +238,19 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     setOverlay,
     setOverlayInteractive,
     setOverlayDetail,
-    openSchema,
-    closeSchema,
-    schemaSession: () => schemaSessionId,
+    openPopup,
+    closePopup,
+    popupView: () => popupShows,
     snap,
     ensureWidth,
     flash: (on) => main.flashFrame(on && !main.isFocused()),
     send: (channel, payload) => {
-      for (const win of [main, dock, overlay, schema]) {
+      for (const win of [main, dock, overlay, popup]) {
         if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
       }
     },
     destroyAll: () => {
-      for (const win of [schema, dock, overlay, main]) if (win && !win.isDestroyed()) win.destroy();
+      for (const win of [popup, dock, overlay, main]) if (win && !win.isDestroyed()) win.destroy();
     },
   };
 }

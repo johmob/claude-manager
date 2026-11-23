@@ -27,7 +27,7 @@
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--text); font: 13px/1.45 var(--font); overflow: hidden; }
-html[data-window="dock"] body, html[data-window="overlay"] body, html[data-window="schema"] body { background: transparent; }
+html[data-window="dock"] body, html[data-window="overlay"] body, html[data-window="popup"] body { background: transparent; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -533,3 +533,43 @@ textarea.input { resize: vertical; }
 @keyframes ws-focus-glow { 0%, 100% { box-shadow: 0 0 0 1px rgba(251,191,36,.35), 0 0 10px rgba(251,191,36,.22); } 50% { box-shadow: 0 0 0 1px rgba(251,191,36,.75), 0 0 24px rgba(251,191,36,.5); } }
 .btn.small.focus { border-color: rgba(251,191,36,.6); color: #fbbf24; }
 .btn.small.focus:hover { background: rgba(251,191,36,.12); }
+
+/* ---------- Questions: the button on cards and tiles, and the full-screen flow ---------- */
+.questions-btn { display: flex; align-items: center; gap: 10px; width: calc(100% - 24px); margin: 0 12px 8px; padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(250,204,21,.6); background: rgba(250,204,21,.1); color: #fde68a; font: inherit; text-align: left; cursor: pointer; animation: q-pulse 1.6s ease-in-out infinite; }
+.questions-btn:hover { background: rgba(250,204,21,.18); }
+.questions-btn-icon { width: 24px; height: 24px; flex: none; border-radius: 50%; display: grid; place-items: center; background: #facc15; color: #1a1405; font-weight: 900; }
+.questions-btn-text { flex: 1; min-width: 0; font-size: 12.5px; }
+.questions-btn-text strong { font-size: 14px; color: #fff3c4; }
+.questions-btn-go { font-size: 18px; color: #facc15; }
+.tile .questions-btn { width: auto; margin: 6px 10px; }
+@keyframes q-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(250,204,21,0); } 50% { box-shadow: 0 0 12px 2px rgba(250,204,21,.35); } }
+.qf { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 10px 0 24px; }
+.qf-steps { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.qf-step-dot { min-width: 30px; height: 30px; padding: 0 8px; border-radius: 15px; border: 1px solid var(--border); background: var(--bg-card); color: var(--muted); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.qf-step-dot[data-kind="assumption"] { border-style: dashed; }
+.qf-step-dot[data-answered] { background: rgba(62,207,142,.16); border-color: rgba(62,207,142,.6); color: var(--green); }
+.qf-step-dot[data-current] { border-color: #facc15; color: #fff; box-shadow: 0 0 0 2px rgba(250,204,21,.35); }
+.qf-step-review { padding: 0 12px; }
+.qf-card, .qf-review { width: min(780px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 26px 28px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border); border-top: 4px solid #facc15; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
+.qf-card[data-kind="assumption"] { border-top-color: #5b9cff; }
+.qf-kind { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #facc15; }
+.qf-card[data-kind="assumption"] .qf-kind { color: #8fb8ff; }
+.qf-count { color: var(--muted); letter-spacing: 0; text-transform: none; font-weight: 600; font-size: 12px; }
+.qf-context { font-size: 12.5px; color: var(--muted); }
+.qf-question { font-size: 22px; font-weight: 650; line-height: 1.4; color: #fff; white-space: pre-wrap; overflow-wrap: anywhere; }
+.qf-answer { font-size: 15px; line-height: 1.45; min-height: 110px; resize: vertical; }
+.qf-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.qf-spacer { flex: 1; }
+.qf-ok { border-color: rgba(62,207,142,.6); color: var(--green); }
+.qf-review-head { font-size: 14px; color: var(--muted); }
+.qf-review-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 12px; max-height: 55vh; overflow: auto; }
+.qf-review-list li { cursor: pointer; }
+.qf-review-q { font-size: 15px; font-weight: 600; }
+.qf-review-a { margin-top: 3px; font-size: 13.5px; color: var(--green); white-space: pre-wrap; }
+.qf-review-a.qf-empty { color: var(--muted); font-style: italic; }
+.qf-tag { margin-right: 6px; padding: 1px 6px; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; color: #8fb8ff; border: 1px solid rgba(91,156,255,.5); vertical-align: 2px; }
+.qf-send { margin-left: auto; }
+/* The question flow fills the screen, with the question centred. */
+.modal.full:has(.qf) { height: 94vh; }
+.modal.full:has(.qf) .modal-body { flex: 1; display: flex; }
+.qf { flex: 1; justify-content: center; }
