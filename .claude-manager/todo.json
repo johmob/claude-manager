@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-23T13:23:17Z",
+  "updated": "2026-11-23T14:01:18Z",
   "tracks": [
     {
       "id": "eng",
@@ -479,7 +479,7 @@
           "id": "dist.1",
           "title": "Genomgång av personlig information i repot",
           "status": "done",
-          "notes": "Testdata och referenser rensade. Kvar: författaruppgifter i git-historiken (beslut från användaren)."
+          "notes": "Testdata och referenser rensade, git-historiken omskriven till anonym GitHub-adress."
         },
         {
           "id": "dist.2",
@@ -499,7 +499,7 @@
         {
           "id": "dist.5",
           "title": "Skriv om git-historiken till anonym e-post",
-          "status": "not_started",
+          "status": "done",
           "dependsOn": [
             "dist.1"
           ]
@@ -507,18 +507,20 @@
         {
           "id": "dist.6",
           "title": "Gör repot publikt och välj licens",
-          "status": "not_started",
+          "status": "done",
           "dependsOn": [
             "dist.5"
-          ]
+          ],
+          "notes": "Repot är publikt med MIT-licens."
         },
         {
           "id": "dist.7",
           "title": "Första releasen och installation av den hos användaren",
-          "status": "not_started",
+          "status": "done",
           "dependsOn": [
             "dist.6"
-          ]
+          ],
+          "notes": "Releaser publiceras med npm run release; appen uppdaterar sig själv när den är ledig."
         }
       ]
     }
