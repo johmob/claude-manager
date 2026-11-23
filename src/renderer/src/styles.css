@@ -235,7 +235,7 @@ textarea.input { resize: vertical; }
 .bubble { max-width: 92%; background: rgba(250,204,21,.06); border: 1px solid rgba(250,204,21,.2); color: #ece7d6; border-radius: 12px; padding: 8px 13px 10px; font-size: 0.875rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
 .bubble-head { margin-bottom: 2px; font-size: 0.6563rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #facc15; }
 .t-assistant { display: flex; gap: 6px; align-items: flex-start; }
-.md { min-width: 0; flex: 1; word-break: break-word; }
+.md { min-width: 0; max-width: 100%; flex: 1; word-break: break-word; }
 .md > :first-child { margin-top: 0; }
 .md > :last-child { margin-bottom: 0; }
 .md p { margin: .4em 0; }
@@ -635,8 +635,9 @@ textarea.input { resize: vertical; }
 .transcript .t-round .t-assistant[data-final] { flex-direction: column; background: none; padding: 2px 0 2px 12px; border-radius: 0; }
 
 /* ---------- Tables in agent text ---------- */
-.md table { display: block; width: max-content; max-width: 100%; overflow-x: auto; margin: .7em 0; border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: 8px; font-size: 0.85em; font-variant-numeric: tabular-nums; }
-.md th, .md td { padding: 6px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.md-table { max-width: 100%; overflow-x: auto; margin: .7em 0; border: 1px solid var(--border); border-radius: 8px; }
+.md table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85em; font-variant-numeric: tabular-nums; }
+.md th, .md td { min-width: 7em; padding: 6px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
 .md th + th, .md td + td { border-left: 1px solid rgba(255,255,255,.07); }
 .md thead th { background: rgba(255,255,255,.07); color: #fff; font-weight: 700; white-space: nowrap; }
 .md tbody tr:nth-child(even) td { background: rgba(255,255,255,.03); }
@@ -723,3 +724,8 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .ov-q-brief, .qf-brief { padding: 7px 10px; border-radius: 8px; background: rgba(255,255,255,.05); border-left: 2px solid var(--accent-ui); color: var(--muted); line-height: 1.45; }
 .ov-q-brief { font-size: 0.78rem; }
 .qf-brief { font-size: 0.9rem; }
+
+/* The answer block always takes the width of its round, never the width of its content (a wide table). */
+.transcript .t-round .t-assistant[data-final] { align-items: stretch; min-width: 0; }
+.t-assistant { min-width: 0; max-width: 100%; }
+.md pre { max-width: 100%; }

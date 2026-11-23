@@ -278,3 +278,19 @@ describe('question split from a statement on the same line', () => {
     expect(q).toMatchObject({ text: 'Ska jag fortsätta med nästa steg?', detail: 'Testet gick bra och allt är sparat.' });
   });
 });
+
+describe('open questions across turns', () => {
+  it('keeps them through a later turn without questions that the user did not start', () => {
+    const { model, apply } = setup();
+    const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'text', text: 'Ska jag fortsätta?' });
+    apply(finish);
+    // A subagent finishes and the agent writes again on its own.
+    apply({ type: 'text', text: 'Subagenten är klar.' });
+    apply(finish);
+    expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Ska jag fortsätta?']);
+    expect(model.summary('s1')?.status).toBe('waiting');
+  });
+});

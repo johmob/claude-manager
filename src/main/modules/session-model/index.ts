@@ -62,6 +62,8 @@ interface SessionState {
   questions: OpenQuestion[];
   questionsId: string;
   questionsAnswer: string;
+  /** Callouts that came before the latest turn ended; only newer ones are this turn's questions. */
+  calloutsBefore: number;
   mapping: boolean;
   context: ContextUsage | null;
   todo: TodoTree | null;
@@ -100,6 +102,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       questions: [],
       questionsId: '',
       questionsAnswer: '',
+      calloutsBefore: 0,
       mapping: false,
       context: null,
       todo: null,
@@ -149,14 +152,20 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
      * one box, so they stand out in the transcript. The user answers them all in the question flow.
      */
     const collectQuestions = (): TranscriptEntry[] => {
-      const tagged = s.callouts.flatMap((c): OpenQuestion[] =>
+      const fresh = s.callouts.slice(s.calloutsBefore);
+      s.calloutsBefore = s.callouts.length;
+      const tagged = fresh.flatMap((c): OpenQuestion[] =>
         c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), context: '', detail: '', brief: '' }] : [],
       );
       const found = findOpenQuestions(s.turnText);
       const seen = new Set<string>();
-      s.questions = [...tagged, ...found].filter((q) => !seen.has(q.text) && seen.add(q.text)).slice(0, MAX_QUESTIONS);
-      s.questionsId = s.questions.length ? String(at) : '';
-      s.questionsAnswer = s.questions.length ? s.turnText : '';
+      const asked = [...tagged, ...found].filter((q) => !seen.has(q.text) && seen.add(q.text)).slice(0, MAX_QUESTIONS);
+      // A turn the user did not start (e.g. after a subagent finished) without questions leaves the open
+      // ones as they are: they are still unanswered. Only new questions replace them.
+      if (!asked.length) return [];
+      s.questions = asked;
+      s.questionsId = String(at);
+      s.questionsAnswer = s.turnText;
       if (!found.length) return [];
       const assumptions = found.filter((q) => q.kind === 'assumption').length;
       const callout: Callout = {
@@ -165,6 +174,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         text: found.map((q) => `- ${q.kind === 'assumption' && assumptions < found.length ? 'Antagande: ' : ''}${q.text}`).join('\n'),
       };
       s.callouts.push(callout);
+      s.calloutsBefore = s.callouts.length;
       return add({ kind: 'callout', callout });
     };
 
@@ -190,6 +200,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.questions = [];
         s.questionsId = '';
         s.questionsAnswer = '';
+        s.calloutsBefore = 0;
         return add({ kind: 'user', text: event.prompt });
       case 'thinking':
         markActive('Tänker…');
@@ -362,6 +373,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.questions = [];
         s.questionsId = '';
         s.questionsAnswer = '';
+        s.calloutsBefore = 0;
       }
     },
     summaries: () => [...states.values()].map(summarize),
