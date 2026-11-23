@@ -3,6 +3,7 @@
 import { CALLOUT_KINDS } from '../../../shared/contracts';
 import type {
   Callout,
+  ContextUsage,
   PendingInput,
   SessionEvent,
   SessionRecord,
@@ -47,7 +48,7 @@ interface SessionState {
   lastActivity: string;
   lastError: string | null;
   callouts: Callout[];
-  costUsd: number;
+  context: ContextUsage | null;
   todo: TodoTree | null;
   slashCommands: string[];
   transcript: TranscriptEntry[];
@@ -78,7 +79,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       lastActivity: '',
       lastError: null,
       callouts: [],
-      costUsd: 0,
+      context: null,
       todo: null,
       slashCommands: [],
       transcript: [],
@@ -182,12 +183,16 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         return system('Konversationen rensades.', 'info');
       case 'model_changed':
         return system(`Modell bytt till ${event.model}.`, 'info');
+      case 'context_usage':
+        s.context = event.usage;
+        return [];
+      case 'context_window_changed':
+        return system(`Kontextfönster: ${event.window === 'auto' ? 'modellens eget' : `${Math.round(event.window / 1000)}k tokens`}.`, 'info');
       case 'effort_changed':
         return system(`Effort bytt till ${event.effort}.`, 'info');
       case 'turn_finished': {
         s.turnActive = false;
         s.turnStartedAt = null;
-        s.costUsd = event.costUsd;
         s.lastActivity = '';
         s.unseenDone = !event.isError && !event.interrupted;
         s.lastError = event.isError ? event.result : null;
@@ -213,7 +218,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.pending = [];
         s.subagents.clear();
         s.pendingThinking = '';
-        return system('Sessionen är stoppad.', 'info');
+        // The card's status already says it stopped; a restart (e.g. a new context window) should not look like a halt.
+        return [];
     }
   }
 
@@ -237,7 +243,9 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       startedAt: s.startedAt,
       lastError: s.lastError,
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
-      costUsd: s.costUsd,
+      tokensUsed: record.tokensUsed,
+      context: s.context,
+      contextWindow: record.contextWindow,
       todo: s.todo,
       resumable: !s.running,
       focused: record.focused,

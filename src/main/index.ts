@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import iconPath from '../../resources/icon.png?asset';
-import { DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES } from '../shared/contracts';
+import { CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
@@ -66,6 +66,8 @@ function boot(): void {
   const claudeDir = process.env['CLAUDE_CONFIG_DIR'] || join(homedir(), '.claude');
   const icon = nativeImage.createFromPath(iconPath);
   let syncTimer: NodeJS.Timeout | null = null;
+  /** Sessions whose new context window applies once the current turn is done. */
+  const awaitingRestart = new Set<string>();
   let quitting = false;
 
   // ---------- Persistence ----------
@@ -157,12 +159,13 @@ function boot(): void {
         if (!model.summary(event.sessionId)?.pendingCount) notifier.clear(event.sessionId);
         break;
       case 'turn_finished': {
-        if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString() });
+        if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
         const completed = !event.isError && !event.interrupted;
         if (settings.alertOnDone && completed) {
           notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} är klar`, body: event.result, urgent: false });
         }
         if (settings.reviewEnabled && completed && record && record.kind !== 'ground-rules') void reviewFinishedTurn(record);
+        if (awaitingRestart.delete(event.sessionId)) void restart(event.sessionId);
         break;
       }
       case 'rate_limit':
@@ -209,6 +212,12 @@ function boot(): void {
     scheduleSync();
   }
 
+  /** Restarts a running session with its saved settings, continuing the same conversation. */
+  async function restart(id: string): Promise<void> {
+    await engine.stop(id);
+    run(requireRecord(id), undefined);
+  }
+
   /** Moves a session into Fokus (others leave when there are too many). */
   function focus(id: string): void {
     saveRecords(bringIntoFocus(records, id));
@@ -245,6 +254,7 @@ function boot(): void {
       cwd: record.cwd,
       model: record.model,
       effort: record.effort,
+      contextWindow: record.contextWindow,
       permissionMode: record.permissionMode,
       appendSystemPrompt: composeAppend(),
       resumeClaudeSessionId: record.claudeSessionId,
@@ -266,6 +276,8 @@ function boot(): void {
       archived: false,
       focused: false,
       lastActiveAt: new Date().toISOString(),
+      contextWindow: 'auto',
+      tokensUsed: 0,
     };
     saveRecord(record);
     focus(id);
@@ -293,6 +305,8 @@ function boot(): void {
       archived: false,
       focused: false,
       lastActiveAt: new Date(candidate.lastActivity).toISOString(),
+      contextWindow: 'auto',
+      tokensUsed: 0,
     };
     saveRecord(record);
     todo.watch(record.id, record.cwd);
@@ -426,12 +440,22 @@ function boot(): void {
   handle('session:answer', (req) => engine.answerQuestion(req.id, req.requestId, req.answers));
   handle('session:permission', (req) => engine.resolvePermission(req.id, req.requestId, req.decision));
   handle('session:interrupt', (req) => engine.interrupt(req.id));
-  handle('session:context-usage', (req) => engine.contextUsage(req.id));
   handle('session:transcript', (req) => model.transcript(req.id));
 
   handle('session:set-model', async (req) => {
     if (engine.isRunning(req.id)) await engine.setModel(req.id, req.model);
     else saveRecord({ ...requireRecord(req.id), model: req.model });
+  });
+
+  handle('session:set-context-window', async (req) => {
+    saveRecord({ ...requireRecord(req.id), contextWindow: req.window });
+    onSessionEvent({ type: 'context_window_changed', sessionId: req.id, window: req.window });
+    if (!engine.isRunning(req.id)) return;
+    // Claude Code reads the window only at start, so a running session restarts with the same conversation.
+    // A turn in progress is never cut off: the restart then waits until the turn is done.
+    const status = model.summary(req.id)?.status;
+    if (status === 'working' || status === 'waiting') awaitingRestart.add(req.id);
+    else await restart(req.id);
   });
 
   handle('session:set-effort', async (req) => {
@@ -549,6 +573,8 @@ function validRecords(raw: unknown): SessionRecord[] | null {
     // Records saved before these fields existed: default effort, not in Fokus, last active when created.
     const focused = r['focused'] === true;
     const lastActiveAt = typeof r['lastActiveAt'] === 'string' ? r['lastActiveAt'] : String(r['createdAt']);
-    return [{ ...(r as unknown as SessionRecord), effort, focused, lastActiveAt }];
+    const contextWindow = CONTEXT_WINDOW_CHOICES.find((w) => w === r['contextWindow']) ?? 'auto';
+    const tokensUsed = typeof r['tokensUsed'] === 'number' ? r['tokensUsed'] : 0;
+    return [{ ...(r as unknown as SessionRecord), effort, focused, lastActiveAt, contextWindow, tokensUsed }];
   });
 }

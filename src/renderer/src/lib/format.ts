@@ -71,8 +71,10 @@ export function formatTokens(n: number): string {
   return String(n);
 }
 
-export function formatCost(usd: number): string {
-  return `$${usd.toFixed(2)}`;
+/** Tokens used so far: "35k", and from a million on "1,2 M" (Swedish decimal comma). */
+export function formatTokenTotal(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toLocaleString('sv-SE', { maximumFractionDigits: 1 })} M`;
+  return formatTokens(n);
 }
 
 /** 1-2 letter monogram from a session name. */

@@ -15,6 +15,8 @@ const record: SessionRecord = {
   archived: false,
   focused: false,
   lastActiveAt: '2026-11-23T00:00:00Z',
+  contextWindow: 'auto',
+  tokensUsed: 0,
 };
 
 type EventBody = SessionEvent extends infer E ? (E extends SessionEvent ? Omit<E, 'sessionId'> : never) : never;
@@ -43,8 +45,8 @@ describe('session-model', () => {
     const resolved = apply({ type: 'input_resolved', requestId: 'r1', answer: 'Godkänd' });
     expect(resolved[0]).toMatchObject({ kind: 'system', text: 'Godkänd: Bash: ls' });
     expect(model.summary('s1')?.status).toBe('working');
-    apply({ type: 'turn_finished', result: 'klart', isError: false, interrupted: false, costUsd: 0.01, durationMs: 5 });
-    expect(model.summary('s1')).toMatchObject({ status: 'done', costUsd: 0.01, turnStartedAt: null });
+    apply({ type: 'turn_finished', result: 'klart', isError: false, interrupted: false, tokens: 1200, durationMs: 5 });
+    expect(model.summary('s1')).toMatchObject({ status: 'done', turnStartedAt: null });
     model.markSeen('s1');
     expect(model.summary('s1')?.status).toBe('idle');
   });
@@ -141,7 +143,7 @@ describe('session-model', () => {
     const { model, apply } = setup();
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'lång uppgift' });
-    const [entry] = apply({ type: 'turn_finished', result: '', isError: false, interrupted: true, costUsd: 0, durationMs: 1 });
+    const [entry] = apply({ type: 'turn_finished', result: '', isError: false, interrupted: true, tokens: 0, durationMs: 1 });
     expect(entry).toMatchObject({ kind: 'system', text: 'Avbruten.', level: 'info' });
     expect(model.summary('s1')).toMatchObject({ status: 'idle', lastError: null });
   });

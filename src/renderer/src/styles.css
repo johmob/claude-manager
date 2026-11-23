@@ -250,7 +250,6 @@ textarea.input { resize: vertical; }
 .menu button { background: transparent; border: 0; text-align: left; padding: 6px 10px; border-radius: 6px; }
 .menu button:hover { background: var(--bg-hover); }
 .menu .danger-text { color: var(--red); }
-.popover { margin: 2px 4px; padding: 6px 8px; background: var(--bg); border-radius: 6px; font-size: 12px; }
 
 /* ---------- Dock ---------- */
 .dock { display: flex; gap: 8px; padding: 8px; height: 100%; overflow: hidden; }
@@ -367,3 +366,16 @@ textarea.input { resize: vertical; }
 .card-input .chat-input.compact textarea { padding: 5px 8px; font-size: 12.5px; }
 .dialog-divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 4px 0; }
 .dialog-divider::before, .dialog-divider::after { content: ''; flex: 1; border-top: 1px solid var(--border); }
+
+/* Context meter (cards and tiles): fill, window size, compact, tokens used. */
+.context-meter { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: var(--muted); }
+.context-top, .context-actions { display: flex; align-items: center; gap: 6px; }
+.context-label { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.context-bar { flex: 1; min-width: 40px; height: 4px; border-radius: 2px; background: #2a2f3a; overflow: hidden; }
+.context-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--green); transition: width .3s; }
+.context-bar > span[data-level="mid"] { background: #facc15; }
+.context-bar > span[data-level="high"] { background: #ff8a1f; }
+.context-tokens { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mini-btn { font-size: 11px; padding: 1px 7px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; }
+.mini-btn:hover { color: var(--text); border-color: #3a4150; }
+.tile-context { padding: 5px 10px; border-bottom: 1px solid var(--border); }

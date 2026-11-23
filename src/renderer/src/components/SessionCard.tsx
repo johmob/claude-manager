@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
-import { formatCost, formatElapsed } from '../lib/format';
+import { formatElapsed } from '../lib/format';
 import { send } from '../lib/api';
 import { useNow } from '../lib/useNow';
 import { AgentDots, IconButton, ModelEffortPicker, StatusChip } from './Atoms';
 import { CalloutBox } from './CalloutBox';
 import { ChatInput } from './ChatInput';
+import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
 
 interface SessionCardProps {
@@ -110,8 +111,6 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
           <ModelEffortPicker session={session} />
           <AgentDots count={session.activeAgents} color={session.color} />
           {working && session.turnStartedAt !== null && <span className="elapsed">{formatElapsed(now - session.turnStartedAt)}</span>}
-          <span className="spacer" />
-          <span className="muted small-text">{formatCost(session.costUsd)}</span>
         </div>
         <div className="card-task">{session.currentTask || ' '}</div>
         {todo && (
@@ -119,6 +118,7 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
             <div style={{ width: `${todo.progress}%`, background: session.color }} />
           </div>
         )}
+        <ContextMeter session={session} />
         {session.lastError && <div className="card-error">{session.lastError}</div>}
       </div>
       <CardCallouts session={session} />

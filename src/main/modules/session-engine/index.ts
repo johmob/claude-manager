@@ -6,7 +6,6 @@ import type { PermissionResult, Query, SDKMessage, SDKUserMessage, SessionMessag
 import type {
   Callout,
   CalloutKind,
-  ContextUsage,
   EffortChoice,
   ModelChoice,
   PermissionDecision,
@@ -27,9 +26,9 @@ export interface SessionEngine {
   interrupt(id: string): Promise<void>;
   setModel(id: string, model: ModelChoice): Promise<void>;
   setEffort(id: string, effort: EffortChoice): Promise<void>;
-  contextUsage(id: string): Promise<ContextUsage | null>;
   isRunning(id: string): boolean;
-  stop(id: string): void;
+  /** Ends the session's process; resolves once it has exited. */
+  stop(id: string): Promise<void>;
   stopAll(): void;
 }
 
@@ -53,6 +52,9 @@ interface LiveSession {
   stopping: boolean;
   /** Set by interrupt(); the turn's result then reports an interruption rather than an error. */
   interrupting: boolean;
+  /** Resolves when the process has exited and the session is gone from the engine. */
+  exited: Promise<void>;
+  markExited: () => void;
 }
 
 /** Async iterable of user messages that stays open until closed, so one process serves many turns. */
@@ -101,6 +103,7 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
         cwd: spec.cwd,
         model: spec.model === 'default' ? undefined : spec.model,
         effort: spec.effort === 'default' ? undefined : spec.effort,
+        settings: spec.contextWindow === 'auto' ? undefined : { autoCompactWindow: spec.contextWindow },
         permissionMode: spec.permissionMode,
         resume: spec.resumeClaudeSessionId,
         thinking: { type: 'adaptive', display: 'summarized' },
@@ -114,11 +117,15 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
       },
     });
 
-    const live: LiveSession = { q, inbox, pending, stderrTail, stopping: false, interrupting: false };
+    let markExited = (): void => undefined;
+    const exited = new Promise<void>((resolve) => (markExited = resolve));
+    const live: LiveSession = { q, inbox, pending, stderrTail, stopping: false, interrupting: false, exited, markExited };
     sessions.set(spec.id, live);
     onEvent({ type: 'started', sessionId: spec.id });
     if (spec.initialPrompt) send(spec.id, spec.initialPrompt);
     void pump(spec.id, live);
+    // Measure right away, so a resumed conversation shows how full its context is before the first message.
+    void reportContext(spec.id, live);
   }
 
   async function pump(id: string, live: LiveSession): Promise<void> {
@@ -126,10 +133,12 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
       for await (const message of live.q) {
         if (message.type === 'result' && live.interrupting) {
           live.interrupting = false;
-          onEvent({ type: 'turn_finished', sessionId: id, result: '', isError: false, interrupted: true, costUsd: message.total_cost_usd, durationMs: message.duration_ms });
+          onEvent({ type: 'turn_finished', sessionId: id, result: '', isError: false, interrupted: true, tokens: turnTokens(message), durationMs: message.duration_ms });
+          void reportContext(id, live);
           continue;
         }
         for (const event of translate(id, message)) onEvent(event);
+        if (message.type === 'result' || (message.type === 'system' && message.subtype === 'compact_boundary')) void reportContext(id, live);
       }
     } catch (error) {
       if (!live.stopping) {
@@ -147,6 +156,7 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
         sessions.delete(id);
         onEvent({ type: 'exited', sessionId: id });
       }
+      live.markExited();
     }
   }
 
@@ -233,19 +243,23 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
     onEvent({ type: 'effort_changed', sessionId: id, effort });
   }
 
-  async function contextUsage(id: string): Promise<ContextUsage | null> {
-    const live = sessions.get(id);
-    if (!live) return null;
-    const usage = await live.q.getContextUsage();
-    return { percentage: usage.percentage, totalTokens: usage.totalTokens, maxTokens: usage.maxTokens };
+  /** Measures how full the context window is (no tokens used) and reports it; skipped once the session ends. */
+  async function reportContext(id: string, live: LiveSession): Promise<void> {
+    try {
+      const usage = await live.q.getContextUsage();
+      onEvent({ type: 'context_usage', sessionId: id, usage: { percentage: usage.percentage, totalTokens: usage.totalTokens, maxTokens: usage.maxTokens } });
+    } catch {
+      // The session ended between the turn and the measurement; there is nothing left to report.
+    }
   }
 
-  function stop(id: string): void {
+  function stop(id: string): Promise<void> {
     const live = sessions.get(id);
-    if (!live) return;
+    if (!live) return Promise.resolve();
     live.stopping = true;
     live.inbox.close();
     live.q.close();
+    return live.exited;
   }
 
   return {
@@ -256,10 +270,9 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
     interrupt,
     setModel,
     setEffort,
-    contextUsage,
     isRunning: (id) => sessions.has(id),
     stop,
-    stopAll: () => [...sessions.keys()].forEach(stop),
+    stopAll: () => [...sessions.keys()].forEach((id) => void stop(id)),
   };
 }
 
@@ -420,7 +433,7 @@ export function translate(sessionId: string, m: SDKMessage): SessionEvent[] {
           result: m.subtype === 'success' ? m.result : resultErrorText(m),
           isError: m.is_error,
           interrupted: false,
-          costUsd: m.total_cost_usd,
+          tokens: turnTokens(m),
           durationMs: m.duration_ms,
         },
       ];
@@ -480,6 +493,12 @@ function toWindow(fraction: number, resetsAtSeconds: unknown): UsageWindow {
     utilization: Math.round(fraction * 1000) / 10,
     resetsAt: typeof resetsAtSeconds === 'number' ? new Date(resetsAtSeconds * 1000).toISOString() : null,
   };
+}
+
+/** All tokens a turn processed: input, output, and cache reads and writes. */
+function turnTokens(m: Extract<SDKMessage, { type: 'result' }>): number {
+  const u = m.usage;
+  return u.input_tokens + u.output_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens;
 }
 
 /** Readable error text for a failed turn; Claude Code's internal "[ede_diagnostic] …" lines are left out. */

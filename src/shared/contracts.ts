@@ -11,6 +11,9 @@ export const MODEL_CHOICES: readonly ModelChoice[] = ['default', 'opus', 'sonnet
 /** Reasoning effort; 'default' leaves it to the model (or the user's Claude Code setting). */
 export type EffortChoice = 'default' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 export const EFFORT_CHOICES: readonly EffortChoice[] = ['default', 'low', 'medium', 'high', 'xhigh', 'max'];
+/** How large the conversation may grow before Claude Code compacts it: the model's own window ('auto') or a token count. */
+export type ContextWindowChoice = 'auto' | number;
+export const CONTEXT_WINDOW_CHOICES: readonly ContextWindowChoice[] = ['auto', 200_000, 400_000, 600_000, 1_000_000];
 export const PERMISSION_CHOICES: readonly PermissionChoice[] = ['auto', 'default', 'acceptEdits', 'plan'];
 
 /** Persisted description of one session. Survives app restarts. */
@@ -31,6 +34,9 @@ export interface SessionRecord {
   focused: boolean;
   /** ISO time of the last message or finished turn. */
   lastActiveAt: string;
+  contextWindow: ContextWindowChoice;
+  /** Tokens processed in this card's turns (input, output and cache), all turns added up. */
+  tokensUsed: number;
 }
 
 /** Everything session-engine needs to start or resume one Claude Code session. */
@@ -40,6 +46,7 @@ export interface SessionStartSpec {
   model: ModelChoice;
   effort: EffortChoice;
   permissionMode: PermissionChoice;
+  contextWindow: ContextWindowChoice;
   /** Text appended to Claude Code's system prompt (base CLAUDE.md + todo-tree protocol). */
   appendSystemPrompt: string;
   resumeClaudeSessionId?: string;
@@ -218,7 +225,10 @@ export type SessionEvent =
   | { type: 'cleared'; sessionId: string }
   | { type: 'model_changed'; sessionId: string; model: ModelChoice }
   | { type: 'effort_changed'; sessionId: string; effort: EffortChoice }
-  | { type: 'turn_finished'; sessionId: string; result: string; isError: boolean; interrupted: boolean; costUsd: number; durationMs: number }
+  /** `tokens`: this turn's input, output and cache tokens together. */
+  | { type: 'turn_finished'; sessionId: string; result: string; isError: boolean; interrupted: boolean; tokens: number; durationMs: number }
+  | { type: 'context_usage'; sessionId: string; usage: ContextUsage }
+  | { type: 'context_window_changed'; sessionId: string; window: ContextWindowChoice }
   | { type: 'rate_limit'; sessionId: string; windows: UsageWindows; rejected: boolean }
   | { type: 'callout'; sessionId: string; callout: Callout; agentId?: string }
   | { type: 'error'; sessionId: string; message: string }
@@ -252,7 +262,10 @@ export interface SessionSummary {
   lastError: string | null;
   /** Callouts from the latest turn, most severe first, until dismissed or the next turn starts. */
   callouts: Callout[];
-  costUsd: number;
+  tokensUsed: number;
+  /** How full the context window is, measured after the latest turn; null before the first one. */
+  context: ContextUsage | null;
+  contextWindow: ContextWindowChoice;
   todo: TodoTree | null;
   /** True when the session is not running but can be resumed. */
   resumable: boolean;
@@ -338,7 +351,7 @@ export interface IpcInvokeMap {
   'session:interrupt': { req: { id: string }; res: void };
   'session:set-model': { req: { id: string; model: ModelChoice }; res: void };
   'session:set-effort': { req: { id: string; effort: EffortChoice }; res: void };
-  'session:context-usage': { req: { id: string }; res: ContextUsage | null };
+  'session:set-context-window': { req: { id: string; window: ContextWindowChoice }; res: void };
   'session:resume': { req: { id: string }; res: void };
   'session:archive': { req: { id: string }; res: void };
   'session:rename': { req: { id: string; name: string }; res: void };

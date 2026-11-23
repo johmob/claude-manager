@@ -19,6 +19,8 @@ function record(id: string, focused: boolean, idleMs: number, archived = false):
     archived,
     focused,
     lastActiveAt: new Date(NOW - idleMs).toISOString(),
+    contextWindow: 'auto',
+    tokensUsed: 0,
   };
 }
 

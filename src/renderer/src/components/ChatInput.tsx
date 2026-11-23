@@ -1,31 +1,17 @@
 import { useState, type KeyboardEvent } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
-import { formatTokens } from '../lib/format';
-import { errorMessage, send } from '../lib/api';
+import { send } from '../lib/api';
 
+/** Commands that are not on the context meter: clear the conversation, or stop the running turn. */
 function ActionsMenu({ session, onClose }: { session: SessionSummary; onClose: () => void }) {
-  const [context, setContext] = useState<string | null>(null);
-
   const sendText = (text: string): void => {
     send('session:send', { id: session.id, text });
     onClose();
   };
-  const showContext = (): void => {
-    setContext('Hämtar…');
-    window.cm
-      .invoke('session:context-usage', { id: session.id })
-      .then((u) =>
-        setContext(u ? `Kontext: ${Math.round(u.percentage)} % (${formatTokens(u.totalTokens)} / ${formatTokens(u.maxTokens)})` : 'Kontext: ingen data'),
-      )
-      .catch((e: unknown) => setContext(errorMessage(e)));
-  };
 
   return (
     <div className="menu" onMouseLeave={onClose}>
-      <button type="button" onClick={() => sendText('/compact')}>/compact</button>
       <button type="button" onClick={() => sendText('/clear')}>/clear</button>
-      <button type="button" onClick={showContext}>Kontext</button>
-      {context && <div className="popover">{context}</div>}
       {session.status === 'working' && (
         <button type="button" className="danger-text" onClick={() => { send('session:interrupt', { id: session.id }); onClose(); }}>
           Avbryt

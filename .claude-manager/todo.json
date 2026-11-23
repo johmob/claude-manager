@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T10:55:32Z",
+  "updated": "2026-11-23T11:04:45Z",
   "tracks": [
     {
       "id": "1",
@@ -391,6 +391,39 @@
         },
         {
           "id": "12.4",
+          "title": "Rebuild and reinstall",
+          "status": "in_progress",
+          "progress": 50
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "title": "Tokens and context instead of cost",
+      "owner": "main",
+      "items": [
+        {
+          "id": "13.1",
+          "title": "Remove dollar cost everywhere",
+          "status": "done"
+        },
+        {
+          "id": "13.2",
+          "title": "Tokens used per card",
+          "status": "done"
+        },
+        {
+          "id": "13.3",
+          "title": "Context meter with window size and Komprimera",
+          "status": "done"
+        },
+        {
+          "id": "13.4",
+          "title": "Restart to apply a new window (after the turn)",
+          "status": "done"
+        },
+        {
+          "id": "13.5",
           "title": "Rebuild and reinstall",
           "status": "in_progress",
           "progress": 50

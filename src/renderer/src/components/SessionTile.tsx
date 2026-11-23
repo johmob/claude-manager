@@ -3,6 +3,7 @@ import type { SessionSummary } from '../../../shared/contracts';
 import { useTranscript } from '../state/useTranscript';
 import { AgentDots, ModelEffortPicker, StatusChip } from './Atoms';
 import { ChatInput } from './ChatInput';
+import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
 import { TranscriptView } from './TranscriptView';
 import { WorkSchema } from './WorkSchema';
@@ -22,6 +23,9 @@ export function SessionTile({ session }: { session: SessionSummary }) {
           Arbetsschema{session.todo ? ` · ${session.todo.progress} %` : ''}
         </button>
       </header>
+      <div className="tile-context">
+        <ContextMeter session={session} />
+      </div>
       <TranscriptView entries={entries} />
       <PendingPanel session={session} />
       <ChatInput session={session} />

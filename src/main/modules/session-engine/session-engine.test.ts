@@ -32,8 +32,8 @@ describe('translate', () => {
       { type: 'tool_result', sessionId: 's', toolUseId: 't1', isError: true },
     ]);
     expect(
-      translate('s', sdk({ type: 'result', subtype: 'success', result: 'klart', is_error: false, total_cost_usd: 0.5, duration_ms: 9 })),
-    ).toEqual([{ type: 'turn_finished', sessionId: 's', result: 'klart', isError: false, interrupted: false, costUsd: 0.5, durationMs: 9 }]);
+      translate('s', sdk({ type: 'result', subtype: 'success', result: 'klart', is_error: false, duration_ms: 9, usage: { input_tokens: 10, output_tokens: 5, cache_read_input_tokens: 100, cache_creation_input_tokens: 20 } })),
+    ).toEqual([{ type: 'turn_finished', sessionId: 's', result: 'klart', isError: false, interrupted: false, tokens: 135, durationMs: 9 }]);
     expect(translate('s', sdk({ type: 'conversation_reset' }))).toEqual([{ type: 'cleared', sessionId: 's' }]);
   });
 
