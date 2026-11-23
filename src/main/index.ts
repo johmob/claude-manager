@@ -165,6 +165,7 @@ function boot(): void {
     onLaunchAtLogin: (on) => updateSettings({ launchAtLogin: on }),
   });
   applyLaunchAtLogin();
+  windows.setTheme(settings.theme);
   // Only the installed app updates itself; a development run has nothing to install.
   const updater = app.isPackaged
     ? createUpdater({
@@ -583,6 +584,7 @@ function boot(): void {
     notifier.setDoNotDisturb(settings.doNotDisturb);
     applyLaunchAtLogin();
     tray.setLaunchAtLogin(settings.launchAtLogin);
+    windows.setTheme(settings.theme);
     if (changes.autoUpdate !== undefined) updater?.setAuto(settings.autoUpdate);
     windows.send('state:settings', settings);
     scheduleSync();

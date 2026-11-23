@@ -2,7 +2,7 @@
 // Knows nothing about sessions beyond how many cards the dock and overlay must fit.
 import { BrowserWindow, Menu, screen } from 'electron';
 import type { NativeImage, Rectangle } from 'electron';
-import type { DockEdge, IpcEventChannel, IpcEventMap, IpcInvokeMap, PopupView } from '../../../shared/contracts';
+import type { DockEdge, IpcEventChannel, IpcEventMap, IpcInvokeMap, PopupView, ThemeChoice } from '../../../shared/contracts';
 
 type SnapMode = IpcInvokeMap['window:snap']['req']['mode'];
 
@@ -28,6 +28,8 @@ export interface WindowManager {
   setOverlay(visible: boolean, count: number): void;
   /** Shows or hides the detail area under the overlay icons. */
   setOverlayDetail(open: boolean, wide?: boolean): void;
+  /** Colours the window buttons in the top bar to match the theme. */
+  setTheme(theme: ThemeChoice): void;
   /** Lets the overlay take keyboard focus (for its quick chat), or gives it back. */
   setOverlayFocus(focus: boolean): void;
   setOverlayInteractive(interactive: boolean): void;
@@ -56,6 +58,12 @@ const OVERLAY_DETAIL_WIDTH = 284;
 const OVERLAY_CHAT_HEIGHT = 440;
 const OVERLAY_CHAT_WIDTH = 430;
 const EDGE_MARGIN = 8;
+/** Height of the app's top bar, where Windows draws the window buttons; matches .topbar in the stylesheet. */
+const TITLE_BAR_HEIGHT = 52;
+const TITLE_BAR: Record<ThemeChoice, { color: string; symbolColor: string }> = {
+  night: { color: '#090b13', symbolColor: '#f6f8fc' },
+  standard: { color: '#161920', symbolColor: '#e6e8ee' },
+};
 
 type Route = 'main' | 'dock' | 'overlay' | 'popup';
 
@@ -71,9 +79,12 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     minHeight: 520,
     show: false,
     title: 'Claude Manager',
-    backgroundColor: '#14161a',
+    backgroundColor: '#05060b',
     autoHideMenuBar: true,
     icon: opts.icon,
+    // No Windows title bar: the window buttons are drawn by Windows inside the app's own top bar.
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { ...TITLE_BAR.night, height: TITLE_BAR_HEIGHT },
   });
   main.once('ready-to-show', () => {
     if (!opts.startHidden) main.show();
@@ -264,6 +275,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     setOverlayInteractive,
     setOverlayDetail,
     setOverlayFocus,
+    setTheme: (theme) => main.setTitleBarOverlay({ ...TITLE_BAR[theme], height: TITLE_BAR_HEIGHT }),
     openPopup,
     closePopup,
     popupView: () => popupShows,

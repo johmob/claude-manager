@@ -785,3 +785,8 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 /* Links in agent text are clickable */
 .md a.md-link { color: var(--accent-ui); text-decoration: underline; text-decoration-color: rgba(82,200,255,.45); text-underline-offset: 2px; cursor: pointer; overflow-wrap: anywhere; }
 .md a.md-link:hover { text-decoration-color: currentColor; }
+
+/* The top bar is the window's title bar: it drags the window, and Windows draws the window buttons at
+   its right end (titleBarOverlay, 52 px high), so the bar leaves room for them. */
+.topbar { height: 52px; padding-top: 0; padding-bottom: 0; padding-right: 150px; -webkit-app-region: drag; }
+.topbar button, .topbar select, .topbar input, .topbar label, .topbar .settings-pop { -webkit-app-region: no-drag; }
