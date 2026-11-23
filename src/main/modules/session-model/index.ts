@@ -30,6 +30,8 @@ export interface SessionModel {
   /** The user has looked at a finished turn: `done` becomes `idle`. */
   markSeen(id: string): void;
   dismissCallouts(id: string): void;
+  /** Short backgrounds for the questions of the set `questionsId` (ignored once that set is gone). */
+  setQuestionBriefs(id: string, questionsId: string, briefs: string[]): void;
   setMapping(id: string, mapping: boolean): void;
   summaries(): SessionSummary[];
   summary(id: string): SessionSummary | undefined;
@@ -148,7 +150,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
      */
     const collectQuestions = (): TranscriptEntry[] => {
       const tagged = s.callouts.flatMap((c): OpenQuestion[] =>
-        c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), context: '', detail: '' }] : [],
+        c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), context: '', detail: '', brief: '' }] : [],
       );
       const found = findOpenQuestions(s.turnText);
       const seen = new Set<string>();
@@ -348,6 +350,11 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       const s = states.get(id);
       if (s) s.mapping = mapping;
     },
+    setQuestionBriefs: (id, questionsId, briefs) => {
+      const s = states.get(id);
+      if (!s || s.questionsId !== questionsId) return;
+      s.questions = s.questions.map((q, i) => ({ ...q, brief: briefs[i] ?? q.brief }));
+    },
     dismissCallouts: (id) => {
       const s = states.get(id);
       if (s) {
@@ -464,7 +471,7 @@ export function findOpenQuestions(text: string): OpenQuestion[] {
     const item = LIST_ITEM.exec(l.raw);
     const line = clean(item ? item[1]! : l.raw);
     if (item && section) {
-      if (line) found.push({ kind: section.kind, text: line, context: section.context, detail: '' });
+      if (line) found.push({ kind: section.kind, text: line, context: section.context, detail: '', brief: '' });
       return;
     }
     if (!item && !/^\s/.test(l.raw)) section = null;
@@ -473,7 +480,7 @@ export function findOpenQuestions(text: string): OpenQuestion[] {
     const split = /^(.*[.!:])\s+([^.!:?]*\?["”'»)]*)$/.exec(line);
     const around = sectionAround(lines, i);
     const detail = split ? [split[1]!, around].filter(Boolean).join('\n\n') : around;
-    found.push({ kind: 'question', text: split ? split[2]!.trim() : line, context: '', detail });
+    found.push({ kind: 'question', text: split ? split[2]!.trim() : line, context: '', detail, brief: '' });
   });
   return found;
 }

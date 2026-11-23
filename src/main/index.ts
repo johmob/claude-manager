@@ -37,6 +37,7 @@ import { importCandidates, liveTerminals } from './modules/terminal-sessions';
 import { probeAccount, UNVERIFIED_ACCOUNT } from './modules/account';
 import { bringIntoFocus, expireFocus } from './modules/focus-rules';
 import { createUpdater } from './modules/updater';
+import { briefRequest, readBriefs } from './modules/question-briefs';
 
 const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: '',
@@ -227,6 +228,7 @@ function boot(): void {
         if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
         const completed = !event.isError && !event.interrupted;
         const asks = model.summary(event.sessionId);
+        if (completed && asks?.questions.length) void writeQuestionBriefs(event.sessionId);
         if (completed && asks?.status === 'waiting' && !asks.pendingCount) {
           // The turn ended with questions: as urgent as a question asked with the tool.
           const body = asks.questions.slice(0, 3).map((q) => q.text).join('\n');
@@ -395,6 +397,19 @@ function boot(): void {
       if (Number.isFinite(resets) ? now < resets + RESUME_MARGIN_MS : !roomAgain) continue;
       notifier.alert({ sessionId: s.id, title: `${s.name} fortsätter`, body: 'Användningsgränsen har återställts.', urgent: false });
       sendToSession(s.id, RESUME_MESSAGE);
+    }
+  }
+
+  /** Has a cheap model write a short background for each open question, from the agent's answer. */
+  async function writeQuestionBriefs(id: string): Promise<void> {
+    const s = model.summary(id);
+    if (!s?.questions.length) return;
+    try {
+      const reply = await structuredQuery(briefRequest(s.questions, s.questionsAnswer, userData));
+      model.setQuestionBriefs(id, s.questionsId, readBriefs(reply, s.questions.length));
+      scheduleSync();
+    } catch {
+      // Without briefs the questions still show; the full flow has the whole answer.
     }
   }
 

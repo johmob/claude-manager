@@ -254,6 +254,8 @@ export interface OpenQuestion {
   context: string;
   /** The text around it in the answer (its section), e.g. what options A and B are; empty when it stands alone. */
   detail: string;
+  /** A short background written by a cheap model after the turn ('' until it arrives). */
+  brief: string;
 }
 
 /** The app's own updates from GitHub releases. "off" in development, where there is nothing to update. */

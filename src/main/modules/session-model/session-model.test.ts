@@ -240,8 +240,8 @@ describe('questions left for the user', () => {
     apply({ type: 'callout', callout: { kind: 'note', title: '', text: 'Displayen är urkopplad.' } });
     apply(finish);
     expect(model.summary('s1')?.questions).toEqual([
-      { kind: 'question', text: 'Rev: B eller C?', context: '', detail: '' },
-      { kind: 'assumption', text: 'Displayen är urkopplad.', context: '', detail: '' },
+      { kind: 'question', text: 'Rev: B eller C?', context: '', detail: '', brief: '' },
+      { kind: 'assumption', text: 'Displayen är urkopplad.', context: '', detail: '', brief: '' },
     ]);
     expect(model.summary('s1')?.status).toBe('waiting');
     model.dismissCallouts('s1');

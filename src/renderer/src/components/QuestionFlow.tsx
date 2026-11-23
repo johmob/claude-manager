@@ -126,6 +126,7 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
                 <span className="qf-count">{index + 1} av {questions.length}</span>
               </div>
               {q.context && <div className="qf-context">{q.context}</div>}
+              {q.brief && <div className="qf-brief">{q.brief}</div>}
               <div className="qf-question">{q.text}</div>
               {q.detail && (
                 <div className="qf-detail">
@@ -245,6 +246,7 @@ export function QuickQuestion({ session, onOpen }: { session: SessionSummary; on
         <span>{q.kind === 'assumption' ? 'Antagande' : 'Fråga'}{questions.length > 1 ? ` ${index + 1} av ${questions.length}` : ''}</span>
         <span className="muted">{session.name}</span>
       </div>
+      {q.brief && <div className="ov-q-brief">{q.brief}</div>}
       <div className="ov-q-text">{q.text}</div>
       <div className="ov-q-actions">
         {options.map((option) => (

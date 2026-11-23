@@ -718,3 +718,8 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .ov-q-text { font-size: 0.95rem; font-weight: 650; line-height: 1.4; color: #fff; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .ov-q-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ov-q-actions .qf-quick-btn { padding: 6px 16px; min-width: 64px; }
+
+/* Short background above a question, written by a cheap model from the agent's answer */
+.ov-q-brief, .qf-brief { padding: 7px 10px; border-radius: 8px; background: rgba(255,255,255,.05); border-left: 2px solid var(--accent-ui); color: var(--muted); line-height: 1.45; }
+.ov-q-brief { font-size: 0.78rem; }
+.qf-brief { font-size: 0.9rem; }
