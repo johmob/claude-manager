@@ -66,13 +66,32 @@ function groupTools(entries: TranscriptEntry[]): Array<Exclude<TranscriptEntry, 
   return items;
 }
 
-function Entry({ entry, sessionId }: { entry: Exclude<TranscriptEntry, ToolEntry>; sessionId: string }) {
+/**
+ * The answer of each turn: the main agent's last text before the next message from the user. Everything
+ * else it wrote along the way (and all subagent text) is narration and is shown quietly.
+ */
+function finalAnswers(entries: TranscriptEntry[]): Set<string> {
+  const finals = new Set<string>();
+  let candidate: string | null = null;
+  for (const e of entries) {
+    if (e.kind === 'user') {
+      if (candidate) finals.add(candidate);
+      candidate = null;
+    } else if (e.kind === 'assistant' && e.text.trim() && !e.agentId) {
+      candidate = e.id;
+    }
+  }
+  if (candidate) finals.add(candidate);
+  return finals;
+}
+
+function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, ToolEntry>; sessionId: string; final: boolean }) {
   switch (entry.kind) {
     case 'user':
       return <div className="t-user"><div className="bubble">{entry.text}</div></div>;
     case 'assistant':
       return (
-        <div className="t-assistant">
+        <div className="t-assistant" data-final={final ? 'true' : undefined}>
           <Thinking text={entry.thinking} />
           <MarkdownText text={entry.text} />
         </div>
@@ -106,10 +125,15 @@ export function TranscriptView({ entries, sessionId }: { entries: TranscriptEntr
     if (el) stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
   };
 
+  const finals = finalAnswers(entries);
   return (
     <div className="transcript" ref={ref} onScroll={onScroll}>
       {groupTools(entries).map((item) =>
-        Array.isArray(item) ? <ToolGroup key={item[0]!.id} tools={item} /> : <Entry key={item.id} entry={item} sessionId={sessionId} />,
+        Array.isArray(item) ? (
+          <ToolGroup key={item[0]!.id} tools={item} />
+        ) : (
+          <Entry key={item.id} entry={item} sessionId={sessionId} final={finals.has(item.id)} />
+        ),
       )}
     </div>
   );
