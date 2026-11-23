@@ -7,6 +7,7 @@ import { send } from '../lib/api';
 import { AccountContext } from '../state/account';
 import { useAppState } from '../state/useAppState';
 import { useTheme } from '../lib/theme';
+import { ImageViewer } from '../components/ImageViewer';
 import { useTextScale } from '../lib/textScale';
 
 /**
@@ -37,7 +38,12 @@ export function PopupWindow() {
     if (answered) close();
   }, [answered]);
 
-  if (state && view?.kind === 'quick') return <QuickChat onClose={close} large />;
+  if (state && view?.kind === 'quick') return (
+    <>
+      <QuickChat onClose={close} large />
+      <ImageViewer />
+    </>
+  );
   if (!state || !session || !view || answered) return null;
   return (
     <AccountContext.Provider value={state.account}>
@@ -48,6 +54,7 @@ export function PopupWindow() {
           <QuestionFlow key={questionsKey(session)} session={session} onClose={close} onSent={close} />
         )}
       </AskQuestionsContext.Provider>
+      <ImageViewer />
     </AccountContext.Provider>
   );
 }

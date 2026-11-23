@@ -4,6 +4,7 @@ import { AskQuestionsContext, QuestionFlow, questionsKey } from '../components/Q
 import { AccountContext } from '../state/account';
 import { useAppState } from '../state/useAppState';
 import { useTheme } from '../lib/theme';
+import { ImageViewer } from '../components/ImageViewer';
 import { useTextScale } from '../lib/textScale';
 import { TopBar, type ViewMode } from '../components/TopBar';
 import { StartDialog, type DialogKind } from '../components/StartDialogs';
@@ -74,6 +75,7 @@ export function MainWindow() {
         )}
       </main>
       {dialog && <StartDialog kind={dialog} settings={settings} onClose={() => setDialog(null)} />}
+      <ImageViewer />
       {!settings.projectsRoot && !welcomeLater && !dialog && <Welcome onLater={() => setWelcomeLater(true)} />}
       {askingSession && (
         <QuestionFlow

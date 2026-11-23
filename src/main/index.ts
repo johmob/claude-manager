@@ -39,6 +39,7 @@ import { bringIntoFocus, expireFocus } from './modules/focus-rules';
 import { createUpdater } from './modules/updater';
 import { briefRequest, readBriefs } from './modules/question-briefs';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
+import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 
 const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: '',
@@ -95,6 +96,9 @@ interface MappingJob {
 // CLAUDE_MANAGER_DATA_DIR gives a test run its own folder, so it never touches (or locks out) the real app.
 app.setPath('userData', process.env['CLAUDE_MANAGER_DATA_DIR'] || join(app.getPath('appData'), 'claude-manager'));
 
+// Local images agents refer to are shown through an app-only scheme, registered before the app is ready.
+registerLocalImageScheme();
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -102,6 +106,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function boot(): void {
+  serveLocalImages();
   app.setAppUserModelId('se.johmob.claude-manager');
   const userData = app.getPath('userData');
   const claudeDir = process.env['CLAUDE_CONFIG_DIR'] || join(homedir(), '.claude');
