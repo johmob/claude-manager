@@ -83,3 +83,7 @@ src/preload/         typed IPC bridge (window.cm)
 src/renderer/        React UI for the main window, dock and overlay (#main, #dock, #overlay)
 tools/               SDK verification, CDP driver, icon generator
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE).
