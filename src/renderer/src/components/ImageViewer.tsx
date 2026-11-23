@@ -13,7 +13,7 @@ export function showImage(src: string, alt: string): void {
   window.dispatchEvent(new CustomEvent<Shown>(SHOW_IMAGE, { detail: { src, alt } }));
 }
 
-/** A local image in agent text: a preview; a double-click shows it large. Hidden when the file cannot be read. */
+/** A local image in agent text: a preview; a click shows it large. Hidden when the file cannot be read. */
 export function LocalImage({ src, alt }: Shown) {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
@@ -22,10 +22,10 @@ export function LocalImage({ src, alt }: Shown) {
       className="md-img"
       src={src}
       alt={alt}
-      title="Dubbelklicka för att visa stort"
+      title="Klicka för att visa stort"
       loading="lazy"
       onError={() => setFailed(true)}
-      onDoubleClick={() => showImage(src, alt)}
+      onClick={() => showImage(src, alt)}
     />
   );
 }

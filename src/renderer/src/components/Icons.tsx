@@ -72,3 +72,11 @@ export const TrashIcon = () => (
     <path d="M6.75 6.75v4.25M9.25 6.75v4.25" />
   </Icon>
 );
+
+/** Moon struck through: no sleep. */
+export const NoSleepIcon = () => (
+  <Icon>
+    <path d="M12.75 9.75A5.25 5.25 0 0 1 6.25 3.25a5.25 5.25 0 1 0 6.5 6.5z" />
+    <path d="M2.5 2.5l11 11" />
+  </Icon>
+);

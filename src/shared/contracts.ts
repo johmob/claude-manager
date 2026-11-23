@@ -259,6 +259,8 @@ export interface OpenQuestion {
   detail: string;
   /** A short background written by a cheap model after the turn ('' until it arrives). */
   brief: string;
+  /** One-click answers the agent offered (e.g. "1", "1b"); empty when it gave none. */
+  options: string[];
 }
 
 /** The app's own updates from GitHub releases. "off" in development, where there is nothing to update. */
@@ -332,7 +334,8 @@ export interface SessionSummary {
 
 export type TranscriptEntry =
   | { id: string; kind: 'user'; text: string; at: number }
-  | { id: string; kind: 'assistant'; text: string; thinking: string; agentId?: string; at: number }
+  /** `pinned`: tagged as something the user must see (a question, decision, result, image or link); never folded away. */
+  | { id: string; kind: 'assistant'; text: string; thinking: string; agentId?: string; pinned?: boolean; at: number }
   | { id: string; kind: 'tool'; name: string; summary: string; status: 'running' | 'ok' | 'error'; thinking: string; agentId?: string; at: number }
   | { id: string; kind: 'question'; text: string; answer: string | null; at: number }
   | { id: string; kind: 'callout'; callout: Callout; at: number }
@@ -359,6 +362,8 @@ export interface AppSettings {
   launchAtLogin: boolean;
   /** Sessions stopped by the usage limit continue on their own once it resets. */
   autoResume: boolean;
+  /** Keep Windows from sleeping or turning the display off (agents working overnight). */
+  keepAwake: boolean;
   /** Text size in the main window and popups, 1 = 16 px root (Ctrl + plus/minus/0). */
   textScale: number;
   /** Install new versions from GitHub on their own once no session is busy. */

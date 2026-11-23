@@ -85,7 +85,10 @@ function finalAnswers(entries: TranscriptEntry[]): Set<string> {
   return finals;
 }
 
-/** What always shows: your messages, each turn's answer, tagged callouts, questions, and problems. */
+/** Text with a link, a web address, a local file path or an image: never folded away. */
+const SHOWS_MEDIA = /\]\(|https?:\/\/|file:\/\/|[a-zA-Z]:[\\/][^\s]*\.(?:png|jpe?g|gif|webp|bmp|svg|mp4|webm|mov|pdf)/i;
+
+/** What always shows: your messages, each turn's answer, what was tagged as important, links and images, callouts, questions and problems. */
 function standsOut(entry: TranscriptEntry, finals: Set<string>): boolean {
   switch (entry.kind) {
     case 'user':
@@ -93,7 +96,7 @@ function standsOut(entry: TranscriptEntry, finals: Set<string>): boolean {
     case 'question':
       return true;
     case 'assistant':
-      return finals.has(entry.id);
+      return finals.has(entry.id) || !!entry.pinned || SHOWS_MEDIA.test(entry.text);
     case 'system':
       return entry.level !== 'info';
     case 'tool':

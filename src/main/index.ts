@@ -11,6 +11,9 @@ import { CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERM
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
+  TranscriptEntry,
+  UsageSnapshot,
+  UsageWindow,
   UpdateStatus,
   EffortChoice,
   ImportCandidate,
@@ -38,7 +41,8 @@ import { importCandidates, liveTerminals } from './modules/terminal-sessions';
 import { probeAccount, UNVERIFIED_ACCOUNT } from './modules/account';
 import { bringIntoFocus, expireFocus } from './modules/focus-rules';
 import { createUpdater } from './modules/updater';
-import { briefRequest, readBriefs } from './modules/question-briefs';
+import { createKeepAwake } from './modules/keep-awake';
+import { messagesForTagging, readTags, tagRequest } from './modules/turn-tags';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 
@@ -53,6 +57,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   textScale: 1.1,
   autoUpdate: true,
   autoResume: true,
+  keepAwake: false,
   theme: 'night',
   defaultModel: 'opus',
   defaultEffort: 'medium',
@@ -73,7 +78,9 @@ const QUICK_PROMPT = [
 
 /** Sent to a session stopped by the usage limit once it has reset. */
 const RESUME_MESSAGE =
-  'Användningsgränsen har återställts. Fortsätt där du var, och starta om de subagenter som stoppades.';
+  'Användningsgränsen har återställts. Fortsätt bara med det arbete som gränsen avbröt, och starta om de subagenter som stoppades av den. Börja inget nytt. Väntar du på ett svar eller ett val från användaren, fortsätt vänta och upprepa kort vad du behöver.';
+/** An update installs only after this long without any session event. */
+const QUIET_BEFORE_UPDATE_MS = 10 * 60 * 1000;
 /** Wait a little past the reset time, so the first request is not refused again. */
 const RESUME_MARGIN_MS = 60 * 1000;
 
@@ -113,6 +120,7 @@ function boot(): void {
   const claudeDir = process.env['CLAUDE_CONFIG_DIR'] || join(homedir(), '.claude');
   const icon = nativeImage.createFromPath(iconPath);
   let syncTimer: NodeJS.Timeout | null = null;
+  let lastSessionEvent = 0;
   /** Mapping turns wait here and run one at a time, so several new projects never map at once. */
   const mappingQueue: MappingJob[] = [];
   /** The mapping now; `restore` (the card's own model and effort) is set once its turn has been sent. */
@@ -146,7 +154,10 @@ function boot(): void {
   });
   const usage = createUsageMonitor({
     credentialsPath: join(claudeDir, '.credentials.json'),
-    onSnapshot: (snapshot) => windows.send('state:usage', snapshot),
+    onSnapshot: (snapshot) => {
+      windows.send('state:usage', snapshot);
+      markLimitedFromUsage(snapshot);
+    },
   });
   const windows = createWindowManager({
     preloadPath: join(__dirname, '../preload/index.js'),
@@ -166,12 +177,19 @@ function boot(): void {
   });
   applyLaunchAtLogin();
   windows.setTheme(settings.theme);
+  const keepAwake = createKeepAwake();
+  keepAwake.set(settings.keepAwake);
   // Only the installed app updates itself; a development run has nothing to install.
   const updater = app.isPackaged
     ? createUpdater({
         version: app.getVersion(),
         auto: settings.autoUpdate,
-        isIdle: () => mappingActive === null && model.summaries().every((s) => s.status !== 'working' && !s.pendingCount && !s.questions.length),
+        // Idle means truly quiet: no turn, no subagent, nothing waiting for the user, and no event from any
+        // session for a while (background agents and monitors keep sending events while they work).
+        isIdle: () =>
+          mappingActive === null &&
+          Date.now() - lastSessionEvent >= QUIET_BEFORE_UPDATE_MS &&
+          model.summaries().every((s) => s.status !== 'working' && !s.activeAgents && !s.pendingCount && !s.questions.length),
         onStatus: (status) => windows.send('state:update', status),
       })
     : null;
@@ -209,6 +227,7 @@ function boot(): void {
 
   // ---------- Event flow ----------
   function onSessionEvent(event: SessionEvent): void {
+    lastSessionEvent = Date.now();
     for (const entry of model.apply(event)) windows.send('session:transcript-upsert', { id: event.sessionId, entry });
     rememberLimit(event.sessionId);
     const record = findRecord(event.sessionId);
@@ -253,7 +272,7 @@ function boot(): void {
           if (completed) void summarizeQuickAnswer();
           break;
         }
-        if (completed && asks?.questions.length) void writeQuestionBriefs(event.sessionId);
+        if (completed) void tagTurn(event.sessionId);
         if (completed && asks?.status === 'waiting' && !asks.pendingCount) {
           // The turn ended with questions: as urgent as a question asked with the tool.
           const body = asks.questions.slice(0, 3).map((q) => q.text).join('\n');
@@ -445,17 +464,52 @@ function boot(): void {
     }
   }
 
-  /** Has a cheap model write a short background for each open question, from the agent's answer. */
-  async function writeQuestionBriefs(id: string): Promise<void> {
-    const s = model.summary(id);
-    if (!s?.questions.length) return;
+  /**
+   * Has a cheap model tag the main agent's messages of the turn just finished: the questions and choices
+   * put to the user (with options and a short background) and the messages the user must see. The text is
+   * never rewritten; until the tags arrive (or if the call fails) the text rules' findings stand.
+   */
+  async function tagTurn(id: string): Promise<void> {
+    const transcript = model.transcript(id);
+    const lastUser = [...transcript].reverse().find((e) => e.kind === 'user');
+    const from = lastUser ? transcript.indexOf(lastUser) + 1 : 0;
+    const all = transcript.slice(from).filter((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim());
+    const texts = messagesForTagging(all.map((e) => e.text));
+    const entries = all.slice(-texts.length);
+    if (!entries.length) return;
+    const before = model.summary(id);
     try {
-      const reply = await structuredQuery(briefRequest(s.questions, s.questionsAnswer, userData));
-      model.setQuestionBriefs(id, s.questionsId, readBriefs(reply, s.questions.length));
+      const tags = readTags(await structuredQuery(tagRequest(texts, userData)), entries.length);
+      if (!tags) return;
+      const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, context: '', detail: entries[q.message - 1]?.text ?? '', brief: q.brief, options: q.options }));
+      const keep = tags.keep.map((n) => entries[n - 1]!.id);
+      for (const entry of model.applyTurnTags(id, lastUser?.id ?? null, questions, keep)) windows.send('session:transcript-upsert', { id, entry });
+      const after = model.summary(id);
+      // Questions the text rules missed still get the user's attention.
+      if (after && after.questions.length && after.questionsId !== before?.questionsId && !after.pendingCount) {
+        notifier.alert({ sessionId: id, title: `${after.name} har ${after.questions.length} frågor till dig`, body: after.questions.slice(0, 3).map((q) => q.text).join('\n'), urgent: true });
+      }
       scheduleSync();
     } catch {
-      // Without briefs the questions still show; the full flow has the whole answer.
+      // Without tags the text rules' findings stand.
     }
+  }
+
+  /**
+   * The usage readout at 100 % means requests are refused, also for subagents whose refusal never reaches
+   * the main turn. Sessions that were working at that moment (a turn or subagents running) are marked as
+   * stopped by the limit, so they continue once it resets; idle sessions are left alone.
+   */
+  function markLimitedFromUsage(snapshot: UsageSnapshot): void {
+    const full = [snapshot.fiveHour, snapshot.sevenDay].filter((w): w is UsageWindow => !!w && w.utilization >= 100);
+    if (!full.length) return;
+    const resetsAt = full.map((w) => w.resetsAt ?? '').sort().pop() ?? '';
+    for (const s of model.summaries()) {
+      if (s.limitResetsAt !== null || (s.status !== 'working' && !s.activeAgents)) continue;
+      model.setLimit(s.id, resetsAt);
+      rememberLimit(s.id);
+    }
+    scheduleSync();
   }
 
   /** Saves the usage-limit mark with the card when it changes, so it survives a restart. */
@@ -585,6 +639,7 @@ function boot(): void {
     applyLaunchAtLogin();
     tray.setLaunchAtLogin(settings.launchAtLogin);
     windows.setTheme(settings.theme);
+    keepAwake.set(settings.keepAwake);
     if (changes.autoUpdate !== undefined) updater?.setAuto(settings.autoUpdate);
     windows.send('state:settings', settings);
     scheduleSync();
@@ -897,6 +952,7 @@ function validSettings(r: unknown): AppSettings | null {
     launchAtLogin: bool(r['launchAtLogin'], d.launchAtLogin),
     autoUpdate: bool(r['autoUpdate'], d.autoUpdate),
     autoResume: bool(r['autoResume'], d.autoResume),
+    keepAwake: bool(r['keepAwake'], d.keepAwake),
     theme: pick(r['theme'], THEME_CHOICES, d.theme),
     textScale: typeof r['textScale'] === 'number' && Number.isFinite(r['textScale']) ? clampScale(r['textScale']) : d.textScale,
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),

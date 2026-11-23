@@ -30,8 +30,12 @@ export interface SessionModel {
   /** The user has looked at a finished turn: `done` becomes `idle`. */
   markSeen(id: string): void;
   dismissCallouts(id: string): void;
-  /** Short backgrounds for the questions of the set `questionsId` (ignored once that set is gone). */
-  setQuestionBriefs(id: string, questionsId: string, briefs: string[]): void;
+  /**
+   * A cheap model's tags for the latest turn: its questions (replacing those found by the text rules, keeping
+   * the agent's own tagged ones) and the messages to keep visible. Ignored if a new turn has started since
+   * (`afterEntryId` is no longer the latest message from the user). Returns the entries that changed.
+   */
+  applyTurnTags(id: string, afterEntryId: string | null, questions: OpenQuestion[], keep: string[]): TranscriptEntry[];
   setMapping(id: string, mapping: boolean): void;
   /** Marks a session as stopped by the usage limit (from its saved record, after a restart). */
   setLimit(id: string, resetsAt: string): void;
@@ -66,6 +70,8 @@ interface SessionState {
   questionsAnswer: string;
   /** Callouts that came before the latest turn ended; only newer ones are this turn's questions. */
   calloutsBefore: number;
+  /** Questions the agent itself tagged ([!QUESTION], [!NOTE]) in the latest turn; they stay when a cheap model re-tags the turn. */
+  taggedQuestions: OpenQuestion[];
   /** Questions the user has already replied to in this session (normalised), so a repeat is not asked again. */
   answered: string[];
   mapping: boolean;
@@ -107,6 +113,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       questionsId: '',
       questionsAnswer: '',
       calloutsBefore: 0,
+      taggedQuestions: [],
       answered: [],
       mapping: false,
       context: null,
@@ -162,8 +169,9 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       const fresh = s.callouts.slice(s.calloutsBefore);
       s.calloutsBefore = s.callouts.length;
       const tagged = fresh.flatMap((c): OpenQuestion[] =>
-        c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), context: '', detail: '', brief: '' }] : [],
+        c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), context: '', detail: '', brief: '', options: [] }] : [],
       );
+      s.taggedQuestions = tagged;
       const found = findOpenQuestions(s.turnText);
       const seen = new Set<string>();
       const asked = [...tagged, ...found]
@@ -379,10 +387,26 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       const s = states.get(id);
       if (s) s.mapping = mapping;
     },
-    setQuestionBriefs: (id, questionsId, briefs) => {
+    applyTurnTags: (id, afterEntryId, questions, keep) => {
       const s = states.get(id);
-      if (!s || s.questionsId !== questionsId) return;
-      s.questions = s.questions.map((q, i) => ({ ...q, brief: briefs[i] ?? q.brief }));
+      if (!s || s.turnActive) return [];
+      const lastUser = [...s.transcript].reverse().find((e) => e.kind === 'user');
+      if ((lastUser?.id ?? null) !== afterEntryId) return [];
+      const seen = new Set<string>();
+      const asked = [...s.taggedQuestions, ...questions]
+        .filter((q) => !seen.has(normalizeQuestion(q.text)) && seen.add(normalizeQuestion(q.text)))
+        .filter((q) => !alreadyAnswered(s.answered, q.text))
+        .slice(0, MAX_QUESTIONS);
+      if (JSON.stringify(asked.map((q) => q.text)) !== JSON.stringify(s.questions.map((q) => q.text))) s.questionsId = String(now());
+      s.questions = asked;
+      const changed: TranscriptEntry[] = [];
+      s.transcript = s.transcript.map((e) => {
+        if (e.kind !== 'assistant' || e.pinned || !keep.includes(e.id)) return e;
+        const pinned = { ...e, pinned: true };
+        changed.push(pinned);
+        return pinned;
+      });
+      return changed;
     },
     dismissCallouts: (id) => {
       const s = states.get(id);
@@ -517,7 +541,7 @@ export function findOpenQuestions(text: string): OpenQuestion[] {
     const item = LIST_ITEM.exec(l.raw);
     const line = clean(item ? item[1]! : l.raw);
     if (item && section) {
-      if (line) found.push({ kind: section.kind, text: line, context: section.context, detail: '', brief: '' });
+      if (line) found.push({ kind: section.kind, text: line, context: section.context, detail: '', brief: '', options: [] });
       return;
     }
     if (!item && !/^\s/.test(l.raw)) section = null;
@@ -526,7 +550,7 @@ export function findOpenQuestions(text: string): OpenQuestion[] {
     const split = /^(.*[.!:])\s+([^.!:?]*\?["”'»)]*)$/.exec(line);
     const around = sectionAround(lines, i);
     const detail = split ? [split[1]!, around].filter(Boolean).join('\n\n') : around;
-    found.push({ kind: 'question', text: split ? split[2]!.trim() : line, context: '', detail, brief: '' });
+    found.push({ kind: 'question', text: split ? split[2]!.trim() : line, context: '', detail, brief: '', options: [] });
   });
   return found;
 }

@@ -241,8 +241,8 @@ describe('questions left for the user', () => {
     apply({ type: 'callout', callout: { kind: 'note', title: '', text: 'Displayen är urkopplad.' } });
     apply(finish);
     expect(model.summary('s1')?.questions).toEqual([
-      { kind: 'question', text: 'Rev: B eller C?', context: '', detail: '', brief: '' },
-      { kind: 'assumption', text: 'Displayen är urkopplad.', context: '', detail: '', brief: '' },
+      { kind: 'question', text: 'Rev: B eller C?', context: '', detail: '', brief: '', options: [] },
+      { kind: 'assumption', text: 'Displayen är urkopplad.', context: '', detail: '', brief: '', options: [] },
     ]);
     expect(model.summary('s1')?.status).toBe('waiting');
     model.dismissCallouts('s1');
@@ -316,5 +316,25 @@ describe('usage limit after a restart', () => {
     const { model } = setup();
     model.setLimit('s1', '2026-11-23T17:30:00.000Z');
     expect(model.summary('s1')).toMatchObject({ status: 'limited', limitResetsAt: '2026-11-23T17:30:00.000Z' });
+  });
+});
+
+describe('turn tags from a cheap model', () => {
+  it('replace the text rules questions, keep the agent own tagged ones, and pin messages', () => {
+    const { model, apply } = setup();
+    const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'text', text: 'E väntar på ditt val mellan 1 och 1b.' });
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'Får jag beställa kortet?' } });
+    apply({ type: 'text', text: 'Medan E väntar gör den SD-ändringen.' });
+    apply(finish);
+    const transcript = model.transcript('s1');
+    const lastUser = transcript.filter((e) => e.kind === 'user').pop()!;
+    const choice = transcript.find((e) => e.kind === 'assistant' && e.text.startsWith('E väntar'))!;
+    const changed = model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Greppet: 1 eller 1b?', context: '', detail: '', brief: 'Två varianter.', options: ['1', '1b'] }], [choice.id]);
+    expect(changed.map((e) => e.id)).toEqual([choice.id]);
+    expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Får jag beställa kortet?', 'Greppet: 1 eller 1b?']);
+    expect(model.summary('s1')?.status).toBe('waiting');
   });
 });

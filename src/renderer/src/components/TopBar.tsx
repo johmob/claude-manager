@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AppSettings, DockEdge, UpdateStatus } from '../../../shared/contracts';
 import { send } from '../lib/api';
-import { ChatIcon, ExistingProjectIcon, NewProjectIcon, RulesIcon } from './Icons';
+import { ChatIcon, ExistingProjectIcon, NewProjectIcon, NoSleepIcon, RulesIcon } from './Icons';
 import type { DialogKind } from './StartDialogs';
 
 export type ViewMode = 'overview' | 'focus';
@@ -126,6 +126,15 @@ export function TopBar({ settings, update, view, onView, onDialog }: TopBarProps
       </div>
       <div className="topbar-group topbar-settings">
         <UpdatePill update={update} />
+        <button
+          type="button"
+          className={settings.keepAwake ? 'toggle on icon-toggle' : 'toggle icon-toggle'}
+          aria-pressed={settings.keepAwake}
+          title={settings.keepAwake ? 'Håller datorn vaken (ingen vila, skärmen släcks inte). Klicka för att stänga av.' : 'Håll datorn vaken, så att agenterna kan arbeta i natt'}
+          onClick={() => send('settings:update', { keepAwake: !settings.keepAwake })}
+        >
+          <NoSleepIcon />
+        </button>
         <Toggle label="Stör ej" on={settings.doNotDisturb} onChange={(doNotDisturb) => send('settings:update', { doNotDisturb })} />
         <Toggle label="Docka" on={settings.dockVisible} onChange={(dockVisible) => send('settings:update', { dockVisible })} />
         <Toggle label="Overlay" on={settings.overlayVisible} onChange={(overlayVisible) => send('settings:update', { overlayVisible })} />

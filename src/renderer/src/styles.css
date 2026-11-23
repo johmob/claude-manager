@@ -795,3 +795,8 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .quick-icon { display: inline-grid; place-items: center; width: 38px; padding: 0; }
 .quick-icon .icon { width: 16px; height: 16px; }
 .quick.compact .quick-icon { width: 34px; }
+
+/* Keep-awake: an icon toggle next to Stör ej */
+.icon-toggle { padding: 4px 9px; }
+.icon-toggle .icon { width: 16px; height: 16px; }
+.icon-toggle.on { color: var(--accent-ui); }

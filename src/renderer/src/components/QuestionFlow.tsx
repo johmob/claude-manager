@@ -93,7 +93,7 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
     next(updated);
   };
   const confirm = (): void => answerWith('Stämmer.');
-  const quick = q && q.kind === 'question' ? quickAnswers(q.text) : [];
+  const quick = q && q.kind === 'question' ? (q.options.length ? q.options : quickAnswers(q.text)) : [];
 
   return (
     <Modal title={`${session.name} – ${questions.length} ${questions.length === 1 ? 'fråga' : 'frågor'} till dig`} onClose={onClose} size="full">
@@ -229,7 +229,7 @@ export function QuickQuestion({ session, onOpen }: { session: SessionSummary; on
   const index = answers.findIndex((a) => !a.trim());
   const q = index === -1 ? undefined : questions[index];
   if (!q) return null;
-  const options = q.kind === 'assumption' ? ['Stämmer'] : quickAnswers(q.text);
+  const options = q.kind === 'assumption' ? ['Stämmer'] : q.options.length ? q.options : quickAnswers(q.text);
   const choose = (text: string): void => {
     const updated = answers.map((a, i) => (i === index ? text : a));
     if (updated.every((a) => a.trim())) {
