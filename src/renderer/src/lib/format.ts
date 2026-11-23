@@ -12,6 +12,7 @@ export function formatAgo(epochMs: number, now: number): string {
 export const CALLOUT_LABEL: Record<CalloutKind, string> = {
   caution: 'Risk',
   warning: 'Varning',
+  question: 'Fråga till dig',
   important: 'Bra att veta',
   note: 'Antagande',
   tip: 'Förslag',

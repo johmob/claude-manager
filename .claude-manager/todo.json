@@ -1,429 +1,374 @@
 {
-  "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T11:07:01Z",
+  "title": "Claude Code Manager",
+  "updated": "2026-11-23T11:27:28Z",
   "tracks": [
     {
-      "id": "1",
-      "title": "Foundation",
+      "id": "eng",
+      "title": "Sessionsmotor och modell",
       "owner": "main",
       "items": [
         {
-          "id": "1.1",
-          "title": "Private GitHub repo and spec",
-          "status": "done"
+          "id": "eng.1",
+          "title": "Agent SDK-motor",
+          "items": [
+            {
+              "id": "eng.1.1",
+              "title": "Strömmande sessioner, start och återupptagning",
+              "status": "done"
+            },
+            {
+              "id": "eng.1.2",
+              "title": "Frågor och behörigheter via canUseTool",
+              "status": "done"
+            },
+            {
+              "id": "eng.1.3",
+              "title": "Callouts ur agentens text",
+              "status": "done"
+            },
+            {
+              "id": "eng.1.4",
+              "title": "Avbrott, modell- och effortbyte live",
+              "status": "done"
+            },
+            {
+              "id": "eng.1.5",
+              "title": "Tokens och kontextmätning per tur",
+              "status": "done"
+            }
+          ]
         },
         {
-          "id": "1.2",
-          "title": "Tech stack and architecture decisions",
-          "status": "done"
+          "id": "eng.2",
+          "title": "Sessionsmodell (kort och transkript)",
+          "items": [
+            {
+              "id": "eng.2.1",
+              "title": "Status, agenter, aktuell uppgift",
+              "status": "done"
+            },
+            {
+              "id": "eng.2.2",
+              "title": "Transkript med tänkande och historik",
+              "status": "done"
+            },
+            {
+              "id": "eng.2.3",
+              "title": "Callouts per tur",
+              "status": "done"
+            }
+          ]
         },
         {
-          "id": "1.3",
-          "title": "Verify Agent SDK features",
-          "status": "done"
-        },
-        {
-          "id": "1.4",
-          "title": "Project skeleton (Electron, Vite, React, TS)",
-          "status": "done"
-        },
-        {
-          "id": "1.5",
-          "title": "Shared contracts",
+          "id": "eng.3",
+          "title": "Sparad historik vid omstart",
           "status": "done"
         }
       ]
     },
     {
-      "id": "2",
-      "title": "Main-process modules",
+      "id": "plan",
+      "title": "Arbetsschema och agentprotokoll",
       "owner": "main",
       "items": [
         {
-          "id": "2.1",
-          "title": "session-engine (Agent SDK wrapper)",
-          "status": "done"
+          "id": "plan.1",
+          "title": "Schemaformat",
+          "items": [
+            {
+              "id": "plan.1.1",
+              "title": "Spår, underpunkter, ägare, beroenden",
+              "status": "done"
+            },
+            {
+              "id": "plan.1.2",
+              "title": "Beräknade föräldrar och blockerade punkter",
+              "status": "done"
+            },
+            {
+              "id": "plan.1.3",
+              "title": "Gamla blocks-formatet läses fortfarande",
+              "status": "done"
+            }
+          ]
         },
         {
-          "id": "2.2",
-          "title": "session-model (events to cards and transcript)",
-          "status": "done"
+          "id": "plan.2",
+          "title": "Regler till agenterna",
+          "items": [
+            {
+              "id": "plan.2.1",
+              "title": "Huvudagenten underhåller schemat själv, hela tiden",
+              "status": "done"
+            },
+            {
+              "id": "plan.2.2",
+              "title": "Fråga innan nytt spår öppnas",
+              "status": "done"
+            },
+            {
+              "id": "plan.2.3",
+              "title": "Ordna efter område med djup, inte kronologi",
+              "status": "done"
+            },
+            {
+              "id": "plan.2.4",
+              "title": "Taggning av det viktiga (callouts)",
+              "status": "done"
+            }
+          ]
         },
         {
-          "id": "2.3",
-          "title": "usage-monitor",
-          "status": "done"
-        },
-        {
-          "id": "2.4",
-          "title": "todo-tree watcher",
-          "status": "done"
-        },
-        {
-          "id": "2.5",
-          "title": "json-store, ground-rules, palette",
-          "status": "done"
-        },
-        {
-          "id": "2.6",
-          "title": "projects and project locator",
-          "status": "done"
-        },
-        {
-          "id": "2.7",
-          "title": "notifier (toasts, taskbar flash)",
-          "status": "done"
+          "id": "plan.3",
+          "title": "Kartläggning av projekt",
+          "items": [
+            {
+              "id": "plan.3.1",
+              "title": "Planerare (Fable) som bara får skriva schemat",
+              "status": "done"
+            },
+            {
+              "id": "plan.3.2",
+              "title": "Kartlägg automatiskt när schema saknas",
+              "status": "done",
+              "dependsOn": [
+                "plan.3.1"
+              ]
+            },
+            {
+              "id": "plan.3.3",
+              "title": "Knapp Kartlägg / Kartlägg om i schemavyn",
+              "status": "done",
+              "dependsOn": [
+                "plan.3.1"
+              ]
+            },
+            {
+              "id": "plan.3.4",
+              "title": "Besked till huvudagenten efter kartläggning",
+              "status": "done",
+              "dependsOn": [
+                "plan.3.2"
+              ]
+            }
+          ]
         }
       ]
     },
     {
-      "id": "3",
-      "title": "User interface",
+      "id": "ui",
+      "title": "Gränssnitt",
       "owner": "main",
       "items": [
         {
-          "id": "3.1",
-          "title": "Overview cards with inline answers and approvals",
-          "status": "done"
+          "id": "ui.1",
+          "title": "Översikt",
+          "items": [
+            {
+              "id": "ui.1.1",
+              "title": "Kort: status, modell/effort, kontext, tokens",
+              "status": "done"
+            },
+            {
+              "id": "ui.1.2",
+              "title": "Skrivrad, frågor och behörigheter på kortet",
+              "status": "done"
+            },
+            {
+              "id": "ui.1.3",
+              "title": "Callouts med högerklick Fixa",
+              "status": "done"
+            },
+            {
+              "id": "ui.1.4",
+              "title": "Användningspanel med plan och färgnivåer",
+              "status": "done"
+            }
+          ]
         },
         {
-          "id": "3.2",
-          "title": "Usage panel",
-          "status": "done"
+          "id": "ui.2",
+          "title": "Fokus",
+          "items": [
+            {
+              "id": "ui.2.1",
+              "title": "Rutor sida vid sida, automatiskt urval",
+              "status": "done"
+            },
+            {
+              "id": "ui.2.2",
+              "title": "Kommandon hopfällda som standard",
+              "status": "done"
+            }
+          ]
         },
         {
-          "id": "3.3",
-          "title": "Todo tree view",
-          "status": "done"
+          "id": "ui.3",
+          "title": "Arbetsschemavy",
+          "items": [
+            {
+              "id": "ui.3.1",
+              "title": "Organisationsschema, maximerar vid behov",
+              "status": "done"
+            },
+            {
+              "id": "ui.3.2",
+              "title": "Klicka på punkt och fråga agenten",
+              "status": "done"
+            },
+            {
+              "id": "ui.3.3",
+              "title": "Kartläggning pågår-läge",
+              "status": "done",
+              "dependsOn": [
+                "plan.3.2"
+              ]
+            }
+          ]
         },
         {
-          "id": "3.4",
-          "title": "Focus mode tiles",
-          "status": "done"
+          "id": "ui.4",
+          "title": "Docka och overlay",
+          "items": [
+            {
+              "id": "ui.4.1",
+              "title": "Docka med studs och ikoner",
+              "status": "done"
+            },
+            {
+              "id": "ui.4.2",
+              "title": "Overlay: användning, agenter, status",
+              "status": "done"
+            },
+            {
+              "id": "ui.4.3",
+              "title": "Hovringspanel i overlay",
+              "status": "done"
+            }
+          ]
         },
         {
-          "id": "3.5",
-          "title": "Dock mode",
-          "status": "done"
-        },
-        {
-          "id": "3.6",
-          "title": "Mini overlay",
-          "status": "done"
-        },
-        {
-          "id": "3.7",
-          "title": "Start dialogs (chat, new project, existing project)",
-          "status": "done"
+          "id": "ui.5",
+          "title": "Topprad och dialoger",
+          "items": [
+            {
+              "id": "ui.5.1",
+              "title": "Startmeny med ikoner, centrerade flikar",
+              "status": "done"
+            },
+            {
+              "id": "ui.5.2",
+              "title": "Befintligt projekt: fortsätt senaste samtal",
+              "status": "done"
+            }
+          ]
         }
       ]
     },
     {
-      "id": "4",
-      "title": "Windows and lifecycle",
+      "id": "life",
+      "title": "Projekt, konto och livscykel",
       "owner": "main",
       "items": [
         {
-          "id": "4.1",
-          "title": "Window manager (main, dock, overlay, snapping)",
-          "status": "done"
+          "id": "life.1",
+          "title": "Projekt och sessioner",
+          "items": [
+            {
+              "id": "life.1.1",
+              "title": "Nytt projekt med Git-repo",
+              "status": "done"
+            },
+            {
+              "id": "life.1.2",
+              "title": "Hitta mapp från beskrivning",
+              "status": "done"
+            },
+            {
+              "id": "life.1.3",
+              "title": "Terminalsessioner: lista och spärr",
+              "status": "done"
+            }
+          ]
         },
         {
-          "id": "4.2",
-          "title": "Tray and close behaviour",
-          "status": "done"
+          "id": "life.2",
+          "title": "Konto och kvot",
+          "items": [
+            {
+              "id": "life.2.1",
+              "title": "Användning via OAuth",
+              "status": "done"
+            },
+            {
+              "id": "life.2.2",
+              "title": "Plan och tillgängliga modeller",
+              "status": "done"
+            },
+            {
+              "id": "life.2.3",
+              "title": "Standard Opus/medium",
+              "status": "done"
+            }
+          ]
         },
         {
-          "id": "4.3",
-          "title": "Resume sessions after restart",
-          "status": "done"
-        },
-        {
-          "id": "4.4",
-          "title": "Archive and ground-rules editor session",
-          "status": "done"
-        },
-        {
-          "id": "4.5",
-          "title": "Composition root and preload IPC",
-          "status": "done"
+          "id": "life.3",
+          "title": "Fönster och livscykel",
+          "items": [
+            {
+              "id": "life.3.1",
+              "title": "Systemfält, stängning, enkel instans",
+              "status": "done"
+            },
+            {
+              "id": "life.3.2",
+              "title": "Automatiskt fokus (in vid skrivning, ut efter 3 dagar)",
+              "status": "done"
+            },
+            {
+              "id": "life.3.3",
+              "title": "Kontextfönster med omstart",
+              "status": "done"
+            }
+          ]
         }
       ]
     },
     {
-      "id": "5",
-      "title": "Test and delivery",
+      "id": "ship",
+      "title": "Kvalitet och leverans",
       "owner": "main",
       "items": [
         {
-          "id": "5.1",
-          "title": "Unit tests for pure modules",
+          "id": "ship.1",
+          "title": "Enhetstester för rena moduler",
           "status": "done"
         },
         {
-          "id": "5.2",
-          "title": "Run the app end to end",
+          "id": "ship.2",
+          "title": "Testinstans med egen datamapp",
           "status": "done"
         },
         {
-          "id": "5.3",
-          "title": "Windows installer",
-          "status": "done"
+          "id": "ship.3",
+          "title": "Installationsprogram",
+          "items": [
+            {
+              "id": "ship.3.1",
+              "title": "Paketering med uppackad Claude-binär",
+              "status": "done"
+            },
+            {
+              "id": "ship.3.2",
+              "title": "Installera samlade ändringar när du säger till",
+              "status": "not_started"
+            }
+          ]
         },
         {
-          "id": "5.4",
-          "title": "README",
-          "status": "done"
-        }
-      ]
-    },
-    {
-      "id": "6",
-      "title": "Follow-ups after v1",
-      "owner": "main",
-      "items": [
-        {
-          "id": "6.1",
-          "title": "Load saved transcripts after restart",
-          "status": "done"
-        },
-        {
-          "id": "6.2",
-          "title": "Verify the built-in You Should Know plugin",
-          "status": "done"
-        },
-        {
-          "id": "6.3",
-          "title": "Bra att veta: own stateless Haiku review",
-          "status": "done"
-        },
-        {
-          "id": "6.4",
-          "title": "Rebuild installer",
-          "status": "done"
-        }
-      ]
-    },
-    {
-      "id": "7",
-      "title": "Callouts: agents tag what matters",
-      "owner": "main",
-      "items": [
-        {
-          "id": "7.1",
-          "title": "Test tagging with Haiku and Sonnet (8/8 correct)",
-          "status": "done"
-        },
-        {
-          "id": "7.2",
-          "title": "Callout protocol and parser in session-engine",
-          "status": "done"
-        },
-        {
-          "id": "7.3",
-          "title": "Card, transcript and dock styling per kind",
-          "status": "done"
-        },
-        {
-          "id": "7.4",
-          "title": "Haiku review becomes optional Granskning",
-          "status": "done"
-        },
-        {
-          "id": "7.5",
-          "title": "Rebuild installer",
-          "status": "done"
-        }
-      ]
-    },
-    {
-      "id": "8",
-      "title": "Import sessions from terminal windows",
-      "owner": "main",
-      "items": [
-        {
-          "id": "8.1",
-          "title": "Read live-session registry and saved sessions",
-          "status": "done"
-        },
-        {
-          "id": "8.2",
-          "title": "Import dialog with terminal status",
-          "status": "done"
-        },
-        {
-          "id": "8.3",
-          "title": "Refuse resume while a terminal holds the session",
-          "status": "done"
-        },
-        {
-          "id": "8.4",
-          "title": "Rebuild and reinstall",
-          "status": "done"
-        }
-      ]
-    },
-    {
-      "id": "9",
-      "title": "Work schema and polish",
-      "owner": "main",
-      "items": [
-        {
-          "id": "9.1",
-          "title": "Org-chart work schema format (tracks, owners, dependencies)",
-          "status": "done"
-        },
-        {
-          "id": "9.2",
-          "title": "Ask before opening a new track",
-          "status": "done"
-        },
-        {
-          "id": "9.3",
-          "title": "Arbetsschema view, auto-maximise, click to ask Claude",
-          "status": "done"
-        },
-        {
-          "id": "9.4",
-          "title": "Yellow/orange/red usage levels",
-          "status": "done"
-        },
-        {
-          "id": "9.5",
-          "title": "Interrupt shown as Avbruten, not as an error",
-          "status": "done"
-        },
-        {
-          "id": "9.6",
-          "title": "Rebuild and reinstall",
-          "status": "done"
-        }
-      ]
-    },
-    {
-      "id": "10",
-      "title": "Account, model and effort",
-      "owner": "main",
-      "items": [
-        {
-          "id": "10.1",
-          "title": "Fix project search in the installed app",
-          "status": "done"
-        },
-        {
-          "id": "10.2",
-          "title": "Effort per session, changeable live",
-          "status": "done"
-        },
-        {
-          "id": "10.3",
-          "title": "Model and effort picker on every card",
-          "status": "done"
-        },
-        {
-          "id": "10.4",
-          "title": "Detect plan and available models",
-          "status": "done"
-        },
-        {
-          "id": "10.5",
-          "title": "Usage shown as used",
-          "status": "done"
-        },
-        {
-          "id": "10.6",
-          "title": "Rebuild and reinstall",
-          "status": "done"
-        }
-      ]
-    },
-    {
-      "id": "11",
-      "title": "Fokus and writing from the overview",
-      "owner": "main",
-      "items": [
-        {
-          "id": "11.1",
-          "title": "Message box on every card",
-          "status": "done"
-        },
-        {
-          "id": "11.2",
-          "title": "Double-click a card to open it in Fokus",
-          "status": "done"
-        },
-        {
-          "id": "11.3",
-          "title": "Automatic Fokus: in on writing, out after 3 idle days",
-          "status": "done"
-        },
-        {
-          "id": "11.4",
-          "title": "Opus medium as default for new sessions",
-          "status": "done"
-        },
-        {
-          "id": "11.5",
-          "title": "Rebuild and reinstall",
-          "status": "done"
-        }
-      ]
-    },
-    {
-      "id": "12",
-      "title": "One way back to existing work",
-      "owner": "main",
-      "items": [
-        {
-          "id": "12.1",
-          "title": "Befintligt projekt continues the latest conversation",
-          "status": "done"
-        },
-        {
-          "id": "12.2",
-          "title": "Recent conversations list merged into the same dialog",
-          "status": "done"
-        },
-        {
-          "id": "12.3",
-          "title": "Offer the existing card instead of a duplicate",
-          "status": "done"
-        },
-        {
-          "id": "12.4",
-          "title": "Rebuild and reinstall",
-          "status": "done"
-        }
-      ]
-    },
-    {
-      "id": "13",
-      "title": "Tokens and context instead of cost",
-      "owner": "main",
-      "items": [
-        {
-          "id": "13.1",
-          "title": "Remove dollar cost everywhere",
-          "status": "done"
-        },
-        {
-          "id": "13.2",
-          "title": "Tokens used per card",
-          "status": "done"
-        },
-        {
-          "id": "13.3",
-          "title": "Context meter with window size and Komprimera",
-          "status": "done"
-        },
-        {
-          "id": "13.4",
-          "title": "Restart to apply a new window (after the turn)",
-          "status": "done"
-        },
-        {
-          "id": "13.5",
-          "title": "Rebuild and reinstall",
+          "id": "ship.4",
+          "title": "Dokumentation (README, DECISIONS)",
           "status": "done"
         }
       ]

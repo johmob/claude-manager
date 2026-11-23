@@ -24,6 +24,8 @@ export interface WindowManager {
   allowMainClose(): void;
   setDock(visible: boolean, edge: DockEdge, count: number): void;
   setOverlay(visible: boolean, count: number): void;
+  /** Shows or hides the detail area under the overlay icons. */
+  setOverlayDetail(open: boolean): void;
   setOverlayInteractive(interactive: boolean): void;
   /** Left or right half, maximised, or back from maximised. */
   snap(mode: SnapMode): void;
@@ -38,7 +40,10 @@ const DOCK_CARD = { width: 204, height: 60, gap: 8, pad: 8 };
 const DOCK_VERTICAL_WIDTH = 220;
 const DOCK_HORIZONTAL_HEIGHT = 76;
 const OVERLAY_CELL = 60;
+const OVERLAY_USAGE_WIDTH = 78;
 const OVERLAY_HEIGHT = 44;
+const OVERLAY_DETAIL_HEIGHT = 170;
+const OVERLAY_DETAIL_WIDTH = 360;
 const EDGE_MARGIN = 8;
 
 type Route = 'main' | 'dock' | 'overlay';
@@ -64,6 +69,8 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   let dock: BrowserWindow | null = null;
   let overlay: BrowserWindow | null = null;
   let overlayInteractive = false;
+  let overlayDetail = false;
+  let overlayCount = 0;
 
   function createWindow(route: Route, options: Electron.BrowserWindowConstructorOptions): BrowserWindow {
     const win = new BrowserWindow({
@@ -129,9 +136,18 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
       overlay = floatingWindow('overlay');
       overlay.setIgnoreMouseEvents(true, { forward: true });
     }
+    overlayCount = count;
     const area = screen.getPrimaryDisplay().workArea;
-    const width = Math.min(count * OVERLAY_CELL + 16, area.width);
-    place(overlay, { x: area.x + Math.round((area.width - width) / 2), y: area.y + 2, width, height: OVERLAY_HEIGHT });
+    const row = OVERLAY_USAGE_WIDTH + count * OVERLAY_CELL + 16;
+    const width = Math.min(overlayDetail ? Math.max(row, OVERLAY_DETAIL_WIDTH) : row, area.width);
+    const height = OVERLAY_HEIGHT + (overlayDetail ? OVERLAY_DETAIL_HEIGHT : 0);
+    place(overlay, { x: area.x + Math.round((area.width - width) / 2), y: area.y + 2, width, height });
+  }
+
+  function setOverlayDetail(open: boolean): void {
+    if (open === overlayDetail) return;
+    overlayDetail = open;
+    if (overlay?.isVisible()) setOverlay(true, overlayCount);
   }
 
   function setOverlayInteractive(interactive: boolean): void {
@@ -172,6 +188,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     setDock,
     setOverlay,
     setOverlayInteractive,
+    setOverlayDetail,
     snap,
     ensureWidth,
     flash: (on) => main.flashFrame(on && !main.isFocused()),

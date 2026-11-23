@@ -7,10 +7,12 @@ export const TODO_RELATIVE_PATH = '.claude-manager/todo.json';
 const POLL_MS = 1000;
 
 export const TODO_PROTOCOL = `# Work schema
-For any task with real work, keep a work schema in \`${TODO_RELATIVE_PATH}\` in the project root (create the folder if needed). The user sees it as an org chart: the project on top, parallel tracks below it, each track's items under the track.
+Keep a work schema for the project in \`${TODO_RELATIVE_PATH}\` in the project root (create the folder if needed). The user sees it as an org chart: the project on top, parallel tracks below it, each track's items under the track.
+- Write it as soon as you know the project: after reading up on it, when asked about its status or plan, or before starting real work. Mark what is already done (judge from the code, git history and docs), what is in progress and what remains. If the file exists, update it instead.
+- Read up on the project yourself. Never hand mapping the project, judging what matters or summarising its state to a subagent: that is the main agent's job. Subagents get clearly bounded execution tasks.
 - Split the work into parallel tracks by area that can progress independently, e.g. "CAD – housing", "Firmware – controller", "Firmware – sensor node", "Web – result pages". A small job is a single track.
 - Give each track an owner: the subagent that works on it, or "main" for yourself. A track is a natural unit to hand to a subagent.
-- List each track's items in order; split an item into sub-items when it has distinct parts. Use ids like "fw-a.2" and "fw-a.2.1".
+- Organise tracks by area of the project, never by phase or chronology. Give the tree depth: split each item into sub-items for its parts (usually 2-3 levels), so the schema shows the project's structure, not one flat list. Use ids like "fw-a.2" and "fw-a.2.1".
 - Set "status" ("not_started", "in_progress", "done") on the lowest-level items, and "progress" (0-100) on items in progress. The app computes tracks and parents from their items.
 - When an item needs other items finished first, list their ids in "dependsOn", also across tracks.
 - Notice when the work moves into a new area or phase that no existing track covers (for example a new device, a test campaign, documentation, or a change of direction). Before working on it, ask the user with the AskUserQuestion tool whether to open a new track for it: propose its title and owner, and offer adding it under an existing track as the alternative. Small sub-items inside an existing track need no question.
@@ -26,9 +28,9 @@ For any task with real work, keep a work schema in \`${TODO_RELATIVE_PATH}\` in 
       { "id": "web.1", "title": "Live chart", "status": "not_started", "dependsOn": ["fw-a.2"] } ] }
   ]
 }
-- Write it before starting, keep it current as you go (including "updated"), and update it before changing direction when the plan changes.
-- Only the main agent writes the file; subagents report progress to the main agent.
-- For a plain question that needs no work, skip the file.`;
+- Keep it current as you go (including "updated"), and update it before changing direction when the plan changes.
+- Write and update the file yourself, as the main agent; never hand it to a subagent. It is your own map: plan from it, and refer to items by id (e.g. "fw-a.2") when you report progress. Subagents report their progress to you.
+- Skip it only for a plain question that has nothing to do with the project's work.`;
 
 const STATUSES: readonly TodoStatus[] = ['not_started', 'in_progress', 'done'];
 

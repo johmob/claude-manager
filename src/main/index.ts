@@ -11,6 +11,7 @@ import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
   ImportCandidate,
+  ModelChoice,
   IpcInvokeChannel,
   IpcInvokeMap,
   NewSessionOptions,
@@ -21,13 +22,13 @@ import type {
 import { CALLOUT_PROTOCOL, createSessionEngine, loadHistory } from './modules/session-engine';
 import { createSessionModel } from './modules/session-model';
 import { createUsageMonitor } from './modules/usage-monitor';
-import { createTodoWatcher, TODO_PROTOCOL } from './modules/todo-tree';
+import { createTodoWatcher, TODO_PROTOCOL, TODO_RELATIVE_PATH } from './modules/todo-tree';
+import { mapProject } from './modules/schema-mapper';
 import { createJsonStore } from './modules/json-store';
 import { pickColor } from './modules/palette';
 import { createGroundRules, groundRulesEditorPrompt } from './modules/ground-rules';
 import { createProjects, locateProject } from './modules/projects';
 import { createStructuredQuery } from './modules/structured-query';
-import { digestTurn, reviewTurn } from './modules/turn-review';
 import { createNotifier } from './modules/notifier';
 import { createWindowManager } from './modules/window-manager';
 import { createTray } from './modules/tray';
@@ -39,7 +40,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: 'C:\\Kod',
   doNotDisturb: false,
   alertOnDone: false,
-  reviewEnabled: false,
   dockVisible: false,
   dockEdge: 'right',
   overlayVisible: false,
@@ -49,6 +49,10 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const SYNC_DELAY_MS = 80;
+
+/** Told to a session's main agent once a planner has mapped its project. */
+const MAPPED_NOTE =
+  'Projektet har kartlagts och arbetsschemat ligger i .claude-manager/todo.json. Läs det nu: det är din karta att arbeta efter och hålla aktuell, och du hänvisar till dess punkter. Svara kort med de viktigaste spåren och vad som återstår.';
 
 // Same data folder in development and in the installed app (whose name would otherwise differ).
 // CLAUDE_MANAGER_DATA_DIR gives a test run its own folder, so it never touches (or locks out) the real app.
@@ -66,6 +70,9 @@ function boot(): void {
   const claudeDir = process.env['CLAUDE_CONFIG_DIR'] || join(homedir(), '.claude');
   const icon = nativeImage.createFromPath(iconPath);
   let syncTimer: NodeJS.Timeout | null = null;
+  /** Projects being mapped now, and the queue that maps them one at a time. */
+  const mappingNow = new Set<string>();
+  let mappingQueue: Promise<void> = Promise.resolve();
   /** Sessions whose new context window applies once the current turn is done. */
   const awaitingRestart = new Set<string>();
   let quitting = false;
@@ -164,7 +171,6 @@ function boot(): void {
         if (settings.alertOnDone && completed) {
           notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} är klar`, body: event.result, urgent: false });
         }
-        if (settings.reviewEnabled && completed && record && record.kind !== 'ground-rules') void reviewFinishedTurn(record);
         if (awaitingRestart.delete(event.sessionId)) void restart(event.sessionId);
         break;
       }
@@ -216,6 +222,47 @@ function boot(): void {
   async function restart(id: string): Promise<void> {
     await engine.stop(id);
     run(requireRecord(id), undefined);
+  }
+
+  /** Sends a message to a session, starting (resuming) it first when it is not running. */
+  function sendToSession(id: string, text: string): void {
+    if (engine.isRunning(id)) engine.send(id, text);
+    else run(requireRecord(id), text);
+  }
+
+  function hasSchema(cwd: string): boolean {
+    return existsSync(join(cwd, TODO_RELATIVE_PATH));
+  }
+
+  /**
+   * Maps the project into its work schema with a one-off planner (Fable when the account has it,
+   * otherwise Opus), one project at a time. Afterwards the session's main agent is told to read the
+   * schema, followed by `firstPrompt` when the user had written one.
+   */
+  function startMapping(id: string, guidance: string, firstPrompt?: string): void {
+    if (mappingNow.has(id)) return;
+    mappingNow.add(id);
+    model.setMapping(id, true);
+    const planner: ModelChoice = account.models.some((m) => m.choice === 'fable') ? 'fable' : 'opus';
+    const name = planner === 'fable' ? 'Fable' : 'Opus';
+    onSessionEvent({ type: 'notice', sessionId: id, text: `${name} kartlägger projektet till ett arbetsschema…`, level: 'info' });
+    mappingQueue = mappingQueue.then(async () => {
+      const record = findRecord(id);
+      try {
+        if (!record || record.archived) return;
+        const outcome = await mapProject({ cwd: record.cwd, guidance, model: planner, protocol: TODO_PROTOCOL, ...claudeExecutable });
+        onSessionEvent({ type: 'notice', sessionId: id, text: outcome.ok ? `Arbetsschemat är kartlagt (${name}): ${outcome.message}` : outcome.message, level: outcome.ok ? 'info' : 'warning' });
+        const followUp = [outcome.ok ? MAPPED_NOTE : '', firstPrompt ?? ''].filter(Boolean).join('\n\n');
+        if (followUp) sendToSession(id, followUp);
+      } catch (error) {
+        onSessionEvent({ type: 'notice', sessionId: id, text: `Kartläggningen misslyckades: ${error instanceof Error ? error.message : String(error)}`, level: 'warning' });
+        if (firstPrompt) sendToSession(id, firstPrompt);
+      } finally {
+        mappingNow.delete(id);
+        model.setMapping(id, false);
+        scheduleSync();
+      }
+    });
   }
 
   /** Moves a session into Fokus (others leave when there are too many). */
@@ -322,16 +369,6 @@ function boot(): void {
     return activeRecords().some((r) => sameFolder(r.cwd, cwd)) && title ? `${folder} · ${title}` : folder;
   }
 
-  async function reviewFinishedTurn(record: SessionRecord): Promise<void> {
-    try {
-      const callout = await reviewTurn(digestTurn(model.transcript(record.id)), structuredQuery, record.cwd);
-      if (callout) onSessionEvent({ type: 'callout', sessionId: record.id, callout });
-    } catch (error) {
-      // An optional extra: a failed review must never disturb the session itself.
-      console.warn('Granskning av turen misslyckades', error);
-    }
-  }
-
   function showSession(id: string): void {
     focus(id);
     windows.showMain();
@@ -414,7 +451,10 @@ function boot(): void {
     const wanted = new Set(req.claudeSessionIds);
     const chosen = (await importCandidates(claudeDir, knownSessionIds())).filter((c) => wanted.has(c.claudeSessionId));
     const defaults: NewSessionOptions = { model: settings.defaultModel, effort: settings.defaultEffort, permissionMode: settings.defaultPermissionMode };
-    for (const candidate of chosen) continueSession(candidate, defaults, cardName(candidate.cwd, candidate.title));
+    for (const candidate of chosen) {
+      const id = continueSession(candidate, defaults, cardName(candidate.cwd, candidate.title));
+      if (!hasSchema(candidate.cwd)) startMapping(id, '');
+    }
   });
 
   handle('session:folder-sessions', async (req) => ({
@@ -424,18 +464,25 @@ function boot(): void {
 
   handle('session:open-project', async (req) => {
     if (!existsSync(req.cwd) || !statSync(req.cwd).isDirectory()) throw new Error(`Mappen finns inte: ${req.cwd}`);
-    if (!req.claudeSessionId) return createSession('project', req.name?.trim() || cardName(req.cwd, 'nytt samtal'), req.cwd, req);
-    const candidate = (await importCandidates(claudeDir, knownSessionIds(), { dir: req.cwd })).find((c) => c.claudeSessionId === req.claudeSessionId);
-    if (!candidate) throw new Error('Samtalet finns inte längre (eller har redan ett kort).');
-    const id = continueSession(candidate, req, req.name?.trim() || cardName(candidate.cwd, candidate.title));
-    focus(id);
+    // A project without a work schema is mapped first; the first message waits until the map exists.
+    const mapFirst = !hasSchema(req.cwd);
+    const options = mapFirst ? { ...req, prompt: undefined } : req;
+    let id: string;
+    if (!req.claudeSessionId) {
+      id = createSession('project', req.name?.trim() || cardName(req.cwd, 'nytt samtal'), req.cwd, options);
+    } else {
+      const candidate = (await importCandidates(claudeDir, knownSessionIds(), { dir: req.cwd })).find((c) => c.claudeSessionId === req.claudeSessionId);
+      if (!candidate) throw new Error('Samtalet finns inte längre (eller har redan ett kort).');
+      id = continueSession(candidate, options, req.name?.trim() || cardName(candidate.cwd, candidate.title));
+      focus(id);
+    }
+    if (mapFirst) startMapping(id, '', req.prompt?.trim() || undefined);
     return id;
   });
 
-  handle('session:send', (req) => {
-    if (engine.isRunning(req.id)) engine.send(req.id, req.text);
-    else run(requireRecord(req.id), req.text);
-  });
+  handle('session:map-project', (req) => startMapping(req.id, req.guidance));
+
+  handle('session:send', (req) => sendToSession(req.id, req.text));
 
   handle('session:answer', (req) => engine.answerQuestion(req.id, req.requestId, req.answers));
   handle('session:permission', (req) => engine.resolvePermission(req.id, req.requestId, req.decision));
@@ -519,6 +566,7 @@ function boot(): void {
   handle('window:ensure-width', (req) => windows.ensureWidth(req.width));
   handle('window:show-session', (req) => showSession(req.id));
   handle('overlay:set-interactive', (req) => windows.setOverlayInteractive(req.interactive));
+  handle('overlay:set-detail', (req) => windows.setOverlayDetail(req.open));
 }
 
 // ---------- Pure helpers ----------
@@ -550,7 +598,6 @@ function validSettings(r: unknown): AppSettings | null {
     projectsRoot: typeof r['projectsRoot'] === 'string' && r['projectsRoot'] ? r['projectsRoot'] : d.projectsRoot,
     doNotDisturb: bool(r['doNotDisturb'], d.doNotDisturb),
     alertOnDone: bool(r['alertOnDone'], d.alertOnDone),
-    reviewEnabled: bool(r['reviewEnabled'], d.reviewEnabled),
     dockVisible: bool(r['dockVisible'], d.dockVisible),
     dockEdge: pick(r['dockEdge'], DOCK_EDGES, d.dockEdge),
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),

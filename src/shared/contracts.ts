@@ -187,17 +187,15 @@ export type StructuredQuery = (request: StructuredRequest) => Promise<unknown>;
 
 // ---------- Callouts: what the agent tags as worth attention ----------
 
-/** GitHub alert kinds (`> [!WARNING]` …), most severe first. */
-export type CalloutKind = 'caution' | 'warning' | 'important' | 'note' | 'tip';
-export const CALLOUT_KINDS: readonly CalloutKind[] = ['caution', 'warning', 'important', 'note', 'tip'];
+/** GitHub alert kinds (`> [!WARNING]` …) plus `[!QUESTION]` for questions to the user, most urgent first. */
+export type CalloutKind = 'caution' | 'warning' | 'question' | 'important' | 'note' | 'tip';
+export const CALLOUT_KINDS: readonly CalloutKind[] = ['caution', 'warning', 'question', 'important', 'note', 'tip'];
 
 export interface Callout {
   kind: CalloutKind;
   /** Short bold title; may be empty. */
   title: string;
   text: string;
-  /** Tagged by the working agent itself, or by the optional Haiku review. */
-  source: 'agent' | 'review';
 }
 
 // ---------- Events from session-engine (normalised, labelled) ----------
@@ -271,6 +269,8 @@ export interface SessionSummary {
   resumable: boolean;
   focused: boolean;
   lastActiveAt: string;
+  /** A planner is mapping the project into a work schema right now. */
+  mapping: boolean;
   slashCommands: string[];
 }
 
@@ -291,8 +291,6 @@ export interface AppSettings {
   projectsRoot: string;
   doNotDisturb: boolean;
   alertOnDone: boolean;
-  /** Extra, independent Haiku review of finished turns (the agent tags callouts itself regardless). */
-  reviewEnabled: boolean;
   dockVisible: boolean;
   dockEdge: DockEdge;
   overlayVisible: boolean;
@@ -358,6 +356,8 @@ export interface IpcInvokeMap {
   'session:transcript': { req: { id: string }; res: TranscriptEntry[] };
   'session:mark-seen': { req: { id: string }; res: void };
   'session:set-focus': { req: { id: string; focused: boolean }; res: void };
+  /** Lets a planner (Fable when the account has it) map the project into its work schema; `guidance` may be empty. */
+  'session:map-project': { req: { id: string; guidance: string }; res: void };
   'session:dismiss-callouts': { req: { id: string }; res: void };
   'ground-rules:edit': { req: { instructions: string }; res: string };
   'settings:update': { req: Partial<AppSettings>; res: AppSettings };
@@ -367,6 +367,8 @@ export interface IpcInvokeMap {
   'window:ensure-width': { req: { width: number }; res: boolean };
   'window:show-session': { req: { id: string }; res: void };
   'overlay:set-interactive': { req: { interactive: boolean }; res: void };
+  /** Grows the overlay to show details under the icons (while hovered), or shrinks it back. */
+  'overlay:set-detail': { req: { open: boolean }; res: void };
 }
 
 /** Main -> renderer pushes. */

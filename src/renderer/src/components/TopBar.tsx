@@ -1,5 +1,6 @@
 import type { AppSettings, DockEdge } from '../../../shared/contracts';
 import { send } from '../lib/api';
+import { ChatIcon, ExistingProjectIcon, NewProjectIcon, RulesIcon } from './Icons';
 import type { DialogKind } from './StartDialogs';
 
 export type ViewMode = 'overview' | 'focus';
@@ -29,26 +30,19 @@ function Toggle(props: { label: string; on: boolean; onChange: (on: boolean) => 
 export function TopBar({ settings, view, onView, onDialog }: TopBarProps) {
   return (
     <header className="topbar">
-      <div className="app-name">Claude Code Manager</div>
-      <div className="topbar-group">
-        <button type="button" className="btn primary" onClick={() => onDialog('chat')}>Ny chatt</button>
-        <button type="button" className="btn" onClick={() => onDialog('project')}>Nytt projekt</button>
-        <button type="button" className="btn" onClick={() => onDialog('existing')}>Befintligt projekt</button>
-        <button type="button" className="btn" onClick={() => onDialog('rules')}>Grundregler</button>
+      <nav className="start-menu" aria-label="Starta">
+        <button type="button" onClick={() => onDialog('chat')}><ChatIcon />Ny chatt</button>
+        <button type="button" onClick={() => onDialog('project')}><NewProjectIcon />Nytt projekt</button>
+        <button type="button" onClick={() => onDialog('existing')}><ExistingProjectIcon />Befintligt projekt</button>
+        <span className="start-menu-sep" />
+        <button type="button" onClick={() => onDialog('rules')}><RulesIcon />Grundregler</button>
+      </nav>
+      <div className="view-tabs" role="tablist">
+        <button type="button" role="tab" aria-selected={view === 'overview'} onClick={() => onView('overview')}>Översikt</button>
+        <button type="button" role="tab" aria-selected={view === 'focus'} onClick={() => onView('focus')}>Fokus</button>
       </div>
-      <div className="segmented">
-        <button type="button" className={view === 'overview' ? 'active' : ''} onClick={() => onView('overview')}>Översikt</button>
-        <button type="button" className={view === 'focus' ? 'active' : ''} onClick={() => onView('focus')}>Fokus</button>
-      </div>
-      <span className="spacer" />
-      <div className="topbar-group">
+      <div className="topbar-group topbar-settings">
         <Toggle label="Stör ej" on={settings.doNotDisturb} onChange={(doNotDisturb) => send('settings:update', { doNotDisturb })} />
-        <Toggle
-          label="Granskning"
-          title="Extra, oberoende granskning av varje avslutad tur med Haiku (kostar lite kvot). Agenterna taggar viktiga saker själva ändå."
-          on={settings.reviewEnabled}
-          onChange={(reviewEnabled) => send('settings:update', { reviewEnabled })}
-        />
         <Toggle label="Docka" on={settings.dockVisible} onChange={(dockVisible) => send('settings:update', { dockVisible })} />
         <select
           className="input compact"

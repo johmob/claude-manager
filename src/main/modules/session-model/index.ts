@@ -29,6 +29,7 @@ export interface SessionModel {
   /** The user has looked at a finished turn: `done` becomes `idle`. */
   markSeen(id: string): void;
   dismissCallouts(id: string): void;
+  setMapping(id: string, mapping: boolean): void;
   summaries(): SessionSummary[];
   summary(id: string): SessionSummary | undefined;
   transcript(id: string): TranscriptEntry[];
@@ -48,6 +49,7 @@ interface SessionState {
   lastActivity: string;
   lastError: string | null;
   callouts: Callout[];
+  mapping: boolean;
   context: ContextUsage | null;
   todo: TodoTree | null;
   slashCommands: string[];
@@ -79,6 +81,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       lastActivity: '',
       lastError: null,
       callouts: [],
+      mapping: false,
       context: null,
       todo: null,
       slashCommands: [],
@@ -249,6 +252,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       todo: s.todo,
       resumable: !s.running,
       focused: record.focused,
+      mapping: s.mapping,
       lastActiveAt: record.lastActiveAt,
       slashCommands: s.slashCommands,
     };
@@ -277,6 +281,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     markSeen: (id) => {
       const s = states.get(id);
       if (s) s.unseenDone = false;
+    },
+    setMapping: (id, mapping) => {
+      const s = states.get(id);
+      if (s) s.mapping = mapping;
     },
     dismissCallouts: (id) => {
       const s = states.get(id);

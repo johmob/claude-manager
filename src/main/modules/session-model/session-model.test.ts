@@ -128,13 +128,13 @@ describe('session-model', () => {
   it('keeps the latest turn\'s callouts, most severe first, until dismissed or the next turn', () => {
     const { model, apply } = setup();
     apply({ type: 'turn_started', prompt: 'bygg' });
-    const [entry] = apply({ type: 'callout', callout: { kind: 'note', title: 'Antog port 80', text: 'Ingen port angavs.', source: 'agent' } });
-    apply({ type: 'callout', callout: { kind: 'caution', title: 'Lösenord i klartext', text: 'config.json.', source: 'agent' } });
+    const [entry] = apply({ type: 'callout', callout: { kind: 'note', title: 'Antog port 80', text: 'Ingen port angavs.' } });
+    apply({ type: 'callout', callout: { kind: 'caution', title: 'Lösenord i klartext', text: 'config.json.' } });
     expect(entry).toMatchObject({ kind: 'callout', callout: { kind: 'note' } });
     expect(model.summary('s1')?.callouts.map((c) => c.kind)).toEqual(['caution', 'note']);
     model.dismissCallouts('s1');
     expect(model.summary('s1')?.callouts).toEqual([]);
-    apply({ type: 'callout', callout: { kind: 'tip', title: 'Nästa steg', text: 'Lägg till tester.', source: 'agent' } });
+    apply({ type: 'callout', callout: { kind: 'tip', title: 'Nästa steg', text: 'Lägg till tester.' } });
     apply({ type: 'turn_started', prompt: 'nästa' });
     expect(model.summary('s1')?.callouts).toEqual([]);
   });

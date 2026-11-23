@@ -21,3 +21,8 @@ export function effortOptions(models: ModelOption[], model: ModelChoice, current
   const levels = models.find((m) => m.choice === model)?.efforts ?? [...EFFORT_CHOICES];
   return current && !levels.includes(current) ? [...levels, current] : levels;
 }
+
+/** The account's name for a model ("Opus 5.5"), or the choice itself when unknown. */
+export function modelLabel(account: AccountSnapshot | null, choice: ModelChoice): string {
+  return account?.models.find((m) => m.choice === choice)?.label ?? choice;
+}

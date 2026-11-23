@@ -284,13 +284,15 @@ The user skims your final message in an app that renders GitHub alert blocks as 
 When something in this turn deserves attention, put it in its own alert block at the end of your final message:
 > [!CAUTION]   risky, destructive or irreversible actions; secrets or security problems
 > [!WARNING]   something failed, was skipped, or did not work as intended
+> [!QUESTION]  a question for the user that does not block your work
 > [!IMPORTANT] something the user should know but could easily miss
 > [!NOTE]      an assumption you made on the user's behalf
 > [!TIP]       a suggested next step
 Format: the marker line, then one line starting with "> " holding a short bold title and one sentence. Write the text in Swedish.
-Use at most three blocks per message, only when they add something; never tag routine success.`;
+Use at most three blocks per message, only when they add something; never tag routine success.
+Questions are the exception: never bury a question to the user in running text. Ask it with the AskUserQuestion tool when you need the answer before you continue; otherwise give each question its own [!QUESTION] block.`;
 
-const ALERT_LINE = /^\s*>\s*\[!(CAUTION|WARNING|IMPORTANT|NOTE|TIP)\]\s*(.*)$/i;
+const ALERT_LINE = /^\s*>\s*\[!(CAUTION|WARNING|QUESTION|IMPORTANT|NOTE|TIP)\]\s*(.*)$/i;
 const FENCE_LINE = /^\s*(```|~~~)/;
 const BOLD_TITLE = /^\*\*(.+?)\*\*[\s:.–—-]*([\s\S]*)$/;
 
@@ -325,8 +327,8 @@ function toCallout(kind: CalloutKind, lines: string[]): Callout {
   const body = lines.join('\n').trim();
   const titled = BOLD_TITLE.exec(body);
   return titled
-    ? { kind, title: titled[1]!.replace(/[:.]$/, '').trim(), text: titled[2]!.trim(), source: 'agent' }
-    : { kind, title: '', text: body, source: 'agent' };
+    ? { kind, title: titled[1]!.replace(/[:.]$/, '').trim(), text: titled[2]!.trim() }
+    : { kind, title: '', text: body };
 }
 
 function textEvents(sessionId: string, text: string, agentId: string | undefined): SessionEvent[] {

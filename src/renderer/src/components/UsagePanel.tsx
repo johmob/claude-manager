@@ -1,15 +1,8 @@
-import { USAGE_CRIT_PCT, USAGE_NOTICE_PCT, USAGE_WARN_PCT, type UsageSnapshot, type UsageWindow } from '../../../shared/contracts';
+import type { UsageSnapshot, UsageWindow } from '../../../shared/contracts';
 import { formatReset } from '../lib/format';
 import { send } from '../lib/api';
 import { useAccount } from '../state/account';
-
-/** Green below 50 % used, yellow from 50 %, orange from 70 %, red from 90 %. */
-function level(utilization: number): 'ok' | 'notice' | 'warn' | 'crit' {
-  if (utilization >= USAGE_CRIT_PCT) return 'crit';
-  if (utilization >= USAGE_WARN_PCT) return 'warn';
-  if (utilization >= USAGE_NOTICE_PCT) return 'notice';
-  return 'ok';
-}
+import { usageLevel } from '../lib/usage';
 
 function UsageBar(props: { label: string; window: UsageWindow | null; weekday: boolean }) {
   const { label, window: w, weekday } = props;
@@ -24,7 +17,7 @@ function UsageBar(props: { label: string; window: UsageWindow | null; weekday: b
   const used = Math.min(100, Math.max(0, w.utilization));
   const reset = formatReset(w.resetsAt, weekday);
   return (
-    <div className="usage-row" data-level={level(used)}>
+    <div className="usage-row" data-level={usageLevel(used)}>
       <div className="usage-label">
         <span>{label}</span>
         <span className="usage-used">{Math.round(used)} % använt</span>

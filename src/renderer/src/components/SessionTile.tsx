@@ -26,7 +26,7 @@ export function SessionTile({ session }: { session: SessionSummary }) {
       <div className="tile-context">
         <ContextMeter session={session} />
       </div>
-      <TranscriptView entries={entries} />
+      <TranscriptView entries={entries} sessionId={session.id} />
       <PendingPanel session={session} />
       <ChatInput session={session} />
       {schemaOpen && <WorkSchema session={session} onClose={() => setSchemaOpen(false)} />}

@@ -3,7 +3,7 @@ import type { SessionSummary } from '../../../shared/contracts';
 import { formatElapsed } from '../lib/format';
 import { send } from '../lib/api';
 import { useNow } from '../lib/useNow';
-import { AgentDots, IconButton, ModelEffortPicker, StatusChip } from './Atoms';
+import { AgentDots, IconButton, ModelEffortPicker, Spinner, StatusChip } from './Atoms';
 import { CalloutBox } from './CalloutBox';
 import { ChatInput } from './ChatInput';
 import { ContextMeter } from './ContextMeter';
@@ -86,7 +86,7 @@ function CardCallouts({ session }: { session: SessionSummary }) {
   return (
     <div className="card-callouts">
       <IconButton title="Avfärda" onClick={() => send('session:dismiss-callouts', { id: session.id })}>×</IconButton>
-      {shown.map((callout, i) => <CalloutBox key={i} callout={callout} />)}
+      {shown.map((callout, i) => <CalloutBox key={i} callout={callout} sessionId={session.id} />)}
     </div>
   );
 }
@@ -112,7 +112,7 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
           <AgentDots count={session.activeAgents} color={session.color} />
           {working && session.turnStartedAt !== null && <span className="elapsed">{formatElapsed(now - session.turnStartedAt)}</span>}
         </div>
-        <div className="card-task">{session.currentTask || ' '}</div>
+        <div className="card-task">{session.mapping ? <><Spinner small /> Kartlägger projektet…</> : session.currentTask || " "}</div>
         {todo && (
           <div className="thin-bar" title={`${todo.progress} % · ${todo.doneItems} av ${todo.totalItems} punkter · ${todo.tracks.length} spår`}>
             <div style={{ width: `${todo.progress}%`, background: session.color }} />

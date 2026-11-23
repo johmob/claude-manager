@@ -80,14 +80,14 @@ describe('splitCallouts', () => {
     expect(splitCallouts(text)).toEqual({
       text: 'Done',
       callouts: [
-        { kind: 'warning', title: 'Steg 2 misslyckades', text: '`settings-prod.json` finns inte.', source: 'agent' },
-        { kind: 'note', title: 'Filen skapades från grunden', text: 'den innehåller bara `port`.', source: 'agent' },
+        { kind: 'warning', title: 'Steg 2 misslyckades', text: '`settings-prod.json` finns inte.' },
+        { kind: 'note', title: 'Filen skapades från grunden', text: 'den innehåller bara `port`.' },
       ],
     });
   });
 
   it('accepts text on the marker line and blocks without a bold title', () => {
-    expect(splitCallouts('> [!CAUTION] Lösenordet loggas.').callouts).toEqual([{ kind: 'caution', title: '', text: 'Lösenordet loggas.', source: 'agent' }]);
+    expect(splitCallouts('> [!CAUTION] Lösenordet loggas.').callouts).toEqual([{ kind: 'caution', title: '', text: 'Lösenordet loggas.' }]);
   });
 
   it('ignores alert syntax inside code fences and plain quotes', () => {
