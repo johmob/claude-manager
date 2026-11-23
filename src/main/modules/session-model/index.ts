@@ -16,6 +16,11 @@ export interface SessionModel {
   remove(id: string): void;
   /** Apply one event. Returns the transcript entries that were created or changed. */
   apply(event: SessionEvent): TranscriptEntry[];
+  /**
+   * Prepends a saved conversation (as replayed events) to the session's transcript without
+   * touching its live status. Returns the full transcript afterwards.
+   */
+  loadHistory(id: string, events: SessionEvent[]): TranscriptEntry[];
   setTodo(id: string, tree: TodoTree | null): void;
   /** The user has looked at a finished turn: `done` becomes `idle`. */
   markSeen(id: string): void;
@@ -224,10 +229,22 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     };
   }
 
+  function loadHistory(id: string, events: SessionEvent[]): TranscriptEntry[] {
+    const s = states.get(id);
+    if (!s) return [];
+    const replay = createSessionModel(now);
+    replay.upsertRecord(s.record);
+    for (const event of events) replay.apply(event);
+    const saved = replay.transcript(id).map((entry) => ({ ...entry, id: `history:${entry.id}` }));
+    s.transcript = [...saved, ...s.transcript].slice(-MAX_TRANSCRIPT);
+    return [...s.transcript];
+  }
+
   return {
     upsertRecord,
     remove: (id) => void states.delete(id),
     apply,
+    loadHistory,
     setTodo: (id, tree) => {
       const s = states.get(id);
       if (s) s.todo = tree;

@@ -27,6 +27,10 @@ function ensureSubscribed(): void {
     transcripts.set(id, upsert(transcripts.get(id) ?? EMPTY, entry));
     emit();
   });
+  window.cm.on('session:transcript-reset', ({ id, entries }) => {
+    transcripts.set(id, entries);
+    emit();
+  });
 }
 
 function load(id: string): void {

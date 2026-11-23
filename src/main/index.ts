@@ -16,7 +16,7 @@ import type {
   SessionKind,
   SessionRecord,
 } from '../shared/contracts';
-import { createSessionEngine } from './modules/session-engine';
+import { createSessionEngine, loadHistory } from './modules/session-engine';
 import { createSessionModel } from './modules/session-model';
 import { createUsageMonitor } from './modules/usage-monitor';
 import { createTodoWatcher, TODO_PROTOCOL } from './modules/todo-tree';
@@ -86,6 +86,11 @@ function boot(): void {
   for (const record of activeRecords()) {
     model.upsertRecord(record);
     todo.watch(record.id, record.cwd);
+    if (record.claudeSessionId) {
+      loadHistory(record.id, record.claudeSessionId, record.cwd)
+        .then((events) => windows.send('session:transcript-reset', { id: record.id, entries: model.loadHistory(record.id, events) }))
+        .catch(() => undefined); // No saved transcript (deleted or never written): the card simply starts empty.
+    }
   }
   notifier.setDoNotDisturb(settings.doNotDisturb);
   usage.start();

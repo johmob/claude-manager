@@ -255,6 +255,8 @@ export interface IpcEventMap {
   'state:usage': UsageSnapshot;
   'state:settings': AppSettings;
   'session:transcript-upsert': { id: string; entry: TranscriptEntry };
+  /** Replaces a whole transcript, e.g. after saved history was loaded in front of it. */
+  'session:transcript-reset': { id: string; entries: TranscriptEntry[] };
   'ui:open-session': { id: string };
 }
 

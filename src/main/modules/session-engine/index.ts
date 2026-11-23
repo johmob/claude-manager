@@ -1,8 +1,8 @@
 // session-engine: runs Claude Code sessions through the Agent SDK and turns raw SDK messages
 // into the app's labelled SessionEvents. Holds no UI state; questions and permission requests
 // stay pending here until the host answers them.
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import type { PermissionResult, Query, SDKMessage, SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
+import { getSessionMessages, query } from '@anthropic-ai/claude-agent-sdk';
+import type { PermissionResult, Query, SDKMessage, SDKUserMessage, SessionMessage } from '@anthropic-ai/claude-agent-sdk';
 import type {
   ContextUsage,
   ModelChoice,
@@ -237,6 +237,69 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
     stop,
     stopAll: () => [...sessions.keys()].forEach(stop),
   };
+}
+
+// ---------- Saved history ----------
+
+const HISTORY_LIMIT = 400;
+
+/**
+ * Reads a saved Claude Code transcript (no tokens, local files) and returns it as the same
+ * events the live stream produces. After a compaction only the active part is available.
+ */
+export async function loadHistory(sessionId: string, claudeSessionId: string, cwd: string): Promise<SessionEvent[]> {
+  const messages = await getSessionMessages(claudeSessionId, { dir: cwd });
+  const questionIds = new Set<string>();
+  return messages.slice(-HISTORY_LIMIT).flatMap((m) => historyEvents(sessionId, m, questionIds));
+}
+
+function historyEvents(sessionId: string, m: SessionMessage, questionIds: Set<string>): SessionEvent[] {
+  const flags = asRecord(m);
+  if (flags['isCompactSummary'] === true) return [{ type: 'notice', sessionId, text: 'Tidigare del av konversationen är komprimerad.', level: 'info' }];
+  if (m.type === 'system' || flags['is_meta'] === true) return [];
+  const content = asRecord(m.message)['content'];
+  const blocks = Array.isArray(content) ? content.map(asRecord) : [];
+
+  if (m.type === 'assistant') {
+    const live = translate(sessionId, { type: 'assistant', message: m.message, parent_tool_use_id: m.parent_tool_use_id } as SDKMessage);
+    const questions = blocks
+      .filter((b) => b['type'] === 'tool_use' && b['name'] === 'AskUserQuestion')
+      .map((b): SessionEvent => {
+        const requestId = String(b['id']);
+        questionIds.add(requestId);
+        return { type: 'input_requested', sessionId, pending: { kind: 'question', requestId, questions: parseQuestions(asRecord(b['input'])), createdAt: 0 } };
+      });
+    return [...live, ...questions];
+  }
+
+  if (typeof content === 'string') return savedUserText(sessionId, content);
+  const text = blocks.filter((b) => b['type'] === 'text').map((b) => String(b['text'] ?? '')).join('\n');
+  const results = blocks
+    .filter((b) => b['type'] === 'tool_result')
+    .map((b): SessionEvent => {
+      const toolUseId = String(b['tool_use_id']);
+      return questionIds.has(toolUseId)
+        ? { type: 'input_resolved', sessionId, requestId: toolUseId, answer: firstLine(toolResultText(b['content'])) }
+        : { type: 'tool_result', sessionId, toolUseId, isError: b['is_error'] === true };
+    });
+  return [...(text.trim() ? savedUserText(sessionId, text) : []), ...results];
+}
+
+/** Saved user text also holds slash commands and their local output, wrapped in tags. */
+function savedUserText(sessionId: string, text: string): SessionEvent[] {
+  const tag = (name: string): string | null => text.match(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`))?.[1]?.trim() ?? null;
+  const command = tag('command-name');
+  if (command) return [{ type: 'turn_started', sessionId, prompt: [command, tag('command-args')].filter(Boolean).join(' ') }];
+  const stdout = tag('local-command-stdout');
+  if (stdout !== null) return stdout ? [{ type: 'notice', sessionId, text: stdout, level: 'info' }] : [];
+  if (text.startsWith('[Request interrupted')) return [{ type: 'notice', sessionId, text: 'Avbruten av användaren.', level: 'info' }];
+  return [{ type: 'turn_started', sessionId, prompt: text }];
+}
+
+function toolResultText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content.map((b) => String(asRecord(b)['text'] ?? '')).join('\n');
 }
 
 // ---------- Translation of SDK messages ----------

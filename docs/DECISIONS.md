@@ -82,4 +82,5 @@ Path: `<project>/.claude-manager/todo.json`. Only the main agent writes it; the 
 | Dock click | Brings the main window forward with that session opened. |
 | Error states | SDK errors and process exits mark the card `error` with the message; the card offers Resume. Usage-limit errors come through as `rate_limit_event` with `status: 'rejected'` and are shown on the card. |
 | Transcript logging and search | Claude Code already saves every transcript (`~/.claude/projects`); resume uses it. Full-text search is left for a later version. |
+| Transcript after restart | Loaded from Claude Code's saved transcript with the SDK's `getSessionMessages` (local files, no tokens) and replayed through the same event pipeline as live output, so it looks identical. After a `/compact` only the active part exists; the compacted part shows as one notice. Pending questions from before the restart are not restored: the agent is asked again on resume. |
 | Token storage | The app stores no tokens. It only reads Claude Code's own credentials file, the same way the taskbar plugin does. |

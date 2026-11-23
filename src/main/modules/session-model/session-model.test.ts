@@ -90,6 +90,19 @@ describe('session-model', () => {
     expect(model.summary('s1')?.currentTask).toBe('1.2 Steg');
   });
 
+  it('prepends saved history without changing live status', () => {
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'ny fråga' });
+    const full = model.loadHistory('s1', [
+      { type: 'turn_started', sessionId: 's1', prompt: 'gammal fråga' },
+      { type: 'text', sessionId: 's1', text: 'gammalt svar' },
+    ]);
+    expect(full.map((e) => (e.kind === 'user' || e.kind === 'assistant' ? e.text : e.kind))).toEqual(['gammal fråga', 'gammalt svar', 'ny fråga']);
+    expect(full[0]!.id.startsWith('history:')).toBe(true);
+    expect(model.summary('s1')).toMatchObject({ status: 'working', activeAgents: 1 });
+  });
+
   it('marks errors and clears everything on exit', () => {
     const { model, apply } = setup();
     apply({ type: 'started' });
