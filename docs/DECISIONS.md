@@ -43,7 +43,7 @@ Run `node tools/verify-sdk.mjs <workDir> <logFile>` to repeat. Results:
 | Rate limits in stream | Yes | `rate_limit_event` carries `unifiedWindows.five_hour/seven_day` (utilization 0–1). Used as a live supplement to the OAuth poll. |
 | `TodoWrite` | **No** | Not in the SDK session's tool list. Irrelevant: the todo tree is a file the agent writes (see below). |
 | `session_state_changed` | **Not emitted** | Status is derived from turn start/result and pending input instead. |
-| "You Should Know" plugin | **Not found** | Not installed, not in the official marketplace (`claude-plugins-official`), and `claude plugin details you-should-know` finds nothing. Highlights are left out of v1. If the plugin turns up, its notes would arrive as `system/informational` or `system/notification` messages, which the engine already labels. |
+| "You Should Know" plugin | **Loads, but notes do not reach the stream** | It is built into Claude Code as `cc-plugin-you-should-know` (off by default, so no plugin list shows it). An SDK session can enable it with `settings: { enabledPlugins: { 'cc-plugin-you-should-know@builtin': true } }` and `system/init.plugins` then lists it. Its notes are drawn by the terminal UI ("above the prompt", via the plugin `ui.render` surface); the public SDK has no message or callback for that surface. In a test task (`tools/verify-ysk.mjs`) no note arrived. Per spec §3 the fallback is a small stateless Haiku pass, which needs the user's go-ahead (spec §3 keeps v1 free of extra LLM calls). |
 
 ## Usage panel
 
