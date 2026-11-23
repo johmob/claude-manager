@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T08:09:02Z",
+  "updated": "2026-11-23T08:11:58Z",
   "blocks": [
     {
       "id": "1",
@@ -153,7 +153,7 @@
     {
       "id": "5",
       "title": "Test and delivery",
-      "status": "in_progress",
+      "status": "done",
       "steps": [
         {
           "id": "5.1",
@@ -168,7 +168,7 @@
         {
           "id": "5.3",
           "title": "Windows installer",
-          "status": "in_progress"
+          "status": "done"
         },
         {
           "id": "5.4",
