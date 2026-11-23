@@ -9,10 +9,6 @@ import { Modal } from './Modal';
 
 const STATUS_TEXT: Record<TodoNode['status'], string> = { done: 'Klar', in_progress: 'Pågår', not_started: 'Ej påbörjad' };
 
-/** Sent by the empty view's button; the file format itself is in every session's instructions. */
-const SCHEMA_REQUEST =
-  'Skriv arbetsschemat för projektet nu, själv och inte via en subagent (.claude-manager/todo.json, formatet i dina instruktioner): dela upp i parallella spår och markera vad som redan är klart (utgå från koden, git-historiken och dokumentationen), vad som pågår och vad som återstår.';
-
 /** An item (or a whole track) the user wants to talk to the session's Claude about. */
 interface Topic {
   node: TodoNode;
@@ -157,19 +153,14 @@ function AskBox({ session, topic, onCancel, onSent }: { session: SessionSummary;
 }
 
 /**
- * Maps the project into its work schema: thoroughly with a one-off planner (Fable when the account
- * has it), or by the session's own agent. Optional text describes the structure to follow.
+ * Has the session's main agent map the project into its work schema (on Fable with high effort when
+ * the account has it, then back to the card's model). Optional text describes the structure to follow.
  */
 function MapPanel({ session, onStarted }: { session: SessionSummary; onStarted: () => void }) {
   const [guidance, setGuidance] = useState('');
-  const planner = useAccount()?.models.some((m) => m.choice === 'fable') ? 'Fable' : 'Opus';
-  const byPlanner = (): void => {
+  const mapper = useAccount()?.models.some((m) => m.choice === 'fable') ? 'Fable' : 'Opus';
+  const start = (): void => {
     send('session:map-project', { id: session.id, guidance });
-    onStarted();
-  };
-  const byAgent = (): void => {
-    const structure = guidance.trim() ? `\n\nStruktur att utgå från:\n${guidance.trim()}` : '';
-    send('session:send', { id: session.id, text: SCHEMA_REQUEST + structure });
     onStarted();
   };
   return (
@@ -184,10 +175,9 @@ function MapPanel({ session, onStarted }: { session: SessionSummary; onStarted: 
       />
       <div className="ws-map-actions">
         <span className="muted">
-          {planner} läser hela projektet, skriver bara schemat och avslutas sedan. Därefter får huvudagenten läsa schemat. Använder en del av kvoten.
+          Huvudagenten läser in hela projektet själv och skriver schemat, så kartan finns i dess eget minne. Den turen körs på {mapper} med hög effort och går sedan tillbaka till kortets modell. Använder en del av kvoten.
         </span>
-        <button type="button" className="btn" onClick={byAgent}>Låt sessionens agent göra det</button>
-        <button type="button" className="btn primary" onClick={byPlanner}>Kartlägg med {planner}</button>
+        <button type="button" className="btn primary" onClick={start}>Kartlägg</button>
       </div>
     </div>
   );
@@ -253,7 +243,7 @@ export function WorkSchema({ session, onClose }: { session: SessionSummary; onCl
         )}
       </div>
       {session.mapping && (
-        <div className="ws-mapping"><Spinner small /> Projektet kartläggs. Det kan ta några minuter; schemat dyker upp här när det är klart.</div>
+        <div className="ws-mapping"><Spinner small /> Huvudagenten kartlägger projektet. Det kan ta några minuter; schemat dyker upp här när det är klart.</div>
       )}
       {!session.mapping && (!todo || remapping) && <MapPanel session={session} onStarted={() => setRemapping(false)} />}
       {!todo ? null : (

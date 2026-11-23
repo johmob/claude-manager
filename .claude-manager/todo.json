@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-23T11:27:28Z",
+  "updated": "2026-11-23T11:40:06Z",
   "tracks": [
     {
       "id": "eng",
@@ -124,7 +124,7 @@
           "items": [
             {
               "id": "plan.3.1",
-              "title": "Planerare (Fable) som bara får skriva schemat",
+              "title": "Huvudagenten kartlägger själv (Fable/high för den turen)",
               "status": "done"
             },
             {
@@ -145,11 +145,16 @@
             },
             {
               "id": "plan.3.4",
-              "title": "Besked till huvudagenten efter kartläggning",
+              "title": "Tillbaka till kortets modell, sedan första meddelandet",
               "status": "done",
               "dependsOn": [
-                "plan.3.2"
+                "plan.3.1"
               ]
+            },
+            {
+              "id": "plan.3.5",
+              "title": "Separat planerare borttagen",
+              "status": "done"
             }
           ]
         }

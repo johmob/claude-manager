@@ -32,6 +32,24 @@ Keep a work schema for the project in \`${TODO_RELATIVE_PATH}\` in the project r
 - Write and update the file yourself, as the main agent; never hand it to a subagent. It is your own map: plan from it, and refer to items by id (e.g. "fw-a.2") when you report progress. Subagents report their progress to you.
 - Skip it only for a plain question that has nothing to do with the project's work.`;
 
+/**
+ * Sent to a session's main agent to map its project into the work schema. It is shown as the user's
+ * message in the transcript, so it is in Swedish. `guidance` is the user's optional description of the structure.
+ */
+export function mappingRequest(guidance: string): string {
+  const lines = [
+    'Kartlägg projektet till arbetsschemat nu, före allt annat arbete. Schemat blir din karta resten av samtalet.',
+    '- Läs in dig själv och grundligt: mappstrukturen, README och övrig dokumentation, byggfiler, källkod, CAD- och hårdvarufiler och git-historiken. Lämna inte kartläggningen, bedömningen av vad som är viktigt eller sammanfattningen till en subagent.',
+    '- Underskatta inte projektet. Se efter hur stort det faktiskt är (antal delar, enheter, firmware, webbdelar, dokumentation) innan du beskriver det.',
+    `- Skriv ${TODO_RELATIVE_PATH} i formatet i dina instruktioner: spår per område med djup (oftast 2–3 nivåer), vad som är klart, vad som pågår, vad som återstår och beroenden mellan punkter.`,
+    '- Finns schemat redan: gå igenom det mot projektet som det ser ut nu och gör om det där det inte stämmer.',
+    '- Svara sedan kort: de viktigaste spåren och vad som återstår.',
+  ];
+  const structure = guidance.trim();
+  if (structure) lines.push('', 'Struktur att utgå från, enligt användaren:', structure);
+  return lines.join('\n');
+}
+
 const STATUSES: readonly TodoStatus[] = ['not_started', 'in_progress', 'done'];
 
 

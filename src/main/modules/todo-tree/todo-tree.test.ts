@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { TodoTree } from '../../../shared/contracts';
-import { createTodoWatcher, parseTodoTree, TODO_RELATIVE_PATH } from './index';
+import { createTodoWatcher, mappingRequest, parseTodoTree, TODO_RELATIVE_PATH } from './index';
 
 describe('parseTodoTree', () => {
   const schema = {
@@ -79,5 +79,18 @@ describe('createTodoWatcher', () => {
     watcher.close();
     expect(calls.length).toBe(2);
     expect(calls[1]?.title).toBe('T');
+  });
+});
+
+describe('mappingRequest', () => {
+  it('asks the main agent to map the project itself into the schema file', () => {
+    const text = mappingRequest('');
+    expect(text).toContain(TODO_RELATIVE_PATH);
+    expect(text).toContain('subagent');
+    expect(text).not.toContain('Struktur att utgå från');
+  });
+
+  it("adds the user's description of the structure", () => {
+    expect(mappingRequest('  CAD med 30 delar  ')).toMatch(/Struktur att utgå från.*\nCAD med 30 delar$/s);
   });
 });

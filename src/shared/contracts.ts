@@ -269,7 +269,7 @@ export interface SessionSummary {
   resumable: boolean;
   focused: boolean;
   lastActiveAt: string;
-  /** A planner is mapping the project into a work schema right now. */
+  /** The session's main agent is mapping the project into its work schema (or waiting to). */
   mapping: boolean;
   slashCommands: string[];
 }
@@ -356,7 +356,7 @@ export interface IpcInvokeMap {
   'session:transcript': { req: { id: string }; res: TranscriptEntry[] };
   'session:mark-seen': { req: { id: string }; res: void };
   'session:set-focus': { req: { id: string; focused: boolean }; res: void };
-  /** Lets a planner (Fable when the account has it) map the project into its work schema; `guidance` may be empty. */
+  /** Has the session's main agent map the project into its work schema; `guidance` may be empty. */
   'session:map-project': { req: { id: string; guidance: string }; res: void };
   'session:dismiss-callouts': { req: { id: string }; res: void };
   'ground-rules:edit': { req: { instructions: string }; res: string };

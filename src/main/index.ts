@@ -10,6 +10,7 @@ import { CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERM
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
+  EffortChoice,
   ImportCandidate,
   ModelChoice,
   IpcInvokeChannel,
@@ -22,8 +23,7 @@ import type {
 import { CALLOUT_PROTOCOL, createSessionEngine, loadHistory } from './modules/session-engine';
 import { createSessionModel } from './modules/session-model';
 import { createUsageMonitor } from './modules/usage-monitor';
-import { createTodoWatcher, TODO_PROTOCOL, TODO_RELATIVE_PATH } from './modules/todo-tree';
-import { mapProject } from './modules/schema-mapper';
+import { createTodoWatcher, mappingRequest, TODO_PROTOCOL, TODO_RELATIVE_PATH } from './modules/todo-tree';
 import { createJsonStore } from './modules/json-store';
 import { pickColor } from './modules/palette';
 import { createGroundRules, groundRulesEditorPrompt } from './modules/ground-rules';
@@ -50,9 +50,12 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 const SYNC_DELAY_MS = 80;
 
-/** Told to a session's main agent once a planner has mapped its project. */
-const MAPPED_NOTE =
-  'Projektet har kartlagts och arbetsschemat ligger i .claude-manager/todo.json. Läs det nu: det är din karta att arbeta efter och hålla aktuell, och du hänvisar till dess punkter. Svara kort med de viktigaste spåren och vad som återstår.';
+/** A project waiting to be mapped by its session's main agent, with the user's first message held until then. */
+interface MappingJob {
+  id: string;
+  guidance: string;
+  firstPrompt?: string;
+}
 
 // Same data folder in development and in the installed app (whose name would otherwise differ).
 // CLAUDE_MANAGER_DATA_DIR gives a test run its own folder, so it never touches (or locks out) the real app.
@@ -70,9 +73,10 @@ function boot(): void {
   const claudeDir = process.env['CLAUDE_CONFIG_DIR'] || join(homedir(), '.claude');
   const icon = nativeImage.createFromPath(iconPath);
   let syncTimer: NodeJS.Timeout | null = null;
-  /** Projects being mapped now, and the queue that maps them one at a time. */
-  const mappingNow = new Set<string>();
-  let mappingQueue: Promise<void> = Promise.resolve();
+  /** Mapping turns wait here and run one at a time, so several new projects never map at once. */
+  const mappingQueue: MappingJob[] = [];
+  /** The mapping now; `restore` (the card's own model and effort) is set once its turn has been sent. */
+  let mappingActive: (MappingJob & { restore: { model: ModelChoice; effort: EffortChoice } | null }) | null = null;
   /** Sessions whose new context window applies once the current turn is done. */
   const awaitingRestart = new Set<string>();
   let quitting = false;
@@ -147,11 +151,12 @@ function boot(): void {
           focus(record.id);
         }
         break;
+      // The mapping turn's own model and effort are temporary and never saved to the card.
       case 'model_changed':
-        if (record) saveRecord({ ...record, model: event.model });
+        if (record && !mappingTurn(record.id)) saveRecord({ ...record, model: event.model });
         break;
       case 'effort_changed':
-        if (record) saveRecord({ ...record, effort: event.effort });
+        if (record && !mappingTurn(record.id)) saveRecord({ ...record, effort: event.effort });
         break;
       case 'input_requested':
         notifier.alert({
@@ -164,6 +169,8 @@ function boot(): void {
       case 'input_resolved':
       case 'exited':
         if (!model.summary(event.sessionId)?.pendingCount) notifier.clear(event.sessionId);
+        // A mapping waiting for this session starts now; one whose turn was running ends with the process.
+        if (event.type === 'exited' && mappingActive?.id === event.sessionId) void (mappingActive.restore ? endMapping('stopped') : sendMappingTurn());
         break;
       case 'turn_finished': {
         if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
@@ -172,6 +179,7 @@ function boot(): void {
           notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} är klar`, body: event.result, urgent: false });
         }
         if (awaitingRestart.delete(event.sessionId)) void restart(event.sessionId);
+        if (mappingActive?.id === event.sessionId) void (mappingActive.restore ? endMapping(event.interrupted ? 'interrupted' : 'done') : sendMappingTurn());
         break;
       }
       case 'rate_limit':
@@ -235,34 +243,85 @@ function boot(): void {
   }
 
   /**
-   * Maps the project into its work schema with a one-off planner (Fable when the account has it,
-   * otherwise Opus), one project at a time. Afterwards the session's main agent is told to read the
-   * schema, followed by `firstPrompt` when the user had written one.
+   * Has the session's main agent map its project into the work schema, so the map stays in its own
+   * conversation. For that turn it runs on Fable (Opus when the account lacks Fable) with high effort,
+   * then goes back to the card's model and effort. The user's first message waits until the map exists.
+   * Mappings run one at a time.
    */
   function startMapping(id: string, guidance: string, firstPrompt?: string): void {
-    if (mappingNow.has(id)) return;
-    mappingNow.add(id);
+    if (mappingActive?.id === id || mappingQueue.some((j) => j.id === id)) return;
+    mappingQueue.push({ id, guidance, firstPrompt });
     model.setMapping(id, true);
+    if (mappingActive) onSessionEvent({ type: 'notice', sessionId: id, text: 'Kartläggningen börjar när pågående kartläggning i ett annat projekt är klar.', level: 'info' });
+    else scheduleSync();
+    void nextMapping();
+  }
+
+  /** The running mapping turn of this session, if any. */
+  function mappingTurn(id: string): typeof mappingActive {
+    return mappingActive?.id === id && mappingActive.restore ? mappingActive : null;
+  }
+
+  async function nextMapping(): Promise<void> {
+    if (mappingActive) return;
+    const job = mappingQueue.shift();
+    if (!job) return;
+    mappingActive = { ...job, restore: null };
+    // A turn in progress is never cut off: the mapping is sent when it is done (see turn_finished).
+    const status = model.summary(job.id)?.status;
+    if (engine.isRunning(job.id) && (status === 'working' || status === 'waiting')) return;
+    await sendMappingTurn();
+  }
+
+  async function sendMappingTurn(): Promise<void> {
+    const job = mappingActive;
+    if (!job || job.restore) return;
+    const record = findRecord(job.id);
+    if (!record || record.archived) return endMapping('stopped');
+    job.restore = { model: record.model, effort: record.effort };
     const planner: ModelChoice = account.models.some((m) => m.choice === 'fable') ? 'fable' : 'opus';
     const name = planner === 'fable' ? 'Fable' : 'Opus';
-    onSessionEvent({ type: 'notice', sessionId: id, text: `${name} kartlägger projektet till ett arbetsschema…`, level: 'info' });
-    mappingQueue = mappingQueue.then(async () => {
-      const record = findRecord(id);
-      try {
-        if (!record || record.archived) return;
-        const outcome = await mapProject({ cwd: record.cwd, guidance, model: planner, protocol: TODO_PROTOCOL, ...claudeExecutable });
-        onSessionEvent({ type: 'notice', sessionId: id, text: outcome.ok ? `Arbetsschemat är kartlagt (${name}): ${outcome.message}` : outcome.message, level: outcome.ok ? 'info' : 'warning' });
-        const followUp = [outcome.ok ? MAPPED_NOTE : '', firstPrompt ?? ''].filter(Boolean).join('\n\n');
-        if (followUp) sendToSession(id, followUp);
-      } catch (error) {
-        onSessionEvent({ type: 'notice', sessionId: id, text: `Kartläggningen misslyckades: ${error instanceof Error ? error.message : String(error)}`, level: 'warning' });
-        if (firstPrompt) sendToSession(id, firstPrompt);
-      } finally {
-        mappingNow.delete(id);
-        model.setMapping(id, false);
-        scheduleSync();
+    onSessionEvent({ type: 'notice', sessionId: job.id, text: `Huvudagenten kartlägger projektet på ${name} med hög effort och går sedan tillbaka till ${record.model} / ${record.effort}.`, level: 'info' });
+    try {
+      if (engine.isRunning(job.id)) {
+        await engine.setModel(job.id, planner);
+        await engine.setEffort(job.id, 'high');
+        engine.send(job.id, mappingRequest(job.guidance));
+      } else {
+        run({ ...record, model: planner, effort: 'high' }, mappingRequest(job.guidance));
+        if (!engine.isRunning(job.id)) await endMapping('failed'); // e.g. a terminal still holds the conversation
       }
-    });
+    } catch (error) {
+      onSessionEvent({ type: 'notice', sessionId: job.id, text: `Kartläggningen kunde inte starta: ${error instanceof Error ? error.message : String(error)}`, level: 'warning' });
+      await endMapping('failed');
+    }
+  }
+
+  /** Ends the mapping: back to the card's model and effort, then the held first message, then the next project. */
+  async function endMapping(how: 'done' | 'interrupted' | 'stopped' | 'failed'): Promise<void> {
+    const job = mappingActive;
+    if (!job) return;
+    const { id } = job;
+    if (job.restore && engine.isRunning(id)) {
+      try {
+        await engine.setModel(id, job.restore.model);
+        await engine.setEffort(id, job.restore.effort);
+      } catch {
+        // The process ended meanwhile; it starts with the card's saved model and effort next time.
+      }
+    }
+    mappingActive = null;
+    model.setMapping(id, false);
+    const record = findRecord(id);
+    if (how === 'done' && record && !hasSchema(record.cwd)) {
+      onSessionEvent({ type: 'notice', sessionId: id, text: 'Agenten skrev inget arbetsschema. Öppna Arbetsschema och kartlägg igen, eller be den i chatten.', level: 'warning' });
+    }
+    if (job.firstPrompt) {
+      if (how === 'done') sendToSession(id, job.firstPrompt);
+      else onSessionEvent({ type: 'notice', sessionId: id, text: `Kartläggningen avbröts, så ditt första meddelande skickades inte: ${job.firstPrompt}`, level: 'warning' });
+    }
+    scheduleSync();
+    void nextMapping();
   }
 
   /** Moves a session into Fokus (others leave when there are too many). */
@@ -490,7 +549,10 @@ function boot(): void {
   handle('session:transcript', (req) => model.transcript(req.id));
 
   handle('session:set-model', async (req) => {
-    if (engine.isRunning(req.id)) await engine.setModel(req.id, req.model);
+    // During a mapping turn the choice is saved and applies once the mapping is done.
+    const mapping = mappingTurn(req.id);
+    if (mapping?.restore) mapping.restore.model = req.model;
+    if (engine.isRunning(req.id) && !mapping) await engine.setModel(req.id, req.model);
     else saveRecord({ ...requireRecord(req.id), model: req.model });
   });
 
@@ -506,7 +568,9 @@ function boot(): void {
   });
 
   handle('session:set-effort', async (req) => {
-    if (engine.isRunning(req.id)) await engine.setEffort(req.id, req.effort);
+    const mapping = mappingTurn(req.id);
+    if (mapping?.restore) mapping.restore.effort = req.effort;
+    if (engine.isRunning(req.id) && !mapping) await engine.setEffort(req.id, req.effort);
     else saveRecord({ ...requireRecord(req.id), effort: req.effort });
   });
 
