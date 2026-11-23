@@ -326,7 +326,10 @@ export interface IpcInvokeMap {
   'session:new-chat': { req: NewSessionOptions & { name?: string }; res: string };
   'session:new-project': { req: NewSessionOptions & { name: string; createGitRepo: boolean }; res: string };
   'session:locate-project': { req: { description: string }; res: LocateResult };
-  'session:open-project': { req: NewSessionOptions & { cwd: string; name?: string }; res: string };
+  /** Opens a project folder: continues `claudeSessionId` when given, otherwise starts a new conversation there. */
+  'session:open-project': { req: NewSessionOptions & { cwd: string; name?: string; claudeSessionId?: string }; res: string };
+  /** Saved conversations in one folder (newest first), and the card that already shows that folder, if any. */
+  'session:folder-sessions': { req: { cwd: string }; res: { candidates: ImportCandidate[]; existingCardId: string | null } };
   'session:import-candidates': { req: void; res: ImportCandidate[] };
   'session:import': { req: { claudeSessionIds: string[] }; res: void };
   'session:send': { req: { id: string; text: string }; res: void };

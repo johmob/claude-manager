@@ -34,7 +34,6 @@ export function TopBar({ settings, view, onView, onDialog }: TopBarProps) {
         <button type="button" className="btn primary" onClick={() => onDialog('chat')}>Ny chatt</button>
         <button type="button" className="btn" onClick={() => onDialog('project')}>Nytt projekt</button>
         <button type="button" className="btn" onClick={() => onDialog('existing')}>Befintligt projekt</button>
-        <button type="button" className="btn" onClick={() => onDialog('import')}>Importera</button>
         <button type="button" className="btn" onClick={() => onDialog('rules')}>Grundregler</button>
       </div>
       <div className="segmented">

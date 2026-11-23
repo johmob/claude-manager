@@ -4,12 +4,13 @@ import { app, dialog, ipcMain, nativeImage } from 'electron';
 import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import iconPath from '../../resources/icon.png?asset';
 import { DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
+  ImportCandidate,
   IpcInvokeChannel,
   IpcInvokeMap,
   NewSessionOptions,
@@ -273,6 +274,40 @@ function boot(): void {
     return id;
   }
 
+  /**
+   * A card that continues a saved Claude Code conversation: its history is shown at once, and the
+   * session resumes on the first message (right away when `options.prompt` is given).
+   */
+  function continueSession(candidate: ImportCandidate, options: NewSessionOptions, name: string): string {
+    const record: SessionRecord = {
+      id: randomUUID(),
+      name,
+      color: pickColor(activeRecords().map((r) => r.color)),
+      kind: 'project',
+      cwd: candidate.cwd,
+      model: options.model,
+      effort: options.effort,
+      permissionMode: options.permissionMode,
+      claudeSessionId: candidate.claudeSessionId,
+      createdAt: new Date().toISOString(),
+      archived: false,
+      focused: false,
+      lastActiveAt: new Date(candidate.lastActivity).toISOString(),
+    };
+    saveRecord(record);
+    todo.watch(record.id, record.cwd);
+    loadSavedHistory(record);
+    const prompt = options.prompt?.trim();
+    if (prompt) run(record, prompt);
+    return record.id;
+  }
+
+  /** The folder name, plus the conversation title when the folder already has a card, so cards stay apart. */
+  function cardName(cwd: string, title: string): string {
+    const folder = basename(cwd);
+    return activeRecords().some((r) => sameFolder(r.cwd, cwd)) && title ? `${folder} · ${title}` : folder;
+  }
+
   async function reviewFinishedTurn(record: SessionRecord): Promise<void> {
     try {
       const callout = await reviewTurn(digestTurn(model.transcript(record.id)), structuredQuery, record.cwd);
@@ -364,31 +399,23 @@ function boot(): void {
   handle('session:import', async (req) => {
     const wanted = new Set(req.claudeSessionIds);
     const chosen = (await importCandidates(claudeDir, knownSessionIds())).filter((c) => wanted.has(c.claudeSessionId));
-    for (const candidate of chosen) {
-      const record: SessionRecord = {
-        id: randomUUID(),
-        name: candidate.title,
-        color: pickColor(activeRecords().map((r) => r.color)),
-        kind: 'project',
-        cwd: candidate.cwd,
-        model: settings.defaultModel,
-        effort: settings.defaultEffort,
-        permissionMode: settings.defaultPermissionMode,
-        claudeSessionId: candidate.claudeSessionId,
-        createdAt: new Date().toISOString(),
-        archived: false,
-        focused: false,
-        lastActiveAt: new Date(candidate.lastActivity).toISOString(),
-      };
-      saveRecord(record);
-      todo.watch(record.id, record.cwd);
-      loadSavedHistory(record);
-    }
+    const defaults: NewSessionOptions = { model: settings.defaultModel, effort: settings.defaultEffort, permissionMode: settings.defaultPermissionMode };
+    for (const candidate of chosen) continueSession(candidate, defaults, cardName(candidate.cwd, candidate.title));
   });
 
-  handle('session:open-project', (req) => {
+  handle('session:folder-sessions', async (req) => ({
+    candidates: await importCandidates(claudeDir, knownSessionIds(), { dir: req.cwd }),
+    existingCardId: activeRecords().find((r) => sameFolder(r.cwd, req.cwd))?.id ?? null,
+  }));
+
+  handle('session:open-project', async (req) => {
     if (!existsSync(req.cwd) || !statSync(req.cwd).isDirectory()) throw new Error(`Mappen finns inte: ${req.cwd}`);
-    return createSession('project', req.name?.trim() || basename(req.cwd), req.cwd, req);
+    if (!req.claudeSessionId) return createSession('project', req.name?.trim() || cardName(req.cwd, 'nytt samtal'), req.cwd, req);
+    const candidate = (await importCandidates(claudeDir, knownSessionIds(), { dir: req.cwd })).find((c) => c.claudeSessionId === req.claudeSessionId);
+    if (!candidate) throw new Error('Samtalet finns inte längre (eller har redan ett kort).');
+    const id = continueSession(candidate, req, req.name?.trim() || cardName(candidate.cwd, candidate.title));
+    focus(id);
+    return id;
   });
 
   handle('session:send', (req) => {
@@ -473,6 +500,10 @@ function boot(): void {
 // ---------- Pure helpers ----------
 
 /** In the installed app the SDK's Claude binary sits outside the asar archive; in development the SDK finds it itself. */
+function sameFolder(a: string, b: string): boolean {
+  return resolve(a).toLowerCase() === resolve(b).toLowerCase();
+}
+
 function packagedClaudeBinary(): string | undefined {
   if (!app.isPackaged) return undefined;
   return join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '@anthropic-ai', 'claude-agent-sdk-win32-x64', 'claude.exe');

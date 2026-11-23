@@ -34,12 +34,17 @@ export function liveTerminals(configDir: string): LiveTerminal[] {
 }
 
 /**
- * Saved interactive sessions (the same list as `/resume` in a terminal; the app's own SDK sessions are
- * left out), newest first, with the terminal that still runs each one. Skips sessions in `exclude`.
+ * Saved interactive sessions, everywhere or in one folder (`scope.dir`), newest first, with the terminal
+ * that still runs each one. It is the same list as `/resume` in a terminal, so the app's own SDK sessions
+ * are left out. Skips sessions in `exclude`.
  */
-export async function importCandidates(configDir: string, exclude: ReadonlySet<string>, limit = 40): Promise<ImportCandidate[]> {
+export async function importCandidates(
+  configDir: string,
+  exclude: ReadonlySet<string>,
+  scope: { dir?: string; limit?: number } = {},
+): Promise<ImportCandidate[]> {
   const live = new Map(liveTerminals(configDir).map((t) => [t.sessionId, t]));
-  const saved = await listSessions({ limit, includeProgrammatic: false });
+  const saved = await listSessions({ dir: scope.dir, limit: scope.limit ?? 40, includeProgrammatic: false });
   return saved.flatMap((s): ImportCandidate[] => {
     const terminal = live.get(s.sessionId);
     const cwd = s.cwd ?? terminal?.cwd ?? '';

@@ -112,7 +112,7 @@ Path: `<project>/.claude-manager/todo.json`. The main agent writes it, following
 | One-shot Claude calls in the installed app | The project locator and the optional review spawn their own Claude process. They must get the same unpacked executable path as the sessions, or they fail at once in the installed app; the root now passes one shared executable setting to every Claude process it starts. |
 | Permission mode per session | Chosen at start; default `auto` (classifier approves, asks only when unsure). |
 | New chat folder | `%APPDATA%\claude-manager\chats\<id>` so chats never touch a code project. |
-| Existing project | A short Haiku query, limited to read-only tools in `C:\Kod`, returns the matching folder; the user confirms before the session starts there. |
+| Existing project | Continuing is the default, so "Befintligt projekt" and importing are one dialog (the user did not want two flows). Recent conversations can be opened straight from a list, or a short Haiku query (read-only tools in `C:Kod`) finds the folder from a description; the folder's latest saved conversation is then preselected, a new conversation is the alternative, and an existing card for the folder is offered instead of a duplicate. Cards for the same folder are named "Folder · conversation title". |
 | Base CLAUDE.md | Stored in `%APPDATA%\claude-manager\base-CLAUDE.md`, appended to the Claude Code system prompt (the project's own CLAUDE.md still loads). |
 | Dock click | Brings the main window forward with that session opened. |
 | Error states | SDK errors and process exits mark the card `error` with the message; the card offers Resume. Usage-limit errors come through as `rate_limit_event` with `status: 'rejected'` and are shown on the card. |

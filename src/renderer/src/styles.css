@@ -365,3 +365,5 @@ textarea.input { resize: vertical; }
 /* One-line message box on overview cards. */
 .card-input .chat-input.compact { border-top: 0; padding: 0 12px 8px; }
 .card-input .chat-input.compact textarea { padding: 5px 8px; font-size: 12.5px; }
+.dialog-divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin: 4px 0; }
+.dialog-divider::before, .dialog-divider::after { content: ''; flex: 1; border-top: 1px solid var(--border); }

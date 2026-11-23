@@ -12,11 +12,11 @@ import {
 } from '../../../shared/contracts';
 import { EFFORT_LABEL, formatAgo, PERMISSION_LABEL } from '../lib/format';
 import { effortOptions, modelOptions, useAccount } from '../state/account';
-import { errorMessage } from '../lib/api';
+import { errorMessage, send } from '../lib/api';
 import { Modal } from './Modal';
 import { Spinner } from './Atoms';
 
-export type DialogKind = 'chat' | 'project' | 'existing' | 'import' | 'rules';
+export type DialogKind = 'chat' | 'project' | 'existing' | 'rules';
 
 interface DialogProps {
   settings: AppSettings;
@@ -182,71 +182,6 @@ function NewProjectDialog({ settings, onClose }: DialogProps) {
   );
 }
 
-function ExistingProjectDialog({ settings, onClose }: DialogProps) {
-  const [description, setDescription] = useState('');
-  const [locating, setLocating] = useState(false);
-  const [found, setFound] = useState<LocateResult | null>(null);
-  const [cwd, setCwd] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [options, patch] = useOptions(settings);
-
-  const locate = (): void => {
-    setLocating(true);
-    setError(null);
-    window.cm
-      .invoke('session:locate-project', { description: description.trim() })
-      .then((r) => {
-        setFound(r);
-        setCwd(r.path ?? '');
-      })
-      .catch((e: unknown) => setError(errorMessage(e)))
-      .finally(() => setLocating(false));
-  };
-
-  if (!found) {
-    return (
-      <Modal title="Befintligt projekt" onClose={onClose}>
-        <div className="form">
-          <Field label="Beskriv projektet med egna ord">
-            <textarea className="input" rows={4} autoFocus value={description} onChange={(e) => setDescription(e.target.value)} />
-          </Field>
-          {error && <div className="form-error">{error}</div>}
-          <div className="form-actions">
-            <button type="button" className="btn" onClick={onClose}>Avbryt</button>
-            <button type="button" className="btn primary" disabled={locating || description.trim() === ''} onClick={locate}>
-              {locating && <Spinner small />} {locating ? 'Letar…' : 'Hitta projekt'}
-            </button>
-          </div>
-        </div>
-      </Modal>
-    );
-  }
-
-  return (
-    <DialogForm
-      title="Befintligt projekt"
-      onClose={onClose}
-      submitLabel="Starta"
-      canSubmit={cwd !== ''}
-      onSubmit={async () => {
-        await window.cm.invoke('session:open-project', { ...toSessionOptions(options), cwd });
-      }}
-    >
-      <div className="found">
-        <div className="found-path">{found.path ?? 'Ingen träff'}</div>
-        <div className="muted">{found.reason}</div>
-      </div>
-      <Field label="Mapp">
-        <select className="input" value={cwd} onChange={(e) => setCwd(e.target.value)}>
-          {cwd === '' && <option value="">Välj mapp…</option>}
-          {found.candidates.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </Field>
-      <OptionFields value={options} onChange={patch} />
-    </DialogForm>
-  );
-}
-
 function GroundRulesDialog({ onClose }: DialogProps) {
   const [instructions, setInstructions] = useState('');
   return (
@@ -273,18 +208,63 @@ const TERMINAL_STATUS: Record<TerminalStatus, string> = {
   unknown: 'kör',
 };
 
-function ImportDialog({ onClose }: DialogProps) {
-  const [candidates, setCandidates] = useState<ImportCandidate[] | null>(null);
-  const [chosen, setChosen] = useState<Set<string>>(new Set());
+const TERMINAL_HINT = 'Ett samtal som fortfarande körs i ett terminalfönster öppnas här direkt, men fortsätter först när du har stängt fönstret.';
+
+/** One saved conversation: title, folder and age, and whether a terminal still runs it. */
+function CandidateRow({ candidate, now, showFolder, control }: { candidate: ImportCandidate; now: number; showFolder: boolean; control: ReactNode }) {
+  return (
+    <label className="import-row" data-live={candidate.terminal ? candidate.terminal.status : undefined}>
+      {control}
+      <span className="import-main">
+        <span className="import-title">{candidate.title}</span>
+        <span className="import-meta">{showFolder ? `${candidate.cwd} · ` : ''}{formatAgo(candidate.lastActivity, now)}</span>
+      </span>
+      {candidate.terminal && <span className="import-live">I terminal · {TERMINAL_STATUS[candidate.terminal.status]}</span>}
+    </label>
+  );
+}
+
+/**
+ * Getting back to existing work, in one place: continue recent conversations straight from a list,
+ * or describe a project and continue its latest conversation (or start a new one there).
+ */
+function ExistingProjectDialog({ settings, onClose }: DialogProps) {
+  const [description, setDescription] = useState('');
+  const [locating, setLocating] = useState(false);
+  const [found, setFound] = useState<LocateResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recent, setRecent] = useState<ImportCandidate[] | null>(null);
+  const [chosen, setChosen] = useState<Set<string>>(new Set());
+  const [opening, setOpening] = useState(false);
   const [now] = useState(() => Date.now());
 
   useEffect(() => {
     window.cm
       .invoke('session:import-candidates', undefined)
-      .then(setCandidates)
+      .then(setRecent)
       .catch((e: unknown) => setError(errorMessage(e)));
   }, []);
+
+  const locate = (): void => {
+    setLocating(true);
+    setError(null);
+    window.cm
+      .invoke('session:locate-project', { description: description.trim() })
+      .then(setFound)
+      .catch((e: unknown) => setError(errorMessage(e)))
+      .finally(() => setLocating(false));
+  };
+
+  const openChosen = (): void => {
+    setOpening(true);
+    window.cm
+      .invoke('session:import', { claudeSessionIds: [...chosen] })
+      .then(onClose)
+      .catch((e: unknown) => {
+        setError(errorMessage(e));
+        setOpening(false);
+      });
+  };
 
   const toggle = (id: string): void =>
     setChosen((prev) => {
@@ -294,47 +274,135 @@ function ImportDialog({ onClose }: DialogProps) {
       return next;
     });
 
+  if (found) return <FolderStep settings={settings} found={found} now={now} onClose={onClose} />;
+
+  return (
+    <Modal title="Befintligt projekt" onClose={onClose}>
+      <div className="form">
+        <Field label="Beskriv projektet med egna ord" hint="Appen hittar mappen och fortsätter det senaste samtalet där.">
+          <textarea className="input" rows={3} autoFocus value={description} onChange={(e) => setDescription(e.target.value)} />
+        </Field>
+        <div className="form-actions">
+          <button type="button" className="btn primary" disabled={locating || description.trim() === ''} onClick={locate}>
+            {locating && <Spinner small />} {locating ? 'Letar…' : 'Hitta projekt'}
+          </button>
+        </div>
+        <div className="dialog-divider">eller fortsätt där du slutade</div>
+        {!recent && !error && <div className="muted"><Spinner small /> Hämtar senaste samtal…</div>}
+        {recent?.length === 0 && <div className="muted">Inga sparade samtal.</div>}
+        {recent && recent.length > 0 && (
+          <ul className="import-list">
+            {recent.map((c) => (
+              <li key={c.claudeSessionId}>
+                <CandidateRow
+                  candidate={c}
+                  now={now}
+                  showFolder
+                  control={<input type="checkbox" checked={chosen.has(c.claudeSessionId)} onChange={() => toggle(c.claudeSessionId)} />}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="field-hint">{TERMINAL_HINT}</p>
+        {error && <div className="form-error">{error}</div>}
+        <div className="form-actions">
+          <button type="button" className="btn" onClick={onClose}>Avbryt</button>
+          <button type="button" className="btn primary" disabled={!chosen.size || opening} onClick={openChosen}>
+            {opening && <Spinner small />} Öppna valda{chosen.size ? ` (${chosen.size})` : ''}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** After the folder is found: continue one of its conversations (the latest is preselected) or start a new one. */
+function FolderStep({ settings, found, now, onClose }: DialogProps & { found: LocateResult; now: number }) {
+  const [cwd, setCwd] = useState(found.path ?? '');
+  const [conversations, setConversations] = useState<ImportCandidate[] | null>(null);
+  const [existingCardId, setExistingCardId] = useState<string | null>(null);
+  const [choice, setChoice] = useState('');
+  const [options, patch] = useOptions(settings);
+
+  useEffect(() => {
+    if (!cwd) return;
+    setConversations(null);
+    window.cm
+      .invoke('session:folder-sessions', { cwd })
+      .then((r) => {
+        setConversations(r.candidates);
+        setExistingCardId(r.existingCardId);
+        setChoice(r.candidates[0]?.claudeSessionId ?? '');
+      })
+      .catch(() => setConversations([]));
+  }, [cwd]);
+
+  const openCard = (id: string): void => {
+    send('window:show-session', { id });
+    onClose();
+  };
+
   return (
     <DialogForm
-      title="Importera sessioner"
+      title="Befintligt projekt"
       onClose={onClose}
-      submitLabel={`Importera${chosen.size ? ` (${chosen.size})` : ''}`}
-      canSubmit={chosen.size > 0}
+      submitLabel={choice ? 'Fortsätt samtalet' : 'Starta nytt samtal'}
+      canSubmit={cwd !== '' && conversations !== null}
       onSubmit={async () => {
-        await window.cm.invoke('session:import', { claudeSessionIds: [...chosen] });
+        await window.cm.invoke('session:open-project', { ...toSessionOptions(options), cwd, ...(choice ? { claudeSessionId: choice } : {}) });
       }}
     >
-      <p className="field-hint">
-        Hela samtalet följer med. En session som fortfarande körs i ett terminalfönster importeras som stoppad: stäng fönstret när
-        agenten är klar med sin tur, och fortsätt sedan här.
-      </p>
-      {error && <div className="form-error">{error}</div>}
-      {!candidates && !error && <div className="muted"><Spinner small /> Letar efter sessioner…</div>}
-      {candidates?.length === 0 && <div className="muted">Inga sessioner att importera.</div>}
-      {candidates && candidates.length > 0 && (
-        <ul className="import-list">
-          {candidates.map((c) => (
-            <li key={c.claudeSessionId}>
-              <label className="import-row" data-live={c.terminal ? c.terminal.status : undefined}>
-                <input type="checkbox" checked={chosen.has(c.claudeSessionId)} onChange={() => toggle(c.claudeSessionId)} />
-                <span className="import-main">
-                  <span className="import-title">{c.title}</span>
-                  <span className="import-meta">{c.cwd} · {formatAgo(c.lastActivity, now)}</span>
-                </span>
-                {c.terminal && <span className="import-live">I terminal · {TERMINAL_STATUS[c.terminal.status]}</span>}
-              </label>
-            </li>
-          ))}
-        </ul>
+      <div className="found">
+        <div className="found-path">{found.path ?? 'Ingen träff'}</div>
+        <div className="muted">{found.reason}</div>
+      </div>
+      <Field label="Mapp">
+        <select className="input" value={cwd} onChange={(e) => setCwd(e.target.value)}>
+          {cwd === '' && <option value="">Välj mapp…</option>}
+          {found.candidates.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </Field>
+      {existingCardId && (
+        <div className="found">
+          <span>Mappen har redan ett kort i appen. </span>
+          <button type="button" className="link-btn" onClick={() => openCard(existingCardId)}>Öppna kortet</button>
+        </div>
       )}
+      {cwd !== '' && (
+        <div className="field">
+          <span className="field-label">Samtal</span>
+          {!conversations && <div className="muted"><Spinner small /> Hämtar samtal i mappen…</div>}
+          {conversations && (
+            <ul className="import-list">
+              {conversations.map((c) => (
+                <li key={c.claudeSessionId}>
+                  <CandidateRow
+                    candidate={c}
+                    now={now}
+                    showFolder={false}
+                    control={<input type="radio" name="conversation" checked={choice === c.claudeSessionId} onChange={() => setChoice(c.claudeSessionId)} />}
+                  />
+                </li>
+              ))}
+              <li>
+                <label className="import-row">
+                  <input type="radio" name="conversation" checked={choice === ''} onChange={() => setChoice('')} />
+                  <span className="import-main"><span className="import-title">Nytt samtal i mappen</span></span>
+                </label>
+              </li>
+            </ul>
+          )}
+          {conversations?.some((c) => c.terminal) && <span className="field-hint">{TERMINAL_HINT}</span>}
+        </div>
+      )}
+      <OptionFields value={options} onChange={patch} />
     </DialogForm>
   );
 }
 
 export function StartDialog({ kind, settings, onClose }: DialogProps & { kind: DialogKind }) {
   switch (kind) {
-    case 'import':
-      return <ImportDialog settings={settings} onClose={onClose} />;
     case 'chat':
       return <NewChatDialog settings={settings} onClose={onClose} />;
     case 'project':

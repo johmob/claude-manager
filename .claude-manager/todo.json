@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T10:49:18Z",
+  "updated": "2026-11-23T10:55:32Z",
   "tracks": [
     {
       "id": "1",
@@ -366,6 +366,34 @@
           "id": "11.5",
           "title": "Rebuild and reinstall",
           "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "title": "One way back to existing work",
+      "owner": "main",
+      "items": [
+        {
+          "id": "12.1",
+          "title": "Befintligt projekt continues the latest conversation",
+          "status": "done"
+        },
+        {
+          "id": "12.2",
+          "title": "Recent conversations list merged into the same dialog",
+          "status": "done"
+        },
+        {
+          "id": "12.3",
+          "title": "Offer the existing card instead of a duplicate",
+          "status": "done"
+        },
+        {
+          "id": "12.4",
+          "title": "Rebuild and reinstall",
+          "status": "in_progress",
+          "progress": 50
         }
       ]
     }
