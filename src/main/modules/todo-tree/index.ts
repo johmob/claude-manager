@@ -30,6 +30,7 @@ Keep a work schema for the project in \`${TODO_RELATIVE_PATH}\` in the project r
   ]
 }
 - Keep it current as you go (including "updated"), and update it before changing direction when the plan changes.
+- The schema is also your memory. When the user mentions something in chat that belongs to another item than the one you are working on now (an idea, a requirement, a bug, a decision), add it to that item's notes at once, marked as from the user ("Användaren: …"), and say in one line where you noted it. Create the item if none fits. Read an item's notes before you start on it, and update them once a remark is dealt with.
 - Write and update the file yourself, as the main agent; never hand it to a subagent. It is your own map: plan from it, and refer to items by id (e.g. "fw-a.2") when you report progress. Subagents report their progress to you.
 - Skip it only for a plain question that has nothing to do with the project's work.`;
 
