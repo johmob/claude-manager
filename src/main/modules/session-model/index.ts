@@ -1,0 +1,267 @@
+// session-model: pure state. Folds SessionEvents, records and todo trees into the
+// SessionSummary cards and TranscriptEntry lists the UI shows. No I/O, no timers.
+import type {
+  PendingInput,
+  SessionEvent,
+  SessionRecord,
+  SessionStatus,
+  SessionSummary,
+  TodoTree,
+  TranscriptEntry,
+} from '../../../shared/contracts';
+
+export interface SessionModel {
+  /** Add a session or update its persisted fields (name, colour, model…). */
+  upsertRecord(record: SessionRecord): void;
+  remove(id: string): void;
+  /** Apply one event. Returns the transcript entries that were created or changed. */
+  apply(event: SessionEvent): TranscriptEntry[];
+  setTodo(id: string, tree: TodoTree | null): void;
+  /** The user has looked at a finished turn: `done` becomes `idle`. */
+  markSeen(id: string): void;
+  summaries(): SessionSummary[];
+  summary(id: string): SessionSummary | undefined;
+  transcript(id: string): TranscriptEntry[];
+}
+
+const MAX_TRANSCRIPT = 500;
+
+interface SessionState {
+  record: SessionRecord;
+  running: boolean;
+  turnActive: boolean;
+  unseenDone: boolean;
+  pending: PendingInput[];
+  subagents: Set<string>;
+  turnStartedAt: number | null;
+  startedAt: number | null;
+  lastActivity: string;
+  lastError: string | null;
+  costUsd: number;
+  todo: TodoTree | null;
+  slashCommands: string[];
+  transcript: TranscriptEntry[];
+  pendingThinking: string;
+  /** toolUseId or requestId -> transcript entry id */
+  entryFor: Map<string, string>;
+  seq: number;
+}
+
+export function createSessionModel(now: () => number = Date.now): SessionModel {
+  const states = new Map<string, SessionState>();
+
+  function upsertRecord(record: SessionRecord): void {
+    const existing = states.get(record.id);
+    if (existing) {
+      existing.record = record;
+      return;
+    }
+    states.set(record.id, {
+      record,
+      running: false,
+      turnActive: false,
+      unseenDone: false,
+      pending: [],
+      subagents: new Set(),
+      turnStartedAt: null,
+      startedAt: null,
+      lastActivity: '',
+      lastError: null,
+      costUsd: 0,
+      todo: null,
+      slashCommands: [],
+      transcript: [],
+      pendingThinking: '',
+      entryFor: new Map(),
+      seq: 0,
+    });
+  }
+
+  function apply(event: SessionEvent): TranscriptEntry[] {
+    const s = states.get(event.sessionId);
+    if (!s) return [];
+    const at = now();
+
+    const add = (entry: DistributiveOmit<TranscriptEntry, 'id' | 'at'>, key?: string): TranscriptEntry[] => {
+      const full = { ...entry, id: `${event.sessionId}:${++s.seq}`, at } as TranscriptEntry;
+      s.transcript.push(full);
+      if (s.transcript.length > MAX_TRANSCRIPT) s.transcript.splice(0, s.transcript.length - MAX_TRANSCRIPT);
+      if (key) s.entryFor.set(key, full.id);
+      return [full];
+    };
+    const update = (key: string, change: (entry: TranscriptEntry) => TranscriptEntry): TranscriptEntry[] => {
+      const id = s.entryFor.get(key);
+      const index = id ? s.transcript.findIndex((e) => e.id === id) : -1;
+      if (index < 0) return [];
+      s.entryFor.delete(key);
+      s.transcript[index] = change(s.transcript[index]!);
+      return [s.transcript[index]!];
+    };
+    const takeThinking = (): string => {
+      const text = s.pendingThinking;
+      s.pendingThinking = '';
+      return text;
+    };
+    const markActive = (activity: string): void => {
+      s.turnActive = true;
+      s.turnStartedAt ??= at;
+      if (activity) s.lastActivity = activity;
+    };
+    const system = (text: string, level: 'info' | 'warning' | 'error'): TranscriptEntry[] => add({ kind: 'system', text, level });
+
+    switch (event.type) {
+      case 'started':
+        s.running = true;
+        s.startedAt = at;
+        s.lastError = null;
+        return [];
+      case 'init':
+        s.slashCommands = event.slashCommands;
+        return [];
+      case 'turn_started':
+        s.turnActive = true;
+        s.turnStartedAt = at;
+        s.unseenDone = false;
+        s.lastError = null;
+        s.lastActivity = '';
+        return add({ kind: 'user', text: event.prompt });
+      case 'thinking':
+        markActive('Tänker…');
+        s.pendingThinking = s.pendingThinking ? `${s.pendingThinking}\n\n${event.text}` : event.text;
+        return [];
+      case 'text':
+        markActive('Skriver svar…');
+        return add({ kind: 'assistant', text: event.text, thinking: takeThinking(), agentId: event.agentId });
+      case 'tool_use':
+        markActive(event.summary ? `${event.name}: ${event.summary}` : event.name);
+        if (event.name === 'AskUserQuestion') return [];
+        return add(
+          { kind: 'tool', name: event.name, summary: event.summary, status: 'running', thinking: takeThinking(), agentId: event.agentId },
+          event.toolUseId,
+        );
+      case 'tool_result':
+        return update(event.toolUseId, (e) => (e.kind === 'tool' ? { ...e, status: event.isError ? 'error' : 'ok' } : e));
+      case 'input_requested': {
+        s.pending.push(event.pending);
+        if (event.pending.kind === 'question') {
+          const text = event.pending.questions.map((q) => q.question).join('\n');
+          return add({ kind: 'question', text, answer: null }, event.pending.requestId);
+        }
+        return [];
+      }
+      case 'input_resolved': {
+        const resolved = s.pending.find((p) => p.requestId === event.requestId);
+        s.pending = s.pending.filter((p) => p.requestId !== event.requestId);
+        if (resolved?.kind === 'permission') return system(`${event.answer}: ${resolved.summary}`, 'info');
+        return update(event.requestId, (e) => (e.kind === 'question' ? { ...e, answer: event.answer } : e));
+      }
+      case 'subagent_started':
+        s.subagents.add(event.taskId);
+        s.lastActivity = `Subagent: ${event.description}`;
+        return [];
+      case 'subagent_finished':
+        s.subagents.delete(event.taskId);
+        return [];
+      case 'notice':
+        return system(event.text, event.level);
+      case 'compacted':
+        return system('Konversationen komprimerades.', 'info');
+      case 'cleared':
+        return system('Konversationen rensades.', 'info');
+      case 'model_changed':
+        return system(`Modell bytt till ${event.model}.`, 'info');
+      case 'turn_finished': {
+        s.turnActive = false;
+        s.turnStartedAt = null;
+        s.costUsd = event.costUsd;
+        s.lastActivity = '';
+        s.unseenDone = !event.isError;
+        s.lastError = event.isError ? event.result : null;
+        const thinking = takeThinking();
+        const leftover = thinking ? add({ kind: 'assistant', text: '', thinking }) : [];
+        return event.isError ? [...leftover, ...system(event.result, 'error')] : leftover;
+      }
+      case 'rate_limit':
+        if (!event.rejected) return [];
+        s.lastError = 'Användningsgränsen är nådd.';
+        return system(s.lastError, 'warning');
+      case 'error':
+        s.lastError = event.message;
+        return system(event.message, 'error');
+      case 'exited':
+        s.running = false;
+        s.turnActive = false;
+        s.turnStartedAt = null;
+        s.pending = [];
+        s.subagents.clear();
+        s.pendingThinking = '';
+        return system('Sessionen är stoppad.', 'info');
+    }
+  }
+
+  function summarize(s: SessionState): SessionSummary {
+    const { record } = s;
+    return {
+      id: record.id,
+      name: record.name,
+      color: record.color,
+      kind: record.kind,
+      cwd: record.cwd,
+      model: record.model,
+      permissionMode: record.permissionMode,
+      status: statusOf(s),
+      currentTask: currentTask(s.todo) ?? s.lastActivity,
+      activeAgents: (s.turnActive ? 1 : 0) + s.subagents.size,
+      pending: s.pending[0] ?? null,
+      pendingCount: s.pending.length,
+      turnStartedAt: s.turnStartedAt,
+      startedAt: s.startedAt,
+      lastError: s.lastError,
+      costUsd: s.costUsd,
+      todo: s.todo,
+      resumable: !s.running,
+      slashCommands: s.slashCommands,
+    };
+  }
+
+  return {
+    upsertRecord,
+    remove: (id) => void states.delete(id),
+    apply,
+    setTodo: (id, tree) => {
+      const s = states.get(id);
+      if (s) s.todo = tree;
+    },
+    markSeen: (id) => {
+      const s = states.get(id);
+      if (s) s.unseenDone = false;
+    },
+    summaries: () => [...states.values()].map(summarize),
+    summary: (id) => {
+      const s = states.get(id);
+      return s ? summarize(s) : undefined;
+    },
+    transcript: (id) => [...(states.get(id)?.transcript ?? [])],
+  };
+}
+
+function statusOf(s: SessionState): SessionStatus {
+  if (!s.running) return s.lastError ? 'error' : 'stopped';
+  if (s.pending.length) return 'waiting';
+  if (s.turnActive) return 'working';
+  if (s.lastError) return 'error';
+  return s.unseenDone ? 'done' : 'idle';
+}
+
+/** First in-progress step ("2.3 Title"), else the first in-progress block, else null. */
+function currentTask(tree: TodoTree | null): string | null {
+  if (!tree) return null;
+  for (const block of tree.blocks) {
+    const step = block.steps.find((st) => st.status === 'in_progress');
+    if (step) return `${step.id} ${step.title}`;
+  }
+  const block = tree.blocks.find((b) => b.status === 'in_progress');
+  return block ? `${block.id} ${block.title}` : null;
+}
+
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;

@@ -1,0 +1,181 @@
+{
+  "title": "Claude Code Manager v1",
+  "updated": "2026-11-23T08:09:02Z",
+  "blocks": [
+    {
+      "id": "1",
+      "title": "Foundation",
+      "status": "done",
+      "steps": [
+        {
+          "id": "1.1",
+          "title": "Private GitHub repo and spec",
+          "status": "done"
+        },
+        {
+          "id": "1.2",
+          "title": "Tech stack and architecture decisions",
+          "status": "done"
+        },
+        {
+          "id": "1.3",
+          "title": "Verify Agent SDK features",
+          "status": "done"
+        },
+        {
+          "id": "1.4",
+          "title": "Project skeleton (Electron, Vite, React, TS)",
+          "status": "done"
+        },
+        {
+          "id": "1.5",
+          "title": "Shared contracts",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "title": "Main-process modules",
+      "status": "done",
+      "steps": [
+        {
+          "id": "2.1",
+          "title": "session-engine (Agent SDK wrapper)",
+          "status": "done"
+        },
+        {
+          "id": "2.2",
+          "title": "session-model (events to cards and transcript)",
+          "status": "done"
+        },
+        {
+          "id": "2.3",
+          "title": "usage-monitor",
+          "status": "done"
+        },
+        {
+          "id": "2.4",
+          "title": "todo-tree watcher",
+          "status": "done"
+        },
+        {
+          "id": "2.5",
+          "title": "json-store, ground-rules, palette",
+          "status": "done"
+        },
+        {
+          "id": "2.6",
+          "title": "projects and project locator",
+          "status": "done"
+        },
+        {
+          "id": "2.7",
+          "title": "notifier (toasts, taskbar flash)",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "title": "User interface",
+      "status": "done",
+      "steps": [
+        {
+          "id": "3.1",
+          "title": "Overview cards with inline answers and approvals",
+          "status": "done"
+        },
+        {
+          "id": "3.2",
+          "title": "Usage panel",
+          "status": "done"
+        },
+        {
+          "id": "3.3",
+          "title": "Todo tree view",
+          "status": "done"
+        },
+        {
+          "id": "3.4",
+          "title": "Focus mode tiles",
+          "status": "done"
+        },
+        {
+          "id": "3.5",
+          "title": "Dock mode",
+          "status": "done"
+        },
+        {
+          "id": "3.6",
+          "title": "Mini overlay",
+          "status": "done"
+        },
+        {
+          "id": "3.7",
+          "title": "Start dialogs (chat, new project, existing project)",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "title": "Windows and lifecycle",
+      "status": "done",
+      "steps": [
+        {
+          "id": "4.1",
+          "title": "Window manager (main, dock, overlay, snapping)",
+          "status": "done"
+        },
+        {
+          "id": "4.2",
+          "title": "Tray and close behaviour",
+          "status": "done"
+        },
+        {
+          "id": "4.3",
+          "title": "Resume sessions after restart",
+          "status": "done"
+        },
+        {
+          "id": "4.4",
+          "title": "Archive and ground-rules editor session",
+          "status": "done"
+        },
+        {
+          "id": "4.5",
+          "title": "Composition root and preload IPC",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "5",
+      "title": "Test and delivery",
+      "status": "in_progress",
+      "steps": [
+        {
+          "id": "5.1",
+          "title": "Unit tests for pure modules",
+          "status": "done"
+        },
+        {
+          "id": "5.2",
+          "title": "Run the app end to end",
+          "status": "done"
+        },
+        {
+          "id": "5.3",
+          "title": "Windows installer",
+          "status": "in_progress"
+        },
+        {
+          "id": "5.4",
+          "title": "README",
+          "status": "done"
+        }
+      ]
+    }
+  ]
+}
