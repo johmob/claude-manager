@@ -1,19 +1,21 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import {
   MODEL_CHOICES,
   PERMISSION_CHOICES,
   type AppSettings,
+  type ImportCandidate,
   type LocateResult,
   type ModelChoice,
   type NewSessionOptions,
   type PermissionChoice,
+  type TerminalStatus,
 } from '../../../shared/contracts';
-import { MODEL_LABEL, PERMISSION_LABEL } from '../lib/format';
+import { formatAgo, MODEL_LABEL, PERMISSION_LABEL } from '../lib/format';
 import { errorMessage } from '../lib/api';
 import { Modal } from './Modal';
 import { Spinner } from './Atoms';
 
-export type DialogKind = 'chat' | 'project' | 'existing' | 'rules';
+export type DialogKind = 'chat' | 'project' | 'existing' | 'import' | 'rules';
 
 interface DialogProps {
   settings: AppSettings;
@@ -249,8 +251,75 @@ function GroundRulesDialog({ onClose }: DialogProps) {
   );
 }
 
+const TERMINAL_STATUS: Record<TerminalStatus, string> = {
+  busy: 'arbetar',
+  waiting: 'väntar på dig',
+  idle: 'vilar',
+  unknown: 'kör',
+};
+
+function ImportDialog({ onClose }: DialogProps) {
+  const [candidates, setCandidates] = useState<ImportCandidate[] | null>(null);
+  const [chosen, setChosen] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+  const [now] = useState(() => Date.now());
+
+  useEffect(() => {
+    window.cm
+      .invoke('session:import-candidates', undefined)
+      .then(setCandidates)
+      .catch((e: unknown) => setError(errorMessage(e)));
+  }, []);
+
+  const toggle = (id: string): void =>
+    setChosen((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  return (
+    <DialogForm
+      title="Importera sessioner"
+      onClose={onClose}
+      submitLabel={`Importera${chosen.size ? ` (${chosen.size})` : ''}`}
+      canSubmit={chosen.size > 0}
+      onSubmit={async () => {
+        await window.cm.invoke('session:import', { claudeSessionIds: [...chosen] });
+      }}
+    >
+      <p className="field-hint">
+        Hela samtalet följer med. En session som fortfarande körs i ett terminalfönster importeras som stoppad: stäng fönstret när
+        agenten är klar med sin tur, och fortsätt sedan här.
+      </p>
+      {error && <div className="form-error">{error}</div>}
+      {!candidates && !error && <div className="muted"><Spinner small /> Letar efter sessioner…</div>}
+      {candidates?.length === 0 && <div className="muted">Inga sessioner att importera.</div>}
+      {candidates && candidates.length > 0 && (
+        <ul className="import-list">
+          {candidates.map((c) => (
+            <li key={c.claudeSessionId}>
+              <label className="import-row" data-live={c.terminal ? c.terminal.status : undefined}>
+                <input type="checkbox" checked={chosen.has(c.claudeSessionId)} onChange={() => toggle(c.claudeSessionId)} />
+                <span className="import-main">
+                  <span className="import-title">{c.title}</span>
+                  <span className="import-meta">{c.cwd} · {formatAgo(c.lastActivity, now)}</span>
+                </span>
+                {c.terminal && <span className="import-live">I terminal · {TERMINAL_STATUS[c.terminal.status]}</span>}
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DialogForm>
+  );
+}
+
 export function StartDialog({ kind, settings, onClose }: DialogProps & { kind: DialogKind }) {
   switch (kind) {
+    case 'import':
+      return <ImportDialog settings={settings} onClose={onClose} />;
     case 'chat':
       return <NewChatDialog settings={settings} onClose={onClose} />;
     case 'project':

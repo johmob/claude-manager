@@ -260,6 +260,20 @@ export interface LocateResult {
   reason: string;
 }
 
+/** What a running terminal session is doing, from Claude Code's process registry. */
+export type TerminalStatus = 'busy' | 'idle' | 'waiting' | 'unknown';
+
+/** A Claude Code session started outside the app that can be imported as a card. */
+export interface ImportCandidate {
+  claudeSessionId: string;
+  cwd: string;
+  title: string;
+  /** ms epoch of the last saved message. */
+  lastActivity: number;
+  /** Set while the session still runs in a terminal window. */
+  terminal: { pid: number; status: TerminalStatus; name: string } | null;
+}
+
 /** Renderer -> main requests. `req` is the argument, `res` the resolved value. */
 export interface IpcInvokeMap {
   'app:get-state': { req: void; res: { sessions: SessionSummary[]; usage: UsageSnapshot; settings: AppSettings } };
@@ -267,6 +281,8 @@ export interface IpcInvokeMap {
   'session:new-project': { req: NewSessionOptions & { name: string; createGitRepo: boolean }; res: string };
   'session:locate-project': { req: { description: string }; res: LocateResult };
   'session:open-project': { req: NewSessionOptions & { cwd: string; name?: string }; res: string };
+  'session:import-candidates': { req: void; res: ImportCandidate[] };
+  'session:import': { req: { claudeSessionIds: string[] }; res: void };
   'session:send': { req: { id: string; text: string }; res: void };
   'session:answer': { req: { id: string; requestId: string; answers: QuestionAnswers }; res: void };
   'session:permission': { req: { id: string; requestId: string; decision: PermissionDecision }; res: void };

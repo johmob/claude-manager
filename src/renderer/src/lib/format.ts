@@ -1,5 +1,14 @@
 import type { CalloutKind, ModelChoice, PermissionChoice, SessionStatus, TodoTree } from '../../../shared/contracts';
 
+/** "nyss", "12 min sedan", "3 h sedan", "2 d sedan". */
+export function formatAgo(epochMs: number, now: number): string {
+  const minutes = Math.max(0, Math.round((now - epochMs) / 60_000));
+  if (minutes < 1) return 'nyss';
+  if (minutes < 60) return `${minutes} min sedan`;
+  const hours = Math.round(minutes / 60);
+  return hours < 48 ? `${hours} h sedan` : `${Math.round(hours / 24)} d sedan`;
+}
+
 export const CALLOUT_LABEL: Record<CalloutKind, string> = {
   caution: 'Risk',
   warning: 'Varning',

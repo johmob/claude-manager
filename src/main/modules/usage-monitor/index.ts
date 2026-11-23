@@ -1,6 +1,4 @@
 import { readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
 import type { UsageSnapshot, UsageWindow, UsageWindows } from '../../../shared/contracts';
 import { isRecord } from '../../../shared/guards';
 
@@ -20,10 +18,10 @@ export interface UsageMonitor {
 export interface UsageMonitorOptions {
   onSnapshot: (s: UsageSnapshot) => void;
   pollSeconds?: number;
-  credentialsPath?: string;
+  /** Claude Code's `.credentials.json` (holds the OAuth token; never refreshed here). */
+  credentialsPath: string;
   fetchImpl?: typeof fetch;
 }
-
 
 function parseWindow(raw: unknown): UsageWindow | null {
   if (!isRecord(raw) || typeof raw.utilization !== 'number') return null;
@@ -36,11 +34,6 @@ export function parseUsageResponse(json: unknown): UsageWindows {
     fiveHour: parseWindow(body.five_hour) ?? { utilization: 0, resetsAt: null },
     sevenDay: parseWindow(body.seven_day),
   };
-}
-
-export function defaultCredentialsPath(): string {
-  const configDir = process.env.CLAUDE_CONFIG_DIR;
-  return join(configDir ? configDir : join(homedir(), '.claude'), '.credentials.json');
 }
 
 interface Credentials {
@@ -70,7 +63,7 @@ async function fetchWindows(fetchImpl: typeof fetch, token: string): Promise<Usa
 
 export function createUsageMonitor(opts: UsageMonitorOptions): UsageMonitor {
   const pollMs = (opts.pollSeconds ?? DEFAULT_POLL_SECONDS) * 1000;
-  const credentialsPath = opts.credentialsPath ?? defaultCredentialsPath();
+  const credentialsPath = opts.credentialsPath;
   const fetchImpl = opts.fetchImpl ?? fetch;
   let snapshot: UsageSnapshot = { fiveHour: null, sevenDay: null, updatedAt: 0, source: 'none' };
   let timer: NodeJS.Timeout | null = null;

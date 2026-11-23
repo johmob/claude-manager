@@ -3,6 +3,7 @@
 import { app, dialog, ipcMain, nativeImage } from 'electron';
 import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import iconPath from '../../resources/icon.png?asset';
 import { DOCK_EDGES, MODEL_CHOICES, PERMISSION_CHOICES } from '../shared/contracts';
@@ -29,6 +30,7 @@ import { digestTurn, reviewTurn } from './modules/turn-review';
 import { createNotifier } from './modules/notifier';
 import { createWindowManager } from './modules/window-manager';
 import { createTray } from './modules/tray';
+import { importCandidates, liveTerminals } from './modules/terminal-sessions';
 
 const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: 'C:\\Kod',
@@ -56,6 +58,7 @@ if (!app.requestSingleInstanceLock()) {
 function boot(): void {
   app.setAppUserModelId('se.johmob.claude-manager');
   const userData = app.getPath('userData');
+  const claudeDir = process.env['CLAUDE_CONFIG_DIR'] || join(homedir(), '.claude');
   const icon = nativeImage.createFromPath(iconPath);
   let syncTimer: NodeJS.Timeout | null = null;
   let quitting = false;
@@ -75,7 +78,10 @@ function boot(): void {
     model.setTodo(id, tree);
     scheduleSync();
   });
-  const usage = createUsageMonitor({ onSnapshot: (snapshot) => windows.send('state:usage', snapshot) });
+  const usage = createUsageMonitor({
+    credentialsPath: join(claudeDir, '.credentials.json'),
+    onSnapshot: (snapshot) => windows.send('state:usage', snapshot),
+  });
   const windows = createWindowManager({
     preloadPath: join(__dirname, '../preload/index.js'),
     rendererUrl: app.isPackaged ? undefined : process.env['ELECTRON_RENDERER_URL'],
@@ -89,11 +95,7 @@ function boot(): void {
   for (const record of activeRecords()) {
     model.upsertRecord(record);
     todo.watch(record.id, record.cwd);
-    if (record.claudeSessionId) {
-      loadHistory(record.id, record.claudeSessionId, record.cwd)
-        .then((events) => windows.send('session:transcript-reset', { id: record.id, entries: model.loadHistory(record.id, events) }))
-        .catch(() => undefined); // No saved transcript (deleted or never written): the card simply starts empty.
-    }
+    loadSavedHistory(record);
   }
   notifier.setDoNotDisturb(settings.doNotDisturb);
   usage.start();
@@ -176,7 +178,22 @@ function boot(): void {
     return [groundRules.read().trim(), TODO_PROTOCOL, CALLOUT_PROTOCOL].join('\n\n');
   }
 
+  /** Puts a saved conversation in front of the card's transcript (no tokens; local files). */
+  function loadSavedHistory(record: SessionRecord): void {
+    if (!record.claudeSessionId) return;
+    loadHistory(record.id, record.claudeSessionId, record.cwd)
+      .then((events) => windows.send('session:transcript-reset', { id: record.id, entries: model.loadHistory(record.id, events) }))
+      .catch(() => undefined); // No saved transcript (deleted or never written): the card simply starts empty.
+  }
+
   function run(record: SessionRecord, prompt: string | undefined): void {
+    // Two processes writing one conversation would corrupt it, so a terminal that still holds it wins.
+    const holder = record.claudeSessionId ? liveTerminals(claudeDir).find((t) => t.sessionId === record.claudeSessionId) : undefined;
+    if (holder) {
+      const message = `Körs fortfarande i ett terminalfönster (${holder.name || `pid ${holder.pid}`}). Stäng fönstret när agenten är klar med sin tur, sedan fortsätter du här med hela samtalet.`;
+      onSessionEvent({ type: 'error', sessionId: record.id, message });
+      return;
+    }
     engine.start({
       id: record.id,
       cwd: record.cwd,
@@ -286,6 +303,32 @@ function boot(): void {
     const candidates = projects.list();
     const found = await locateProject(settings.projectsRoot, req.description, candidates, structuredQuery);
     return { ...found, candidates };
+  });
+
+  const knownSessionIds = (): Set<string> => new Set(records.flatMap((r) => (r.claudeSessionId && !r.archived ? [r.claudeSessionId] : [])));
+
+  handle('session:import-candidates', () => importCandidates(claudeDir, knownSessionIds()));
+
+  handle('session:import', async (req) => {
+    const wanted = new Set(req.claudeSessionIds);
+    const chosen = (await importCandidates(claudeDir, knownSessionIds())).filter((c) => wanted.has(c.claudeSessionId));
+    for (const candidate of chosen) {
+      const record: SessionRecord = {
+        id: randomUUID(),
+        name: candidate.title,
+        color: pickColor(activeRecords().map((r) => r.color)),
+        kind: 'project',
+        cwd: candidate.cwd,
+        model: settings.defaultModel,
+        permissionMode: settings.defaultPermissionMode,
+        claudeSessionId: candidate.claudeSessionId,
+        createdAt: new Date().toISOString(),
+        archived: false,
+      };
+      saveRecord(record);
+      todo.watch(record.id, record.cwd);
+      loadSavedHistory(record);
+    }
   });
 
   handle('session:open-project', (req) => {

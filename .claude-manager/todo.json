@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager v1",
-  "updated": "2026-11-23T09:18:09Z",
+  "updated": "2026-11-23T09:26:27Z",
   "blocks": [
     {
       "id": "1",
@@ -233,6 +233,33 @@
           "id": "7.5",
           "title": "Rebuild installer",
           "status": "done"
+        }
+      ]
+    },
+    {
+      "id": "8",
+      "title": "Import sessions from terminal windows",
+      "status": "in_progress",
+      "steps": [
+        {
+          "id": "8.1",
+          "title": "Read live-session registry and saved sessions",
+          "status": "done"
+        },
+        {
+          "id": "8.2",
+          "title": "Import dialog with terminal status",
+          "status": "done"
+        },
+        {
+          "id": "8.3",
+          "title": "Refuse resume while a terminal holds the session",
+          "status": "done"
+        },
+        {
+          "id": "8.4",
+          "title": "Rebuild and reinstall",
+          "status": "in_progress"
         }
       ]
     }
