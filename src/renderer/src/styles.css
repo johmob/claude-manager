@@ -710,3 +710,11 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .qf-quick-btn:hover:not(:disabled) { border-color: var(--accent-ui); }
 .qf-quick-btn[data-picked] { border-color: var(--accent-ui); color: var(--accent-ui); }
 .qf-steps[hidden] { display: none; }
+
+/* A question answered straight from the overlay */
+.ov-q { display: flex; flex-direction: column; gap: 10px; }
+.ov-q-head { display: flex; justify-content: space-between; gap: 8px; font-size: 0.6875rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #facc15; }
+.ov-q-head .muted { text-transform: none; letter-spacing: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-q-text { font-size: 0.95rem; font-weight: 650; line-height: 1.4; color: #fff; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.ov-q-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ov-q-actions .qf-quick-btn { padding: 6px 16px; min-width: 64px; }

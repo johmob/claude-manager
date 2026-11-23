@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { SessionSummary, UsageSnapshot, UsageWindow } from '../../../shared/contracts';
 import { AgentsIcon } from '../components/Icons';
+import { QuickQuestion, questionsKey } from '../components/QuestionFlow';
 import { InfoBar, InfoRow, SessionInfo } from '../components/SessionInfo';
 import { send } from '../lib/api';
 import { formatReset, monogram } from '../lib/format';
@@ -96,7 +97,7 @@ export function OverlayWindow() {
   return (
     <div
       className="overlay"
-      onMouseMove={(e: MouseEvent) => setInteractive(e.ctrlKey || (e.target instanceof Element && !!e.target.closest('.ov-cell')))}
+      onMouseMove={(e: MouseEvent) => setInteractive(e.ctrlKey || (e.target instanceof Element && !!e.target.closest('.ov-cell, .ov-q')))}
       onMouseLeave={() => {
         setInteractive(false);
         setHovered(null);
@@ -134,7 +135,13 @@ export function OverlayWindow() {
       </div>
       {detailOpen && (
         <div className="ov-detail">
-          {hovered === 'usage' ? <UsageDetail usage={state.usage} /> : session && <SessionInfo session={session} account={state.account} />}
+          {hovered === 'usage' ? (
+            <UsageDetail usage={state.usage} />
+          ) : session?.questions.length ? (
+            <QuickQuestion key={questionsKey(session)} session={session} onOpen={() => send('popup:open', { kind: 'questions', id: session.id })} />
+          ) : (
+            session && <SessionInfo session={session} account={state.account} />
+          )}
           <div className="ov-hint">{hovered === 'usage' ? 'Uppdateras automatiskt' : session?.questions.length ? 'Klicka: svara på frågorna · Högerklicka: arbetsschema' : 'Klicka: öppna i appen · Högerklicka: arbetsschema'}</div>
         </div>
       )}

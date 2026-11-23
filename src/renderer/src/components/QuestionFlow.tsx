@@ -60,7 +60,7 @@ function composeAnswers(questions: OpenQuestion[], answers: string[]): string {
 
 /**
  * The questions and assumptions a turn ended with, one at a time in large text, each with its own
- * answer box. At the end everything is reviewed and sent back to the agent as one message.
+ * answer box. After the last one everything goes back to the agent as one message, without a review step.
  */
 export function QuestionFlow({ session, onClose, onSent }: { session: SessionSummary; onClose: () => void; onSent: () => void }) {
   const { questions } = session;
@@ -69,28 +69,22 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
   const [answers, setAnswers] = useState<string[]>(() => questions.map((_, i) => saved?.[i] ?? ''));
   const firstOpen = answers.findIndex((a) => !a.trim());
   const [index, setIndex] = useState(firstOpen === -1 ? 0 : firstOpen);
-  const [review, setReview] = useState(firstOpen === -1 && saved !== null);
   useEffect(() => void drafts.set(key, answers), [key, answers]);
 
   const last = questions.length - 1;
   const q = questions[index];
-  const answered = answers.filter((a) => a.trim()).length;
   const setAnswer = (text: string): void => setAnswers((prev) => prev.map((a, i) => (i === index ? text : a)));
-  const go = (i: number): void => {
-    setReview(false);
-    setIndex(i);
-  };
+  const go = (i: number): void => setIndex(i);
   const single = questions.length === 1;
   const submit = (current: string[] = answers): void => {
     send('session:send', { id: session.id, text: composeAnswers(questions, current) });
     drafts.delete(key);
     onSent();
   };
-  /** On to the next question; after the last one to the review, or straight off when there was only one. */
+  /** On to the next question; after the last one, everything is sent. */
   const next = (current: string[] = answers): void => {
     if (index < last) go(index + 1);
-    else if (single) submit(current);
-    else setReview(true);
+    else submit(current);
   };
   /** A one-click answer: set it and move on (or send, when it was the only question). */
   const answerWith = (text: string): void => {
@@ -111,7 +105,7 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
               type="button"
               className="qf-step-dot"
               data-kind={item.kind}
-              data-current={!review && i === index ? 'true' : undefined}
+              data-current={i === index ? 'true' : undefined}
               data-answered={answers[i]?.trim() ? 'true' : undefined}
               title={item.text}
               onClick={() => go(i)}
@@ -119,31 +113,12 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
               {i + 1}
             </button>
           ))}
-          <button type="button" className="qf-step-dot qf-step-review" data-current={review ? 'true' : undefined} onClick={() => setReview(true)}>
+          <button type="button" className="qf-step-dot qf-step-review" title="Skicka svaren nu" onClick={() => submit()}>
             Skicka
           </button>
         </div>
 
-        {review ? (
-          <div className="qf-review">
-            <div className="qf-review-head">{answered} av {questions.length} besvarade. Allt skickas till agenten som ett meddelande.</div>
-            <ol className="qf-review-list">
-              {questions.map((item, i) => (
-                <li key={i} onClick={() => go(i)} title="Klicka för att ändra">
-                  <div className="qf-review-q">
-                    {item.kind === 'assumption' && <span className="qf-tag">Antagande</span>}
-                    {item.text}
-                  </div>
-                  <div className={answers[i]?.trim() ? 'qf-review-a' : 'qf-review-a qf-empty'}>{answers[i]?.trim() || 'Inget svar'}</div>
-                </li>
-              ))}
-            </ol>
-            <div className="qf-actions">
-              <button type="button" className="btn" onClick={() => go(last)}>‹ Tillbaka</button>
-              <button type="button" className="btn primary qf-send" onClick={() => submit()}>Skicka alla svar</button>
-            </div>
-          </div>
-        ) : (
+        {(
           q && (
             <div className="qf-card" data-kind={q.kind}>
               <div className="qf-kind">
@@ -205,7 +180,7 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
                   </button>
                 )}
                 <button type="button" className="btn" onClick={() => next()}>Hoppa över</button>
-                <button type="button" className="btn primary" onClick={() => next()}>{index < last ? 'Nästa ›' : single ? 'Skicka' : 'Granska och skicka ›'}</button>
+                <button type="button" className="btn primary" onClick={() => next()}>{index < last ? 'Nästa ›' : 'Skicka'}</button>
               </div>
             </div>
           )
@@ -238,5 +213,47 @@ export function QuestionsButton({ session }: { session: SessionSummary }) {
       </span>
       <span className="questions-btn-go">›</span>
     </button>
+  );
+}
+
+/**
+ * The next unanswered question with one-click answers, for the overlay: just the question and its
+ * buttons. Each click answers it (shared with the full flow); the last one sends all answers in one
+ * message. Questions that need written answers, and "read more", open the full flow.
+ */
+export function QuickQuestion({ session, onOpen }: { session: SessionSummary; onOpen: () => void }) {
+  const { questions } = session;
+  const key = questionsKey(session);
+  const [answers, setAnswers] = useState<string[]>(() => questions.map((_, i) => drafts.get(key)?.[i] ?? ''));
+  const index = answers.findIndex((a) => !a.trim());
+  const q = index === -1 ? undefined : questions[index];
+  if (!q) return null;
+  const options = q.kind === 'assumption' ? ['Stämmer'] : quickAnswers(q.text);
+  const choose = (text: string): void => {
+    const updated = answers.map((a, i) => (i === index ? text : a));
+    if (updated.every((a) => a.trim())) {
+      send('session:send', { id: session.id, text: composeAnswers(questions, updated) });
+      drafts.delete(key);
+    } else {
+      drafts.set(key, updated);
+    }
+    setAnswers(updated);
+  };
+  return (
+    <div className="ov-q">
+      <div className="ov-q-head">
+        <span>{q.kind === 'assumption' ? 'Antagande' : 'Fråga'}{questions.length > 1 ? ` ${index + 1} av ${questions.length}` : ''}</span>
+        <span className="muted">{session.name}</span>
+      </div>
+      <div className="ov-q-text">{q.text}</div>
+      <div className="ov-q-actions">
+        {options.map((option) => (
+          <button key={option} type="button" className="btn qf-quick-btn" onClick={() => choose(option === 'Stämmer' ? 'Stämmer.' : option)}>
+            {option}
+          </button>
+        ))}
+        <button type="button" className="link-btn" onClick={onOpen}>{options.length ? 'Läs mer' : 'Svara…'}</button>
+      </div>
+    </div>
   );
 }

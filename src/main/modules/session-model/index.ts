@@ -382,7 +382,7 @@ function statusOf(s: SessionState): SessionStatus {
 
 const MAX_QUESTIONS = 20;
 const QUESTION_END = /\?["”'»)]*$/;
-const QUESTION_HEADING = /fråg|question/i;
+const QUESTION_HEADING = /(?:öppna|obesvarade)\s+fråg|(?:jag har|några|ett par|en|två|tre|fyra|fem|\d+)\s+(?:\w+\s+)?fråg|fråg\w*\s+(?:till|för|åt)\s+(?:dig|er)|att\s+(?:svara|ta\s+ställning)|open questions|questions?\s+for\s+you/i;
 const ASSUMPTION_HEADING = /antag|assum|rätta|bekräfta|stämmer det/i;
 const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+(.*)$/;
 

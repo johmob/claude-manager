@@ -199,6 +199,12 @@ describe('questions left for the user', () => {
     ]);
   });
 
+  it('does not take a plain "Frågor" section title as questions to the user', () => {
+    const text = ['**Frågor**', '- Ja/nej-frågor får knapparna Ja och Nej.', '- Öppna frågor får inga knappar.'].join('\n');
+    expect(findOpenQuestions(text)).toEqual([]);
+    expect(findOpenQuestions(['**Frågor till dig**', '- Vilken port ska gälla'].join('\n')).map((q) => q.text)).toEqual(['Vilken port ska gälla']);
+  });
+
   it('gives a question the text around it, so options it names come with it', () => {
     const text = ['## Bakgrund', 'Allt byggdes.', '', '## Val', 'Jag ser två vägar:', '- A: snabbt men dyrt', '- B: billigt men långsamt', '', 'Vill du ha A eller B?', '', '## Sist', 'Klart.'].join('\n');
     const [question] = findOpenQuestions(text);
