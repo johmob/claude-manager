@@ -58,6 +58,7 @@ describe('translate', () => {
       type: 'rate_limit',
       sessionId: 's',
       rejected: false,
+      resetsAt: null,
       windows: {
         fiveHour: { utilization: 5, resetsAt: new Date(1795437000 * 1000).toISOString() },
         sevenDay: { utilization: 1, resetsAt: new Date(1795791600 * 1000).toISOString() },

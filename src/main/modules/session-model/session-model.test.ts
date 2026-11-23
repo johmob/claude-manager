@@ -242,3 +242,33 @@ describe('questions left for the user', () => {
     expect(model.summary('s1')?.status).toBe('done');
   });
 });
+
+describe('usage limit', () => {
+  const finish = (result = '') => ({ type: 'turn_finished', result, isError: false, interrupted: false, tokens: 0, durationMs: 0 }) as const;
+
+  it('stays limited after the turn ends, until a new turn starts', () => {
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'rate_limit', windows: { fiveHour: null, sevenDay: null }, rejected: true, resetsAt: '2026-11-23T17:30:00.000Z' });
+    apply(finish());
+    expect(model.summary('s1')).toMatchObject({ status: 'limited', limitResetsAt: '2026-11-23T17:30:00.000Z', lastError: 'Användningsgränsen är nådd.' });
+    apply({ type: 'turn_started', prompt: 'fortsätt' });
+    expect(model.summary('s1')).toMatchObject({ status: 'working', limitResetsAt: null });
+  });
+
+  it('recognises a turn refused by the limit from its result text', () => {
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply(finish('Claude AI usage limit reached|1795437000'));
+    expect(model.summary('s1')).toMatchObject({ status: 'limited', limitResetsAt: '' });
+  });
+});
+
+describe('question split from a statement on the same line', () => {
+  it('keeps only the question as its text and the statement as background', () => {
+    const [q] = findOpenQuestions('Testet gick bra och allt är sparat. Ska jag fortsätta med nästa steg?');
+    expect(q).toMatchObject({ text: 'Ska jag fortsätta med nästa steg?', detail: 'Testet gick bra och allt är sparat.' });
+  });
+});

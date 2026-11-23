@@ -84,6 +84,12 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
             on={update.auto}
             onChange={(autoUpdate) => send('settings:update', { autoUpdate })}
           />
+          <Toggle
+            label="Fortsätt efter gränsen"
+            title="Sessioner som stoppats av användningsgränsen fortsätter av sig själva när den har återställts."
+            on={settings.autoResume}
+            onChange={(autoResume) => send('settings:update', { autoResume })}
+          />
           <label className="settings-row">
             <span>Dockan</span>
             <select className="input compact" value={settings.dockEdge} onChange={(e) => send('settings:update', { dockEdge: e.target.value as DockEdge })}>

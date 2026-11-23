@@ -457,7 +457,8 @@ export function translate(sessionId: string, m: SDKMessage): SessionEvent[] {
       return [{ type: 'cleared', sessionId }];
     case 'rate_limit_event': {
       const info = m.rate_limit_info;
-      return [{ type: 'rate_limit', sessionId, windows: rateLimitWindows(info), rejected: info.status === 'rejected' }];
+      const resetsAt = typeof info.resetsAt === 'number' ? new Date(info.resetsAt * 1000).toISOString() : null;
+      return [{ type: 'rate_limit', sessionId, windows: rateLimitWindows(info), rejected: info.status === 'rejected', resetsAt }];
     }
     default:
       return [];

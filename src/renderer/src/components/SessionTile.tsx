@@ -10,18 +10,22 @@ import { SchemaButton } from './SchemaButton';
 import { TranscriptView } from './TranscriptView';
 import { WorkSchema } from './WorkSchema';
 
-/** One focus-mode tile: coloured header, live transcript, pending input, message box. */
+/** One focus-mode tile: header (name on its own row, controls below), live transcript, pending input, message box. */
 export function SessionTile({ session }: { session: SessionSummary }) {
   const entries = useTranscript(session.id);
   const [schemaOpen, setSchemaOpen] = useState(false);
   return (
     <section className="tile" style={{ '--accent': session.color } as CSSProperties}>
       <header className="tile-head">
-        <span className="tile-name">{session.name}</span>
-        <StatusChip status={session.status} />
-        <ModelEffortPicker session={session} />
-        <AgentDots count={session.activeAgents} color="#fff" />
-        <SchemaButton session={session} onOpen={() => setSchemaOpen(true)} compact />
+        <div className="tile-title">
+          <span className="tile-name" title={session.cwd}>{session.name}</span>
+          <StatusChip status={session.status} />
+        </div>
+        <div className="tile-controls">
+          <ModelEffortPicker session={session} />
+          <AgentDots count={session.activeAgents} color={session.color} />
+          <SchemaButton session={session} onOpen={() => setSchemaOpen(true)} compact />
+        </div>
       </header>
       <div className="tile-context">
         <ContextMeter session={session} />

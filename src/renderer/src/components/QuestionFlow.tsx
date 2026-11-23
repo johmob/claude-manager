@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type CSSProperties } from 'react';
 import type { OpenQuestion, SessionSummary } from '../../../shared/contracts';
 import { send } from '../lib/api';
+import { quickAnswers } from '../lib/quickAnswers';
 import { MarkdownText } from './MarkdownText';
 import { Modal } from './Modal';
 
@@ -91,11 +92,14 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
     else if (single) submit(current);
     else setReview(true);
   };
-  const confirm = (): void => {
-    const updated = answers.map((a, i) => (i === index ? 'Stämmer.' : a));
+  /** A one-click answer: set it and move on (or send, when it was the only question). */
+  const answerWith = (text: string): void => {
+    const updated = answers.map((a, i) => (i === index ? text : a));
     setAnswers(updated);
     next(updated);
   };
+  const confirm = (): void => answerWith('Stämmer.');
+  const quick = q && q.kind === 'question' ? quickAnswers(q.text) : [];
 
   return (
     <Modal title={`${session.name} – ${questions.length} ${questions.length === 1 ? 'fråga' : 'frågor'} till dig`} onClose={onClose} size="full">
@@ -160,6 +164,16 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
                     <MarkdownText text={session.questionsAnswer} />
                   </div>
                 </details>
+              )}
+              {quick.length > 0 && (
+                <div className="qf-quick">
+                  {quick.map((option) => (
+                    <button key={option} type="button" className="btn qf-quick-btn" data-picked={answers[index] === option ? 'true' : undefined} onClick={() => answerWith(option)}>
+                      {option}
+                    </button>
+                  ))}
+                  <span className="muted">eller skriv ett eget svar nedan</span>
+                </div>
               )}
               <textarea
                 key={index}

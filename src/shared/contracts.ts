@@ -233,14 +233,16 @@ export type SessionEvent =
   | { type: 'turn_finished'; sessionId: string; result: string; isError: boolean; interrupted: boolean; tokens: number; durationMs: number }
   | { type: 'context_usage'; sessionId: string; usage: ContextUsage }
   | { type: 'context_window_changed'; sessionId: string; window: ContextWindowChoice }
-  | { type: 'rate_limit'; sessionId: string; windows: UsageWindows; rejected: boolean }
+  /** `resetsAt` (ISO) is when the window that refused the request opens again, when known. */
+  | { type: 'rate_limit'; sessionId: string; windows: UsageWindows; rejected: boolean; resetsAt: string | null }
   | { type: 'callout'; sessionId: string; callout: Callout; agentId?: string }
   | { type: 'error'; sessionId: string; message: string }
   | { type: 'exited'; sessionId: string };
 
 // ---------- What the UI shows ----------
 
-export type SessionStatus = 'starting' | 'working' | 'waiting' | 'done' | 'idle' | 'error' | 'stopped';
+/** "limited": stopped by the usage limit; it continues on its own once the limit resets (unless turned off). */
+export type SessionStatus = 'starting' | 'working' | 'waiting' | 'done' | 'idle' | 'error' | 'stopped' | 'limited';
 
 export type OpenQuestionKind = 'question' | 'assumption';
 
@@ -300,6 +302,8 @@ export interface SessionSummary {
   lastError: string | null;
   /** Callouts from the latest turn, most severe first, until dismissed or the next turn starts. */
   callouts: Callout[];
+  /** Stopped by the usage limit: when it resets (ISO), or "" when not known. Null when not limited. */
+  limitResetsAt: string | null;
   /** Questions and assumptions the latest turn left for the user; empty once answered or dismissed. */
   questions: OpenQuestion[];
   /** Changes with every turn that leaves new questions, so a set put off can be told from a new one. */
@@ -347,6 +351,8 @@ export interface AppSettings {
   overlayVisible: boolean;
   /** Start with Windows, in the system tray (installed app only). */
   launchAtLogin: boolean;
+  /** Sessions stopped by the usage limit continue on their own once it resets. */
+  autoResume: boolean;
   /** Text size in the main window and popups, 1 = 16 px root (Ctrl + plus/minus/0). */
   textScale: number;
   /** Install new versions from GitHub on their own once no session is busy. */
@@ -415,7 +421,8 @@ export interface IpcInvokeMap {
   'session:set-effort': { req: { id: string; effort: EffortChoice }; res: void };
   'session:set-context-window': { req: { id: string; window: ContextWindowChoice }; res: void };
   'session:resume': { req: { id: string }; res: void };
-  'session:archive': { req: { id: string }; res: void };
+  /** Removes the card (stops its session); the project's files and Claude's saved conversation stay. */
+  'session:delete': { req: { id: string }; res: void };
   'session:rename': { req: { id: string; name: string }; res: void };
   'session:transcript': { req: { id: string }; res: TranscriptEntry[] };
   'session:mark-seen': { req: { id: string }; res: void };

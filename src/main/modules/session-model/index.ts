@@ -51,6 +51,8 @@ interface SessionState {
   startedAt: number | null;
   lastActivity: string;
   lastError: string | null;
+  /** Stopped by the usage limit: when it resets ('' when unknown); null when not limited. Kept until a new turn starts. */
+  limitResetsAt: string | null;
   callouts: Callout[];
   /** The main agent's latest text in the current turn; its questions are checked when the turn ends. */
   turnText: string;
@@ -90,6 +92,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       startedAt: null,
       lastActivity: '',
       lastError: null,
+      limitResetsAt: null,
       callouts: [],
       turnText: '',
       questions: [],
@@ -173,6 +176,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.slashCommands = event.slashCommands;
         return [];
       case 'turn_started':
+        s.limitResetsAt = null;
         s.turnAgents = new Set(s.subagents);
         s.turnActive = true;
         s.turnStartedAt = at;
@@ -245,7 +249,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.turnStartedAt = null;
         s.lastActivity = '';
         s.unseenDone = !event.isError && !event.interrupted;
-        s.lastError = event.isError ? event.result : null;
+        // A turn that ran into the usage limit ends like any other; it stays marked as limited, not done.
+        if (s.limitResetsAt === null && USAGE_LIMIT_TEXT.test(event.result)) s.limitResetsAt = '';
+        s.unseenDone = s.unseenDone && s.limitResetsAt === null;
+        s.lastError = s.limitResetsAt !== null ? LIMIT_MESSAGE : event.isError ? event.result : null;
         const thinking = takeThinking();
         const leftover = thinking ? add({ kind: 'assistant', text: '', thinking }) : [];
         if (event.interrupted) return [...leftover, ...system('Avbruten.', 'info')];
@@ -257,7 +264,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         return add({ kind: 'callout', callout: event.callout });
       case 'rate_limit':
         if (!event.rejected) return [];
-        s.lastError = 'Användningsgränsen är nådd.';
+        s.limitResetsAt = event.resetsAt ?? s.limitResetsAt ?? '';
+        s.lastError = LIMIT_MESSAGE;
         return system(s.lastError, 'warning');
       case 'error':
         s.lastError = event.message;
@@ -295,6 +303,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       turnStartedAt: s.turnStartedAt,
       startedAt: s.startedAt,
       lastError: s.lastError,
+      limitResetsAt: s.limitResetsAt,
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
       questions: s.questions,
       questionsId: s.questionsId,
@@ -357,7 +366,12 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
   };
 }
 
+const LIMIT_MESSAGE = 'Användningsgränsen är nådd.';
+/** How Claude Code words a turn refused by the usage limit. */
+const USAGE_LIMIT_TEXT = /usage limit|hit your (?:usage )?limit|rate limit reached|limit reached\|/i;
+
 function statusOf(s: SessionState): SessionStatus {
+  if (s.limitResetsAt !== null && !s.turnActive && !s.pending.length) return 'limited';
   if (!s.running) return s.lastError ? 'error' : s.questions.length ? 'waiting' : 'stopped';
   if (s.pending.length) return 'waiting';
   if (s.turnActive) return 'working';
@@ -454,7 +468,12 @@ export function findOpenQuestions(text: string): OpenQuestion[] {
       return;
     }
     if (!item && !/^\s/.test(l.raw)) section = null;
-    if (line.length >= 6 && QUESTION_END.test(line)) found.push({ kind: 'question', text: line, context: '', detail: sectionAround(lines, i) });
+    if (line.length < 6 || !QUESTION_END.test(line)) return;
+    // "Testet gick bra. Ska jag fortsätta?": the question is the last sentence; what came before is background.
+    const split = /^(.*[.!:])\s+([^.!:?]*\?["”'»)]*)$/.exec(line);
+    const around = sectionAround(lines, i);
+    const detail = split ? [split[1]!, around].filter(Boolean).join('\n\n') : around;
+    found.push({ kind: 'question', text: split ? split[2]!.trim() : line, context: '', detail });
   });
   return found;
 }

@@ -48,6 +48,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   launchAtLogin: true,
   textScale: 1.1,
   autoUpdate: true,
+  autoResume: true,
   theme: 'night',
   defaultModel: 'opus',
   defaultEffort: 'medium',
@@ -55,6 +56,12 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const SYNC_DELAY_MS = 80;
+
+/** Sent to a session stopped by the usage limit once it has reset. */
+const RESUME_MESSAGE =
+  'Användningsgränsen har återställts. Fortsätt där du var, och starta om de subagenter som stoppades.';
+/** Wait a little past the reset time, so the first request is not refused again. */
+const RESUME_MARGIN_MS = 60 * 1000;
 
 /** Given to the app when Windows starts it at login, so it starts in the tray instead of opening its window. */
 const AUTOSTART_ARG = '--autostart';
@@ -163,6 +170,7 @@ function boot(): void {
   const expireStale = (): void => saveRecords(expireFocus(records, Date.now()));
   expireStale();
   const focusTimer = setInterval(expireStale, 60 * 60 * 1000);
+  const resumeTimer = setInterval(resumeAfterLimit, 60 * 1000);
   let account = UNVERIFIED_ACCOUNT;
   probeAccount({ cwd: userData, ...claudeExecutable })
     .then((found) => {
@@ -372,6 +380,24 @@ function boot(): void {
     void nextMapping();
   }
 
+  /**
+   * Sessions stopped by the usage limit continue where they were once it has reset: at the reset time
+   * the limit gave, or, when it gave none, once the usage readout shows room again.
+   */
+  function resumeAfterLimit(): void {
+    if (!settings.autoResume) return;
+    const now = Date.now();
+    const current = usage.current();
+    const roomAgain = [current.fiveHour, current.sevenDay].every((w) => !w || w.utilization < 100);
+    for (const s of model.summaries()) {
+      if (s.status !== 'limited' || s.limitResetsAt === null) continue;
+      const resets = s.limitResetsAt ? Date.parse(s.limitResetsAt) : NaN;
+      if (Number.isFinite(resets) ? now < resets + RESUME_MARGIN_MS : !roomAgain) continue;
+      notifier.alert({ sessionId: s.id, title: `${s.name} fortsätter`, body: 'Användningsgränsen har återställts.', urgent: false });
+      sendToSession(s.id, RESUME_MESSAGE);
+    }
+  }
+
   /** Moves a session into Fokus (others leave when there are too many). */
   function focus(id: string): void {
     saveRecords(bringIntoFocus(records, id));
@@ -528,6 +554,7 @@ function boot(): void {
     if (quitting) return;
     quitting = true;
     clearInterval(focusTimer);
+    clearInterval(resumeTimer);
     updater?.stop();
     engine.stopAll();
     usage.stop();
@@ -647,11 +674,14 @@ function boot(): void {
     if (!engine.isRunning(req.id)) run(requireRecord(req.id), undefined);
   });
 
-  handle('session:archive', (req) => {
-    engine.stop(req.id);
+  handle('session:delete', (req) => {
+    void engine.stop(req.id);
     todo.unwatch(req.id);
     notifier.clear(req.id);
-    saveRecord({ ...requireRecord(req.id), archived: true });
+    model.remove(req.id);
+    records = records.filter((r) => r.id !== req.id);
+    recordStore.write(records);
+    scheduleSync();
   });
 
   handle('session:rename', (req) => {
@@ -748,6 +778,7 @@ function validSettings(r: unknown): AppSettings | null {
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),
     launchAtLogin: bool(r['launchAtLogin'], d.launchAtLogin),
     autoUpdate: bool(r['autoUpdate'], d.autoUpdate),
+    autoResume: bool(r['autoResume'], d.autoResume),
     theme: pick(r['theme'], THEME_CHOICES, d.theme),
     textScale: typeof r['textScale'] === 'number' && Number.isFinite(r['textScale']) ? clampScale(r['textScale']) : d.textScale,
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),

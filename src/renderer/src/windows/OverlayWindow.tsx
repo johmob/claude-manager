@@ -15,7 +15,7 @@ function shortName(name: string): string {
 }
 
 /** Small mark on the icon for states that need a glance: waiting, done, error. */
-const STATUS_MARK: Partial<Record<SessionSummary['status'], string>> = { waiting: '!', done: '✓', error: '×' };
+const STATUS_MARK: Partial<Record<SessionSummary['status'], string>> = { waiting: '!', done: '✓', error: '×', limited: '⏸' };
 
 function UsageRow({ label, window: w }: { label: string; window: UsageWindow | null }) {
   const used = w ? Math.round(Math.min(100, Math.max(0, w.utilization))) : null;

@@ -222,8 +222,10 @@ textarea.input { resize: vertical; }
 .tile-grid { flex: 1; min-height: 0; display: grid; gap: 8px; padding: 8px; }
 .tile { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 /* A calm header: the session's colour only as a thin top edge and a dot, never as a full bar. */
-.tile-head { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--bg-elev); color: var(--text); border-top: 3px solid var(--accent); border-bottom: 1px solid var(--border); flex: none; }
-.tile-name { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile-head { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; background: var(--bg-elev); color: var(--text); border-top: 3px solid var(--accent); border-bottom: 1px solid var(--border); flex: none; }
+.tile-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tile-name { font-size: 0.95rem; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .tile-name::before { content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: var(--accent); vertical-align: 1px; }
 .tile .pending-wrap { flex: none; max-height: 45%; overflow-y: auto; }
 
@@ -694,3 +696,17 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.8125rem; }
 .settings-version { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding-top: 6px; border-top: 1px solid var(--border); font-size: 0.7188rem; color: var(--muted); }
 .settings-version .link-btn { padding: 0; font-size: 0.75rem; }
+
+/* ---------- Stopped by the usage limit ---------- */
+.chip[data-status="limited"] { background: rgba(240,82,79,.16); color: var(--red); }
+.card[data-status="limited"] { border-color: rgba(240,82,79,.55); }
+.ov-cell[data-status="limited"] { border-color: rgba(255,59,48,.7); background: rgba(255,59,48,.08); }
+.ov-cell[data-status="limited"] .ov-mark { background: #b42318; }
+.dock-card[data-status="limited"] { border-color: rgba(240,82,79,.6); }
+
+/* One-click answers in the question flow */
+.qf-quick { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.qf-quick-btn { min-width: 72px; font-size: 0.95rem; font-weight: 650; padding: 8px 18px; }
+.qf-quick-btn:hover:not(:disabled) { border-color: var(--accent-ui); }
+.qf-quick-btn[data-picked] { border-color: var(--accent-ui); color: var(--accent-ui); }
+.qf-steps[hidden] { display: none; }

@@ -45,8 +45,8 @@ function CardActions({ session, onRename }: { session: SessionSummary; onRename:
   if (confirming) {
     return (
       <div className="card-actions confirm" onClick={(e) => e.stopPropagation()}>
-        <span className="muted">Arkivera?</span>
-        <button type="button" className="btn small danger" onClick={() => send('session:archive', { id: session.id })}>Ja</button>
+        <span className="muted" title="Projektets filer och Claudes sparade samtal finns kvar">Ta bort kortet?</span>
+        <button type="button" className="btn small danger" onClick={() => send('session:delete', { id: session.id })}>Ta bort</button>
         <button type="button" className="btn small" onClick={() => setConfirming(false)}>Nej</button>
       </div>
     );
@@ -57,9 +57,16 @@ function CardActions({ session, onRename }: { session: SessionSummary; onRename:
         <IconButton title="Återuppta" onClick={() => send('session:resume', { id: session.id })}>▶</IconButton>
       )}
       <IconButton title="Byt namn" onClick={onRename}>✎</IconButton>
-      <IconButton title="Arkivera" onClick={() => setConfirming(true)}>🗄</IconButton>
+      <IconButton title="Ta bort kortet" onClick={() => setConfirming(true)}>🗑</IconButton>
     </div>
   );
+}
+
+/** " Fortsätter 18:30." for a session stopped by the usage limit. */
+function limitNote(session: SessionSummary): string {
+  if (session.status !== 'limited') return '';
+  const at = session.limitResetsAt ? new Date(session.limitResetsAt) : null;
+  return at ? ` Fortsätter ${at.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}.` : ' Fortsätter när gränsen har återställts.';
 }
 
 /** How long to wait for a second click before treating a click as a single click. */
@@ -117,7 +124,7 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
         <div className="card-task">{session.mapping ? <><Spinner small /> Kartlägger projektet…</> : session.currentTask || " "}</div>
         <SchemaButton session={session} onOpen={onOpen} />
         <ContextMeter session={session} />
-        {session.lastError && <div className="card-error">{session.lastError}</div>}
+        {session.lastError && <div className="card-error">{session.lastError}{limitNote(session)}</div>}
       </div>
       <QuestionsButton session={session} />
       <CardCallouts session={session} />

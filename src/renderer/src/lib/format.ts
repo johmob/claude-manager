@@ -26,6 +26,7 @@ export const STATUS_LABEL: Record<SessionStatus, string> = {
   idle: 'Vilar',
   error: 'Fel',
   stopped: 'Stoppad',
+  limited: 'Gräns nådd',
 };
 
 export const EFFORT_LABEL: Record<EffortChoice, string> = {
