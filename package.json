@@ -1,6 +1,6 @@
 {
   "name": "claude-manager",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Windows desktop front end for running and supervising many Claude Code sessions",
   "private": true,
   "main": "out/main/index.js",
