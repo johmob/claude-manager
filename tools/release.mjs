@@ -11,7 +11,9 @@ import { join } from 'node:path';
 const level = process.argv[2] ?? 'patch';
 if (!['patch', 'minor', 'major'].includes(level)) throw new Error(`Okänd nivå: ${level} (patch, minor eller major).`);
 
-const run = (command) => execSync(command, { stdio: 'inherit' });
+// Behind TLS inspection (e.g. a company proxy) Node must trust the Windows certificate store, where its root is.
+const env = { ...process.env, NODE_USE_SYSTEM_CA: '1' };
+const run = (command) => execSync(command, { stdio: 'inherit', env });
 const read = (command) => execSync(command).toString().trim();
 
 if (read('git status --porcelain')) throw new Error('Committa eller ångra ändringarna först.');
