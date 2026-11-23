@@ -231,7 +231,7 @@ textarea.input { resize: vertical; }
 /* Your own messages: on the left like the agent's, a faint yellow surface and label so they are easy to find. */
 .t-user { display: flex; justify-content: flex-start; }
 .bubble { max-width: 92%; background: rgba(250,204,21,.06); border: 1px solid rgba(250,204,21,.2); color: #ece7d6; border-radius: 12px; padding: 8px 13px 10px; font-size: 0.875rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
-.bubble::before { content: "Du"; display: block; margin-bottom: 2px; font-size: 0.6563rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #facc15; }
+.bubble-head { margin-bottom: 2px; font-size: 0.6563rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #facc15; }
 .t-assistant { display: flex; gap: 6px; align-items: flex-start; }
 .md { min-width: 0; flex: 1; word-break: break-word; }
 .md > :first-child { margin-top: 0; }
@@ -240,8 +240,6 @@ textarea.input { resize: vertical; }
 .md code { font-family: var(--mono); font-size: 0.75rem; background: #11141a; padding: 1px 5px; border-radius: 4px; }
 .md pre { background: #11141a; border-radius: 8px; padding: 9px 11px; overflow-x: auto; }
 .md pre code { background: none; padding: 0; }
-.md table { border-collapse: collapse; }
-.md th, .md td { border: 1px solid var(--border); padding: 3px 8px; }
 .md-link { text-decoration: underline; text-decoration-color: var(--muted); }
 .thinking { flex: none; }
 .thinking-toggle { background: var(--bg-hover); border: 0; color: var(--muted); border-radius: 4px; width: 18px; height: 18px; line-height: 1; font-size: 0.75rem; padding: 0; }
@@ -598,8 +596,6 @@ textarea.input { resize: vertical; }
 .transcript .md hr { border: 0; border-top: 1px solid var(--border); margin: 1em 0; }
 .transcript .md code { font-size: 0.7813rem; color: #ffd9a8; }
 .transcript .md pre code { color: inherit; }
-.transcript .md table { margin: .6em 0; font-size: 0.8125rem; }
-.transcript .md th { text-align: left; background: rgba(255,255,255,.04); }
 
 /* ---------- Where the eye goes: a turn's answer stands out, narration along the way recedes ---------- */
 .transcript .t-assistant[data-final] { padding: 10px 14px; border-radius: 10px; background: rgba(255,255,255,.03); border-left: 3px solid var(--accent, var(--accent-ui)); }
@@ -628,3 +624,128 @@ textarea.input { resize: vertical; }
 .qf-detail .md li { margin: .2em 0; }
 .qf-full summary { cursor: pointer; color: var(--accent-ui); font-size: 0.8125rem; margin-bottom: 8px; }
 .qf-full[open] .qf-detail { max-height: 45vh; }
+
+/* The agent's narration and commands along the way, folded. */
+.t-log { margin: 2px 0; }
+.t-log-body { margin: 4px 0 6px 10px; padding-left: 10px; border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+
+/* ---------- Rounds: each of your messages with what followed, as its own section ---------- */
+.transcript { gap: 14px; }
+.t-round { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,.018); }
+.t-answer-head { margin-bottom: 4px; font-size: 0.6563rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums; }
+.transcript .t-round .t-assistant[data-final] { flex-direction: column; background: none; padding: 2px 0 2px 12px; border-radius: 0; }
+
+/* ---------- Tables in agent text ---------- */
+.md table { display: block; width: max-content; max-width: 100%; overflow-x: auto; margin: .7em 0; border-collapse: separate; border-spacing: 0; border: 1px solid var(--border); border-radius: 8px; font-size: 0.85em; font-variant-numeric: tabular-nums; }
+.md th, .md td { padding: 6px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.md th + th, .md td + td { border-left: 1px solid rgba(255,255,255,.07); }
+.md thead th { background: rgba(255,255,255,.07); color: #fff; font-weight: 700; white-space: nowrap; }
+.md tbody tr:nth-child(even) td { background: rgba(255,255,255,.03); }
+.md tbody tr:last-child td { border-bottom: 0; }
+.md tbody tr:hover td { background: rgba(255,255,255,.06); }
+
+/* =====================================================================================================
+   Night mode: black, high contrast, monospace, terminal accents. Same layout, only the look changes.
+   ===================================================================================================== */
+html[data-theme="night"] {
+  --bg: #000;
+  --bg-elev: #050505;
+  --bg-card: #0b0b0b;
+  --bg-hover: #181818;
+  --border: #353535;
+  --text: #f4f4f4;
+  --muted: #ababab;
+  --accent-ui: #00e5ff;
+  --orange: #ffb020;
+  --red: #ff3b5c;
+  --green: #3dff8f;
+  --blue-grey: #9cc2e6;
+  --radius: 4px;
+  --font: "JetBrains Mono Variable", "Cascadia Mono", Consolas, monospace;
+  --mono: "JetBrains Mono Variable", "Cascadia Mono", Consolas, monospace;
+}
+html[data-theme="night"] body { font-feature-settings: "calt" 0, "zero" 1; letter-spacing: -0.01em; }
+html[data-theme="night"] ::selection { background: var(--accent-ui); color: #000; }
+html[data-theme="night"] ::-webkit-scrollbar { width: 9px; height: 9px; }
+html[data-theme="night"] ::-webkit-scrollbar-thumb { background: #2b2b2b; border: 2px solid #000; }
+html[data-theme="night"] ::-webkit-scrollbar-track { background: #000; }
+
+/* Controls: square, outlined, the accent where it counts */
+html[data-theme="night"] .btn, html[data-theme="night"] .toggle, html[data-theme="night"] .input, html[data-theme="night"] .chip,
+html[data-theme="night"] .update-pill, html[data-theme="night"] .schema-btn, html[data-theme="night"] .questions-btn { border-radius: 3px; }
+html[data-theme="night"] .btn { background: #000; }
+html[data-theme="night"] .btn:hover:not(:disabled) { background: #151515; border-color: #555; }
+html[data-theme="night"] .btn.primary { background: var(--accent-ui); border-color: var(--accent-ui); color: #000; font-weight: 700; }
+html[data-theme="night"] .btn.primary:hover:not(:disabled) { background: #6ff2ff; }
+html[data-theme="night"] .input { background: #000; caret-color: var(--accent-ui); }
+html[data-theme="night"] .input:focus { border-color: var(--accent-ui); box-shadow: 0 0 0 1px var(--accent-ui), 0 0 10px rgba(0,229,255,.25); }
+html[data-theme="night"] .toggle { background: #000; }
+html[data-theme="night"] .toggle-dot { border-radius: 1px; background: #444; }
+html[data-theme="night"] .toggle.on { border-color: var(--accent-ui); color: var(--accent-ui); }
+html[data-theme="night"] .chip { text-transform: uppercase; letter-spacing: .04em; font-weight: 700; background: transparent; box-shadow: inset 0 0 0 1px currentColor; }
+html[data-theme="night"] .chip::before { content: "["; opacity: .6; }
+html[data-theme="night"] .chip::after { content: "]"; opacity: .6; }
+html[data-theme="night"] .chip[data-status="stopped"] { box-shadow: inset 0 0 0 1px var(--border); }
+
+/* Frame */
+html[data-theme="night"] .topbar { background: #000; border-bottom-color: #2a2a2a; }
+html[data-theme="night"] .view-tabs button { text-transform: lowercase; letter-spacing: .04em; }
+html[data-theme="night"] .view-tabs button[aria-selected="true"] { color: var(--accent-ui); }
+html[data-theme="night"] .view-tabs button[aria-selected="true"]::before { content: "> "; }
+html[data-theme="night"] .view-tabs button[aria-selected="true"]::after { border-radius: 0; box-shadow: 0 0 8px var(--accent-ui); }
+html[data-theme="night"] .usage-panel { background: #000; border-left-color: #2a2a2a; }
+html[data-theme="night"] .card { background: #070707; }
+html[data-theme="night"] .card:hover { border-color: #5a5a5a; }
+html[data-theme="night"] .card-strip { height: 2px; box-shadow: 0 0 8px var(--accent); }
+html[data-theme="night"] .modal { background: #050505; border-color: #3a3a3a; border-radius: 6px; box-shadow: 0 0 0 1px #000, 0 20px 60px rgba(0,0,0,.8); }
+html[data-theme="night"] .modal-head h2 { color: var(--accent-ui); }
+html[data-theme="night"] .modal-head h2::before { content: "// "; opacity: .7; }
+html[data-theme="night"] .tile { background: #050505; border-radius: 4px; }
+html[data-theme="night"] .tile-head { background: #000; color: var(--text); border-bottom: 2px solid var(--accent); }
+html[data-theme="night"] .tile-name { color: var(--accent); text-shadow: none; }
+html[data-theme="night"] .tile-head .chip { background: transparent; color: var(--text); }
+
+/* Transcript: white text, headings in the accent with their markdown marks, your turns as prompts */
+html[data-theme="night"] .transcript .md { color: #ececec; }
+html[data-theme="night"] .transcript .md :is(h1, h2, h3, h4) { color: var(--accent-ui); border: 0; }
+html[data-theme="night"] .transcript .md h1::before { content: "# "; opacity: .55; }
+html[data-theme="night"] .transcript .md h2::before { content: "## "; opacity: .55; }
+html[data-theme="night"] .transcript .md h3::before { content: "### "; opacity: .55; }
+html[data-theme="night"] .transcript .md h4::before { content: "#### "; opacity: .55; }
+html[data-theme="night"] .transcript .md strong { color: #fff; }
+html[data-theme="night"] .transcript .md li::marker { color: var(--accent-ui); }
+html[data-theme="night"] .transcript .md code { color: var(--green); background: #101010; }
+html[data-theme="night"] .transcript .t-assistant:not([data-final]) .md { color: #9a9a9a; }
+html[data-theme="night"] .t-round { background: #030303; border-color: #2c2c2c; border-radius: 4px; }
+html[data-theme="night"] .transcript .t-round .t-assistant[data-final] { border-left-color: var(--accent-ui); }
+html[data-theme="night"] .t-answer-head { color: var(--accent-ui); text-transform: lowercase; }
+html[data-theme="night"] .t-answer-head::before { content: "// "; opacity: .7; }
+html[data-theme="night"] .bubble { background: #0d0a00; border-color: #5c4a00; border-radius: 3px; color: #fff4cc; }
+html[data-theme="night"] .bubble-head { color: #ffcc00; text-transform: lowercase; }
+html[data-theme="night"] .bubble-head::before { content: "> "; }
+html[data-theme="night"] .md table { border-radius: 2px; }
+html[data-theme="night"] .md thead th { background: #141414; color: var(--accent-ui); }
+
+/* Overlay and dock panels */
+html[data-theme="night"] .ov-row { background: rgba(0,0,0,.95); border-color: #3a3a3a; border-radius: 6px; }
+html[data-theme="night"] .ov-cell { background: #0a0a0a; border-color: #2e2e2e; border-radius: 4px; }
+html[data-theme="night"] .ov-detail { background: rgba(0,0,0,.97); border-color: #3a3a3a; border-radius: 4px; }
+html[data-theme="night"] .ov-agents { border-radius: 2px; }
+html[data-theme="night"] .dock-card { background: #050505; border-radius: 4px; }
+/* Monospace is wider: keep the top bar on one line */
+html[data-theme="night"] .topbar { gap: 10px; padding: 8px 12px; }
+html[data-theme="night"] .start-menu button { white-space: nowrap; font-size: 0.78rem; padding-left: 9px; padding-right: 9px; }
+html[data-theme="night"] .topbar-settings { flex-wrap: nowrap; gap: 6px; }
+html[data-theme="night"] .topbar-settings .toggle, html[data-theme="night"] .topbar-settings .input.compact, html[data-theme="night"] .update-pill { font-size: 0.75rem; padding: 3px 8px; white-space: nowrap; }
+html[data-theme="night"] .view-tabs { gap: 16px; }
+html[data-theme="night"] .view-tabs button { font-size: 0.85rem; white-space: nowrap; }
+
+/* ---------- Settings menu (⚙) ---------- */
+.topbar-settings { justify-self: end; }
+.settings-menu { position: relative; }
+.settings-btn { padding: 4px 10px; font-size: 0.9rem; line-height: 1; }
+.settings-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 230px; display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.55); }
+.settings-pop .toggle { justify-content: flex-start; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.8125rem; }
+.settings-version { padding-top: 6px; border-top: 1px solid var(--border); font-size: 0.7188rem; color: var(--muted); }
+html[data-theme="night"] .settings-pop { background: #050505; border-radius: 4px; }

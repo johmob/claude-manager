@@ -3,6 +3,7 @@ import type { SessionSummary } from '../../../shared/contracts';
 import { AskQuestionsContext, QuestionFlow, questionsKey } from '../components/QuestionFlow';
 import { AccountContext } from '../state/account';
 import { useAppState } from '../state/useAppState';
+import { useTheme } from '../lib/theme';
 import { useTextScale } from '../lib/textScale';
 import { TopBar, type ViewMode } from '../components/TopBar';
 import { StartDialog, type DialogKind } from '../components/StartDialogs';
@@ -12,6 +13,7 @@ import { FocusView } from '../views/FocusView';
 
 export function MainWindow() {
   const state = useAppState();
+  useTheme(state?.settings.theme);
   const [view, setView] = useState<ViewMode>('overview');
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const [asking, setAsking] = useState<string | null>(null);

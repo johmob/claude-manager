@@ -85,13 +85,104 @@ function finalAnswers(entries: TranscriptEntry[]): Set<string> {
   return finals;
 }
 
-function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, ToolEntry>; sessionId: string; final: boolean }) {
+/** What always shows: your messages, each turn's answer, tagged callouts, questions, and problems. */
+function standsOut(entry: TranscriptEntry, finals: Set<string>): boolean {
   switch (entry.kind) {
     case 'user':
-      return <div className="t-user"><div className="bubble">{entry.text}</div></div>;
+    case 'callout':
+    case 'question':
+      return true;
+    case 'assistant':
+      return finals.has(entry.id);
+    case 'system':
+      return entry.level !== 'info';
+    case 'tool':
+      return false;
+  }
+}
+
+type Shown = { kind: 'entry'; entry: Exclude<TranscriptEntry, ToolEntry> } | { kind: 'log'; entries: TranscriptEntry[] };
+
+/** "14:32" for entries from this run; saved history has no times, so it shows none. */
+function timeOf(entry: TranscriptEntry): string {
+  return entry.id.startsWith('history:') ? '' : new Date(entry.at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Everything that does not stand out is gathered into work logs between the entries that do. */
+function arrange(entries: TranscriptEntry[], finals: Set<string>): Shown[] {
+  const shown: Shown[] = [];
+  for (const entry of entries) {
+    if (standsOut(entry, finals) && entry.kind !== 'tool') {
+      shown.push({ kind: 'entry', entry });
+      continue;
+    }
+    const last = shown[shown.length - 1];
+    if (last?.kind === 'log') last.entries.push(entry);
+    else shown.push({ kind: 'log', entries: [entry] });
+  }
+  return shown;
+}
+
+/** Rounds: each message from the user starts one, holding everything up to the next (work log, answer, callouts). */
+function rounds(shown: Shown[]): Shown[][] {
+  const result: Shown[][] = [];
+  for (const item of shown) {
+    if (!result.length || (item.kind === 'entry' && item.entry.kind === 'user')) result.push([]);
+    result[result.length - 1]!.push(item);
+  }
+  return result;
+}
+
+/**
+ * The agent's narration and commands along the way, folded to one quiet line
+ * ("Under arbetet · 3 meddelanden · 5 kommandon"); a click shows them.
+ */
+function WorkLog({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId: string }) {
+  const [open, setOpen] = useState(false);
+  const texts = entries.filter((e) => e.kind === 'assistant' && e.text.trim()).length;
+  const tools = entries.filter((e): e is ToolEntry => e.kind === 'tool');
+  const notices = entries.filter((e) => e.kind === 'system').length;
+  const running = tools.some((t) => t.status === 'running');
+  const parts = [
+    texts ? `${texts} ${texts === 1 ? 'meddelande' : 'meddelanden'}` : '',
+    tools.length ? `${tools.length} ${tools.length === 1 ? 'kommando' : 'kommandon'}` : '',
+    notices ? `${notices} ${notices === 1 ? 'notis' : 'notiser'}` : '',
+  ].filter(Boolean);
+  if (!parts.length) return null;
+  return (
+    <div className="t-log">
+      <button type="button" className="t-tools-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className="t-tools-caret">{open ? '▾' : '▸'}</span>
+        Under arbetet · {parts.join(' · ')}
+        {running && <Spinner small />}
+      </button>
+      {open && (
+        <div className="t-log-body">
+          {groupTools(entries).map((item) =>
+            Array.isArray(item) ? <ToolGroup key={item[0]!.id} tools={item} /> : <Entry key={item.id} entry={item} sessionId={sessionId} final={false} />,
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, ToolEntry>; sessionId: string; final: boolean }) {
+  const time = timeOf(entry);
+  switch (entry.kind) {
+    case 'user':
+      return (
+        <div className="t-user">
+          <div className="bubble">
+            <div className="bubble-head">Du{time && ` · ${time}`}</div>
+            {entry.text}
+          </div>
+        </div>
+      );
     case 'assistant':
       return (
         <div className="t-assistant" data-final={final ? 'true' : undefined}>
+          {final && <div className="t-answer-head">Svar{time && ` · ${time}`}</div>}
           <Thinking text={entry.thinking} />
           <MarkdownText text={entry.text} />
         </div>
@@ -110,7 +201,11 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
   }
 }
 
-/** Scrollable live transcript (commands collapsed by default); sticks to the bottom unless the user scrolled up. */
+/**
+ * Scrollable live transcript: your messages, each turn's answer, callouts and questions stand out; the
+ * agent's narration and commands along the way are folded into work logs. Sticks to the bottom unless
+ * the user scrolled up.
+ */
 export function TranscriptView({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -128,13 +223,17 @@ export function TranscriptView({ entries, sessionId }: { entries: TranscriptEntr
   const finals = finalAnswers(entries);
   return (
     <div className="transcript" ref={ref} onScroll={onScroll}>
-      {groupTools(entries).map((item) =>
-        Array.isArray(item) ? (
-          <ToolGroup key={item[0]!.id} tools={item} />
-        ) : (
-          <Entry key={item.id} entry={item} sessionId={sessionId} final={finals.has(item.id)} />
-        ),
-      )}
+      {rounds(arrange(entries, finals)).map((round) => (
+        <section key={round[0]!.kind === 'log' ? round[0]!.entries[0]!.id : round[0]!.entry.id} className="t-round">
+          {round.map((item) =>
+            item.kind === 'log' ? (
+              <WorkLog key={item.entries[0]!.id} entries={item.entries} sessionId={sessionId} />
+            ) : (
+              <Entry key={item.entry.id} entry={item.entry} sessionId={sessionId} final={finals.has(item.entry.id)} />
+            ),
+          )}
+        </section>
+      ))}
     </div>
   );
 }

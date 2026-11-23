@@ -79,17 +79,28 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
     setReview(false);
     setIndex(i);
   };
-  const next = (): void => (index < last ? go(index + 1) : setReview(true));
-  const submit = (): void => {
-    send('session:send', { id: session.id, text: composeAnswers(questions, answers) });
+  const single = questions.length === 1;
+  const submit = (current: string[] = answers): void => {
+    send('session:send', { id: session.id, text: composeAnswers(questions, current) });
     drafts.delete(key);
     onSent();
+  };
+  /** On to the next question; after the last one to the review, or straight off when there was only one. */
+  const next = (current: string[] = answers): void => {
+    if (index < last) go(index + 1);
+    else if (single) submit(current);
+    else setReview(true);
+  };
+  const confirm = (): void => {
+    const updated = answers.map((a, i) => (i === index ? 'Stämmer.' : a));
+    setAnswers(updated);
+    next(updated);
   };
 
   return (
     <Modal title={`${session.name} – ${questions.length} ${questions.length === 1 ? 'fråga' : 'frågor'} till dig`} onClose={onClose} size="full">
       <div className="qf" style={{ '--accent': session.color } as CSSProperties}>
-        <div className="qf-steps">
+        <div className="qf-steps" hidden={single}>
           {questions.map((item, i) => (
             <button
               key={i}
@@ -125,7 +136,7 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
             </ol>
             <div className="qf-actions">
               <button type="button" className="btn" onClick={() => go(last)}>‹ Tillbaka</button>
-              <button type="button" className="btn primary qf-send" onClick={submit}>Skicka alla svar</button>
+              <button type="button" className="btn primary qf-send" onClick={() => submit()}>Skicka alla svar</button>
             </div>
           </div>
         ) : (
@@ -173,15 +184,14 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
                     type="button"
                     className="btn qf-ok"
                     onClick={() => {
-                      setAnswer('Stämmer.');
-                      next();
+                      confirm();
                     }}
                   >
                     Stämmer
                   </button>
                 )}
-                <button type="button" className="btn" onClick={next}>Hoppa över</button>
-                <button type="button" className="btn primary" onClick={next}>{index < last ? 'Nästa ›' : 'Granska och skicka ›'}</button>
+                <button type="button" className="btn" onClick={() => next()}>Hoppa över</button>
+                <button type="button" className="btn primary" onClick={() => next()}>{index < last ? 'Nästa ›' : single ? 'Skicka' : 'Granska och skicka ›'}</button>
               </div>
             </div>
           )

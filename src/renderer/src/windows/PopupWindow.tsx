@@ -5,6 +5,7 @@ import { WorkSchema } from '../components/WorkSchema';
 import { send } from '../lib/api';
 import { AccountContext } from '../state/account';
 import { useAppState } from '../state/useAppState';
+import { useTheme } from '../lib/theme';
 import { useTextScale } from '../lib/textScale';
 
 /**
@@ -14,6 +15,7 @@ import { useTextScale } from '../lib/textScale';
  */
 export function PopupWindow() {
   const state = useAppState();
+  useTheme(state?.settings.theme);
   const [view, setView] = useState<PopupView | null>(null);
   useTextScale(state?.settings.textScale);
   useEffect(() => {

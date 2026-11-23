@@ -3,9 +3,11 @@ import { StatusChip } from '../components/Atoms';
 import { CalloutIcon } from '../components/CalloutBox';
 import { send } from '../lib/api';
 import { useAppState } from '../state/useAppState';
+import { useTheme } from '../lib/theme';
 
 export function DockWindow() {
   const state = useAppState();
+  useTheme(state?.settings.theme);
   if (!state) return null;
   const vertical = state.settings.dockEdge === 'right';
   return (

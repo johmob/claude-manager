@@ -6,6 +6,7 @@ import { send } from '../lib/api';
 import { formatReset, monogram } from '../lib/format';
 import { usageLevel } from '../lib/usage';
 import { useAppState } from '../state/useAppState';
+import { useTheme } from '../lib/theme';
 
 const MAX_NAME = 10;
 
@@ -75,6 +76,7 @@ function AgentCount({ session }: { session: SessionSummary }) {
  */
 export function OverlayWindow() {
   const state = useAppState();
+  useTheme(state?.settings.theme);
   const interactive = useRef(false);
   const [hovered, setHovered] = useState<string | null>(null);
 

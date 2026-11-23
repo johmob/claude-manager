@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import iconPath from '../../resources/icon.png?asset';
-import { CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES } from '../shared/contracts';
+import { CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, THEME_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
@@ -48,6 +48,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   launchAtLogin: true,
   textScale: 1.1,
   autoUpdate: true,
+  theme: 'night',
   defaultModel: 'opus',
   defaultEffort: 'medium',
   defaultPermissionMode: 'auto',
@@ -737,6 +738,7 @@ function validSettings(r: unknown): AppSettings | null {
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),
     launchAtLogin: bool(r['launchAtLogin'], d.launchAtLogin),
     autoUpdate: bool(r['autoUpdate'], d.autoUpdate),
+    theme: pick(r['theme'], THEME_CHOICES, d.theme),
     textScale: typeof r['textScale'] === 'number' && Number.isFinite(r['textScale']) ? clampScale(r['textScale']) : d.textScale,
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),
     defaultEffort: pick(r['defaultEffort'], EFFORT_CHOICES, d.defaultEffort),

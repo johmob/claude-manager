@@ -333,6 +333,10 @@ export type TranscriptEntry =
 export type DockEdge = 'right' | 'bottom' | 'center';
 export const DOCK_EDGES: readonly DockEdge[] = ['right', 'bottom', 'center'];
 
+/** "night": black, high-contrast, monospace; "standard": the softer dark look. */
+export const THEME_CHOICES = ['night', 'standard'] as const;
+export type ThemeChoice = (typeof THEME_CHOICES)[number];
+
 export interface AppSettings {
   /** Where the user's projects live; empty until chosen (the app then asks, and uses ~/Kod meanwhile). */
   projectsRoot: string;
@@ -347,6 +351,7 @@ export interface AppSettings {
   textScale: number;
   /** Install new versions from GitHub on their own once no session is busy. */
   autoUpdate: boolean;
+  theme: ThemeChoice;
   defaultModel: ModelChoice;
   defaultEffort: EffortChoice;
   defaultPermissionMode: PermissionChoice;
