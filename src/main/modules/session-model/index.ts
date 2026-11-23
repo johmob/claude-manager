@@ -1,6 +1,7 @@
 // session-model: pure state. Folds SessionEvents, records and todo trees into the
 // SessionSummary cards and TranscriptEntry lists the UI shows. No I/O, no timers.
 import type {
+  HeadsUpNote,
   PendingInput,
   SessionEvent,
   SessionRecord,
@@ -24,6 +25,7 @@ export interface SessionModel {
   setTodo(id: string, tree: TodoTree | null): void;
   /** The user has looked at a finished turn: `done` becomes `idle`. */
   markSeen(id: string): void;
+  dismissHeadsUp(id: string): void;
   summaries(): SessionSummary[];
   summary(id: string): SessionSummary | undefined;
   transcript(id: string): TranscriptEntry[];
@@ -42,6 +44,7 @@ interface SessionState {
   startedAt: number | null;
   lastActivity: string;
   lastError: string | null;
+  headsUp: HeadsUpNote | null;
   costUsd: number;
   todo: TodoTree | null;
   slashCommands: string[];
@@ -72,6 +75,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       startedAt: null,
       lastActivity: '',
       lastError: null,
+      headsUp: null,
       costUsd: 0,
       todo: null,
       slashCommands: [],
@@ -186,6 +190,9 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         const leftover = thinking ? add({ kind: 'assistant', text: '', thinking }) : [];
         return event.isError ? [...leftover, ...system(event.result, 'error')] : leftover;
       }
+      case 'heads_up':
+        s.headsUp = event.note;
+        return system(`Bra att veta: ${event.note.title} – ${event.note.text}`, 'warning');
       case 'rate_limit':
         if (!event.rejected) return [];
         s.lastError = 'Användningsgränsen är nådd.';
@@ -222,6 +229,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       turnStartedAt: s.turnStartedAt,
       startedAt: s.startedAt,
       lastError: s.lastError,
+      headsUp: s.headsUp,
       costUsd: s.costUsd,
       todo: s.todo,
       resumable: !s.running,
@@ -252,6 +260,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     markSeen: (id) => {
       const s = states.get(id);
       if (s) s.unseenDone = false;
+    },
+    dismissHeadsUp: (id) => {
+      const s = states.get(id);
+      if (s) s.headsUp = null;
     },
     summaries: () => [...states.values()].map(summarize),
     summary: (id) => {

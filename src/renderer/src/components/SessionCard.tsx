@@ -60,6 +60,20 @@ function CardActions({ session, onRename }: { session: SessionSummary; onRename:
   );
 }
 
+function HeadsUpBox({ session }: { session: SessionSummary }) {
+  if (!session.headsUp) return null;
+  return (
+    <div className="heads-up" role="note">
+      <div className="heads-up-top">
+        <span className="heads-up-label">Bra att veta</span>
+        <IconButton title="Avfärda" onClick={() => send('session:dismiss-heads-up', { id: session.id })}>×</IconButton>
+      </div>
+      <strong>{session.headsUp.title}</strong>
+      <p>{session.headsUp.text}</p>
+    </div>
+  );
+}
+
 export function SessionCard({ session, selected, selectDisabled, onToggleSelect, onOpen }: SessionCardProps) {
   const [renaming, setRenaming] = useState(false);
   const working = session.status === 'working' && session.turnStartedAt !== null;
@@ -91,6 +105,7 @@ export function SessionCard({ session, selected, selectDisabled, onToggleSelect,
         )}
         {session.lastError && <div className="card-error">{session.lastError}</div>}
       </div>
+      <HeadsUpBox session={session} />
       <PendingPanel session={session} />
       <div className="card-foot">
         <label className="select-box" title={selectDisabled && !selected ? 'Max 6 i fokusläget' : 'Visa i Fokus'} onClick={(e) => e.stopPropagation()}>

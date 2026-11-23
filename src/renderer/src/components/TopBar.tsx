@@ -43,6 +43,7 @@ export function TopBar({ settings, view, onView, onDialog }: TopBarProps) {
       <span className="spacer" />
       <div className="topbar-group">
         <Toggle label="Stör ej" on={settings.doNotDisturb} onChange={(doNotDisturb) => send('settings:update', { doNotDisturb })} />
+        <Toggle label="Bra att veta" on={settings.headsUpEnabled} onChange={(headsUpEnabled) => send('settings:update', { headsUpEnabled })} />
         <Toggle label="Docka" on={settings.dockVisible} onChange={(dockVisible) => send('settings:update', { dockVisible })} />
         <select
           className="input compact"

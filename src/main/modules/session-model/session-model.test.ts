@@ -103,6 +103,15 @@ describe('session-model', () => {
     expect(model.summary('s1')).toMatchObject({ status: 'working', activeAgents: 1 });
   });
 
+  it('shows a heads-up until it is dismissed', () => {
+    const { model, apply } = setup();
+    const [entry] = apply({ type: 'heads_up', note: { title: 'Lösenord i klartext', text: 'config.json innehåller dbPassword.' } });
+    expect(entry).toMatchObject({ kind: 'system', level: 'warning', text: 'Bra att veta: Lösenord i klartext – config.json innehåller dbPassword.' });
+    expect(model.summary('s1')?.headsUp?.title).toBe('Lösenord i klartext');
+    model.dismissHeadsUp('s1');
+    expect(model.summary('s1')?.headsUp).toBeNull();
+  });
+
   it('marks errors and clears everything on exit', () => {
     const { model, apply } = setup();
     apply({ type: 'started' });

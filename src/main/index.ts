@@ -24,6 +24,8 @@ import { createJsonStore } from './modules/json-store';
 import { pickColor } from './modules/palette';
 import { createGroundRules, groundRulesEditorPrompt } from './modules/ground-rules';
 import { createProjects, locateProject } from './modules/projects';
+import { structuredQuery } from './modules/structured-query';
+import { digestTurn, reviewTurn } from './modules/heads-up';
 import { createNotifier } from './modules/notifier';
 import { createWindowManager } from './modules/window-manager';
 import { createTray } from './modules/tray';
@@ -32,6 +34,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: 'C:\\Kod',
   doNotDisturb: false,
   alertOnDone: false,
+  headsUpEnabled: true,
   dockVisible: false,
   dockEdge: 'right',
   overlayVisible: false,
@@ -126,6 +129,7 @@ function boot(): void {
         if (settings.alertOnDone && !event.isError) {
           notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} är klar`, body: event.result, urgent: false });
         }
+        if (settings.headsUpEnabled && !event.isError && record && record.kind !== 'ground-rules') void reviewForHeadsUp(record);
         break;
       case 'rate_limit':
         usage.ingest(event.windows);
@@ -202,6 +206,16 @@ function boot(): void {
     return id;
   }
 
+  async function reviewForHeadsUp(record: SessionRecord): Promise<void> {
+    try {
+      const note = await reviewTurn(digestTurn(model.transcript(record.id)), structuredQuery, record.cwd);
+      if (note) onSessionEvent({ type: 'heads_up', sessionId: record.id, note });
+    } catch (error) {
+      // An optional extra: a failed review must never disturb the session itself.
+      console.warn('Bra att veta: granskningen misslyckades', error);
+    }
+  }
+
   function showSession(id: string): void {
     windows.showMain();
     windows.send('ui:open-session', { id });
@@ -270,7 +284,7 @@ function boot(): void {
 
   handle('session:locate-project', async (req) => {
     const candidates = projects.list();
-    const found = await locateProject(settings.projectsRoot, req.description, candidates);
+    const found = await locateProject(settings.projectsRoot, req.description, candidates, structuredQuery);
     return { ...found, candidates };
   });
 
@@ -313,6 +327,11 @@ function boot(): void {
 
   handle('session:mark-seen', (req) => {
     model.markSeen(req.id);
+    scheduleSync();
+  });
+
+  handle('session:dismiss-heads-up', (req) => {
+    model.dismissHeadsUp(req.id);
     scheduleSync();
   });
 
@@ -366,6 +385,7 @@ function validSettings(r: unknown): AppSettings | null {
     projectsRoot: typeof r['projectsRoot'] === 'string' && r['projectsRoot'] ? r['projectsRoot'] : d.projectsRoot,
     doNotDisturb: bool(r['doNotDisturb'], d.doNotDisturb),
     alertOnDone: bool(r['alertOnDone'], d.alertOnDone),
+    headsUpEnabled: bool(r['headsUpEnabled'], d.headsUpEnabled),
     dockVisible: bool(r['dockVisible'], d.dockVisible),
     dockEdge: pick(r['dockEdge'], DOCK_EDGES, d.dockEdge),
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),

@@ -50,6 +50,14 @@ Run `node tools/verify-sdk.mjs <workDir> <logFile>` to repeat. Results:
 Ported from `johmob/claude-usage-trafficmonitor`:
 `GET https://api.anthropic.com/api/oauth/usage` with `Authorization: Bearer <claudeAiOauth.accessToken>` from `%USERPROFILE%\.claude\.credentials.json` (or `%CLAUDE_CONFIG_DIR%`) and header `anthropic-beta: oauth-2025-04-20`. Fields `five_hour` / `seven_day` → `utilization` (percent) and `resets_at`. Poll every 180 s. Never refresh the token (that could log Claude Code out). Thresholds same as the plugin: orange from 70 % used, red from 90 % used.
 
+## "Bra att veta" (replacement for the You Should Know plugin)
+
+After each finished turn with at least 3 tool calls, module `heads-up` sends one stateless Haiku request (`structured-query`, no tools, `persistSession: false`, nothing accumulated between calls, as spec §3 requires). The request holds a compact log of only that turn: the request, tool calls with status, agent text and system notes, capped at 8,000 characters. Haiku returns either nothing or one note (title of at most 8 words, at most 2 sentences, in Swedish). The note shows as a yellow box on the card until dismissed, and as a line in the transcript. It is skipped for ground-rules sessions and when the turn ended in an error (that already shows). The **Bra att veta** toggle in the top bar turns it off.
+
+Verified: a turn that only did what was asked gave no note (Haiku: the final answer already covered it). A turn whose final answer said "Done" while one command had failed gave "Misslyckad läsning av settings-prod.json…".
+
+`structured-query` is also what the project locator uses. The root passes the function into both modules, so neither imports the other.
+
 ## Todo tree file
 
 Path: `<project>/.claude-manager/todo.json`. Only the main agent writes it; the format is given to every session in the appended system prompt.

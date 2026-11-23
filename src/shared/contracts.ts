@@ -122,6 +122,28 @@ export interface TodoTree {
   blocks: TodoBlock[];
 }
 
+// ---------- One-shot structured Claude calls ----------
+
+export interface StructuredRequest {
+  prompt: string;
+  /** JSON schema the answer must match. */
+  schema: Record<string, unknown>;
+  model: ModelChoice;
+  cwd: string;
+  /** Built-in tools the call may use; [] for none. */
+  tools: string[];
+  maxTurns: number;
+}
+
+/** A stateless Claude call returning JSON matching the schema, or null. Created by the root and handed to modules that need one. */
+export type StructuredQuery = (request: StructuredRequest) => Promise<unknown>;
+
+/** "Bra att veta": one thing from a finished turn the user should know but might miss. */
+export interface HeadsUpNote {
+  title: string;
+  text: string;
+}
+
 // ---------- Events from session-engine (normalised, labelled) ----------
 
 export interface ContextUsage {
@@ -148,6 +170,7 @@ export type SessionEvent =
   | { type: 'model_changed'; sessionId: string; model: ModelChoice }
   | { type: 'turn_finished'; sessionId: string; result: string; isError: boolean; costUsd: number; durationMs: number }
   | { type: 'rate_limit'; sessionId: string; windows: UsageWindows; rejected: boolean }
+  | { type: 'heads_up'; sessionId: string; note: HeadsUpNote }
   | { type: 'error'; sessionId: string; message: string }
   | { type: 'exited'; sessionId: string };
 
@@ -176,6 +199,8 @@ export interface SessionSummary {
   /** ms epoch when the session was started or resumed in this app run. */
   startedAt: number | null;
   lastError: string | null;
+  /** Latest "Bra att veta" note, until dismissed. */
+  headsUp: HeadsUpNote | null;
   costUsd: number;
   todo: TodoTree | null;
   /** True when the session is not running but can be resumed. */
@@ -199,6 +224,8 @@ export interface AppSettings {
   projectsRoot: string;
   doNotDisturb: boolean;
   alertOnDone: boolean;
+  /** Review finished turns with a small Haiku call and flag what is worth knowing. */
+  headsUpEnabled: boolean;
   dockVisible: boolean;
   dockEdge: DockEdge;
   overlayVisible: boolean;
@@ -241,6 +268,7 @@ export interface IpcInvokeMap {
   'session:rename': { req: { id: string; name: string }; res: void };
   'session:transcript': { req: { id: string }; res: TranscriptEntry[] };
   'session:mark-seen': { req: { id: string }; res: void };
+  'session:dismiss-heads-up': { req: { id: string }; res: void };
   'ground-rules:edit': { req: { instructions: string }; res: string };
   'settings:update': { req: Partial<AppSettings>; res: AppSettings };
   'usage:refresh': { req: void; res: void };

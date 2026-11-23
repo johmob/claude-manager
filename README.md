@@ -40,6 +40,7 @@ To drive a running app from scripts (screenshots, clicks):
 | **Docka** | Always-on-top strip at the right edge, the bottom, or the centre of the screen. A card bounces red when its session needs you. Click it to open the session. |
 | **Overlay** | Tiny icons at the top centre. Clicks pass through to the window below; hold **Ctrl** to click an icon. |
 | **Stör ej** | No notifications or taskbar flashing; cards, dock and overlay still turn red. |
+| **Bra att veta** | After a turn with real work, a small Haiku review flags one thing you might miss (a failed command the answer glosses over, a secret in plain text, a deleted file). It shows as a yellow box on the card; × dismisses it. The toggle turns the review off. |
 
 Closing the window while sessions run asks whether to minimise to the tray (sessions keep running) or stop them. After a restart every session comes back as a card; send a message or press ▶ to resume it with its full history.
 
@@ -53,6 +54,8 @@ src/main/modules/    self-contained modules; none imports another
   session-model      events -> cards (SessionSummary) and transcripts
   usage-monitor      5-hour / weekly usage via Claude Code's OAuth token
   todo-tree          .claude-manager/todo.json format, parser, watcher
+  heads-up           "Bra att veta": stateless Haiku review of a finished turn
+  structured-query   one-shot Claude call returning schema-checked JSON (injected by the root)
   json-store, palette, ground-rules, projects, notifier, window-manager, tray
 src/preload/         typed IPC bridge (window.cm)
 src/renderer/        React UI for the main window, dock and overlay (#main, #dock, #overlay)

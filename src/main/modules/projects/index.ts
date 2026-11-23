@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import type { StructuredQuery } from '../../../shared/contracts';
+import { isRecord } from '../../../shared/guards';
 
 export interface Projects {
   list(): string[];
@@ -49,7 +50,7 @@ const LOCATE_SCHEMA = {
   properties: { path: { type: ['string', 'null'] }, reason: { type: 'string' } },
   required: ['path', 'reason'],
   additionalProperties: false,
-} as const;
+};
 
 function locatePrompt(description: string, candidates: string[]): string {
   return `Pick the project folder that best matches the user's description.
@@ -64,36 +65,28 @@ You may peek at README files or file names to decide. Answer with the single bes
 }
 
 function readOutcome(value: unknown): LocateOutcome | null {
-  if (typeof value !== 'object' || value === null) return null;
-  const { path, reason } = value as { path?: unknown; reason?: unknown };
+  if (!isRecord(value)) return null;
   return {
-    path: typeof path === 'string' ? path : null,
-    reason: typeof reason === 'string' ? reason : '',
+    path: typeof value['path'] === 'string' ? value['path'] : null,
+    reason: typeof value['reason'] === 'string' ? value['reason'] : '',
   };
 }
 
-export async function locateProject(root: string, description: string, candidates: string[]): Promise<LocateOutcome> {
+/** Asks Claude (read-only tools, inside the projects root) which candidate folder the description means. */
+export async function locateProject(root: string, description: string, candidates: string[], ask: StructuredQuery): Promise<LocateOutcome> {
   try {
-    const run = query({
+    const answer = await ask({
       prompt: locatePrompt(description, candidates),
-      options: {
-        cwd: root,
-        model: 'haiku',
-        tools: ['Read', 'Glob', 'Grep'],
-        permissionMode: 'dontAsk',
-        settingSources: [],
-        maxTurns: 8,
-        outputFormat: { type: 'json_schema', schema: LOCATE_SCHEMA as unknown as Record<string, unknown> },
-      },
+      schema: LOCATE_SCHEMA,
+      model: 'haiku',
+      cwd: root,
+      tools: ['Read', 'Glob', 'Grep'],
+      maxTurns: 8,
     });
-    for await (const message of run) {
-      if (message.type !== 'result') continue;
-      const outcome = message.subtype === 'success' ? readOutcome(message.structured_output) : null;
-      if (!outcome) return { path: null, reason: 'Kunde inte avgöra vilket projekt som avses' };
-      const match = candidates.find((c) => c.toLowerCase() === outcome.path?.toLowerCase());
-      return { path: match ?? null, reason: outcome.reason };
-    }
-    return { path: null, reason: 'Inget svar från sökningen' };
+    const outcome = readOutcome(answer);
+    if (!outcome) return { path: null, reason: 'Kunde inte avgöra vilket projekt som avses' };
+    const match = candidates.find((c) => c.toLowerCase() === outcome.path?.toLowerCase());
+    return { path: match ?? null, reason: outcome.reason };
   } catch {
     return { path: null, reason: 'Sökningen misslyckades' };
   }
