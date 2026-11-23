@@ -14,7 +14,7 @@ Keep a work schema for the project in \`${TODO_RELATIVE_PATH}\` in the project r
 - Give each track an owner: the subagent that works on it, or "main" for yourself. A track is a natural unit to hand to a subagent.
 - Organise tracks by area of the project, never by phase or chronology. Give the tree depth: split each item into sub-items for its parts (usually 2-3 levels), so the schema shows the project's structure, not one flat list. Use ids like "fw-a.2" and "fw-a.2.1".
 - Set "status" ("not_started", "in_progress", "done") on the lowest-level items, and "progress" (0-100) on items in progress. The app computes tracks and parents from their items.
-- Give items and tracks "notes" (one to three sentences) whenever there is more to know than the title: what it covers, where it stands, what is left, open questions or risks. The user reads them when clicking the item, so keep them current like the status.
+- Give every track and every item "notes": one to three sentences on what it covers, where it stands, what is left, and any open questions or risks. The user clicks an item to read them, so an item without notes shows nothing. Write them for all items when you map the project, write them for every new item, and keep them current like the status.
 - When an item needs other items finished first, list their ids in "dependsOn", also across tracks.
 - Notice when the work moves into a new area or phase that no existing track covers (for example a new device, a test campaign, documentation, or a change of direction). Before working on it, ask the user with the AskUserQuestion tool whether to open a new track for it: propose its title and owner, and offer adding it under an existing track as the alternative. Small sub-items inside an existing track need no question.
 - Exact format:
@@ -22,11 +22,11 @@ Keep a work schema for the project in \`${TODO_RELATIVE_PATH}\` in the project r
   "title": "What this session is building",
   "updated": "2026-11-23T09:00:00Z",
   "tracks": [
-    { "id": "fw-a", "title": "Firmware – controller", "owner": "firmware-a", "items": [
-      { "id": "fw-a.1", "title": "SPI driver", "status": "done" },
+    { "id": "fw-a", "title": "Firmware – controller", "owner": "firmware-a", "notes": "STM32 firmware for the controller board: drivers, protocol to the display, control loop.", "items": [
+      { "id": "fw-a.1", "title": "SPI driver", "status": "done", "notes": "DMA-based, tested against the pressure sensor at 8 MHz." },
       { "id": "fw-a.2", "title": "Data protocol", "status": "in_progress", "progress": 40, "notes": "Framing and CRC work on the bench. Retries and versioning are left." } ] },
-    { "id": "web", "title": "Web – result pages", "owner": "main", "items": [
-      { "id": "web.1", "title": "Live chart", "status": "not_started", "dependsOn": ["fw-a.2"] } ] }
+    { "id": "web", "title": "Web – result pages", "owner": "main", "notes": "Pages that show the measurements live and as history.", "items": [
+      { "id": "web.1", "title": "Live chart", "status": "not_started", "dependsOn": ["fw-a.2"], "notes": "Needs the data protocol; open question: how many samples per second to show." } ] }
   ]
 }
 - Keep it current as you go (including "updated"), and update it before changing direction when the plan changes.
@@ -43,6 +43,7 @@ export function mappingRequest(guidance: string): string {
     '- Läs in dig själv och grundligt: mappstrukturen, README och övrig dokumentation, byggfiler, källkod, CAD- och hårdvarufiler och git-historiken. Lämna inte kartläggningen, bedömningen av vad som är viktigt eller sammanfattningen till en subagent.',
     '- Underskatta inte projektet. Se efter hur stort det faktiskt är (antal delar, enheter, firmware, webbdelar, dokumentation) innan du beskriver det.',
     `- Skriv ${TODO_RELATIVE_PATH} i formatet i dina instruktioner: spår per område med djup (oftast 2–3 nivåer), vad som är klart, vad som pågår, vad som återstår och beroenden mellan punkter.`,
+    '- Ge varje spår och varje punkt en kort beskrivning i "notes" (1–3 meningar): vad den omfattar, var den står, vad som återstår och eventuella frågor eller risker. Den visas när användaren klickar på punkten, så ingen punkt får sakna beskrivning.',
     '- Finns schemat redan: gå igenom det mot projektet som det ser ut nu och gör om det där det inte stämmer.',
     '- Svara sedan kort: de viktigaste spåren och vad som återstår.',
   ];

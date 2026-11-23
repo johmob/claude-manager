@@ -88,6 +88,7 @@ describe('mappingRequest', () => {
     const text = mappingRequest('');
     expect(text).toContain(TODO_RELATIVE_PATH);
     expect(text).toContain('subagent');
+    expect(text).toContain('"notes"');
     expect(text).not.toContain('Struktur att utgå från');
   });
 
