@@ -645,100 +645,48 @@ textarea.input { resize: vertical; }
 .md tbody tr:hover td { background: rgba(255,255,255,.06); }
 
 /* =====================================================================================================
-   Night mode: black, high contrast, monospace, terminal accents. Same layout, only the look changes.
+   Night mode: the same UI as always (font, shapes, layout), only deeper blacks, brighter text and vivid
+   accents that glow. A colour layer, nothing else.
    ===================================================================================================== */
 html[data-theme="night"] {
-  --bg: #000;
-  --bg-elev: #050505;
-  --bg-card: #0b0b0b;
-  --bg-hover: #181818;
-  --border: #353535;
-  --text: #f4f4f4;
-  --muted: #ababab;
-  --accent-ui: #00e5ff;
-  --orange: #ffb020;
-  --red: #ff3b5c;
-  --green: #3dff8f;
-  --blue-grey: #9cc2e6;
-  --radius: 4px;
-  --font: "JetBrains Mono Variable", "Cascadia Mono", Consolas, monospace;
-  --mono: "JetBrains Mono Variable", "Cascadia Mono", Consolas, monospace;
+  --bg: #05060b;
+  --bg-elev: #090b13;
+  --bg-card: #0f121c;
+  --bg-hover: #181c2a;
+  --border: #272d3f;
+  --text: #f6f8fc;
+  --muted: #adb6c9;
+  --accent-ui: #52c8ff;
+  --orange: #ffb340;
+  --red: #ff4f6e;
+  --green: #30e8a0;
+  --blue-grey: #a3b6d9;
 }
-html[data-theme="night"] body { font-feature-settings: "calt" 0, "zero" 1; letter-spacing: -0.01em; }
-html[data-theme="night"] ::selection { background: var(--accent-ui); color: #000; }
-html[data-theme="night"] ::-webkit-scrollbar { width: 9px; height: 9px; }
-html[data-theme="night"] ::-webkit-scrollbar-thumb { background: #2b2b2b; border: 2px solid #000; }
-html[data-theme="night"] ::-webkit-scrollbar-track { background: #000; }
+html[data-theme="night"] ::selection { background: rgba(82,200,255,.35); }
 
-/* Controls: square, outlined, the accent where it counts */
-html[data-theme="night"] .btn, html[data-theme="night"] .toggle, html[data-theme="night"] .input, html[data-theme="night"] .chip,
-html[data-theme="night"] .update-pill, html[data-theme="night"] .schema-btn, html[data-theme="night"] .questions-btn { border-radius: 3px; }
-html[data-theme="night"] .btn { background: #000; }
-html[data-theme="night"] .btn:hover:not(:disabled) { background: #151515; border-color: #555; }
-html[data-theme="night"] .btn.primary { background: var(--accent-ui); border-color: var(--accent-ui); color: #000; font-weight: 700; }
-html[data-theme="night"] .btn.primary:hover:not(:disabled) { background: #6ff2ff; }
-html[data-theme="night"] .input { background: #000; caret-color: var(--accent-ui); }
-html[data-theme="night"] .input:focus { border-color: var(--accent-ui); box-shadow: 0 0 0 1px var(--accent-ui), 0 0 10px rgba(0,229,255,.25); }
-html[data-theme="night"] .toggle { background: #000; }
-html[data-theme="night"] .toggle-dot { border-radius: 1px; background: #444; }
-html[data-theme="night"] .toggle.on { border-color: var(--accent-ui); color: var(--accent-ui); }
-html[data-theme="night"] .chip { text-transform: uppercase; letter-spacing: .04em; font-weight: 700; background: transparent; box-shadow: inset 0 0 0 1px currentColor; }
-html[data-theme="night"] .chip::before { content: "["; opacity: .6; }
-html[data-theme="night"] .chip::after { content: "]"; opacity: .6; }
-html[data-theme="night"] .chip[data-status="stopped"] { box-shadow: inset 0 0 0 1px var(--border); }
+/* Glow where the eye should go */
+html[data-theme="night"] .btn.primary { color: #05060b; font-weight: 650; box-shadow: 0 0 14px rgba(82,200,255,.35); }
+html[data-theme="night"] .btn.primary:hover:not(:disabled) { background: #7dd6ff; box-shadow: 0 0 20px rgba(82,200,255,.5); }
+html[data-theme="night"] .start-menu button:first-child { color: #05060b; font-weight: 650; box-shadow: 0 0 12px rgba(82,200,255,.35); }
+html[data-theme="night"] .input:focus { box-shadow: 0 0 0 1px var(--accent-ui), 0 0 14px rgba(82,200,255,.25); }
+html[data-theme="night"] .toggle.on { box-shadow: 0 0 12px rgba(82,200,255,.22); }
+html[data-theme="night"] .view-tabs button[aria-selected="true"]::after { box-shadow: 0 0 10px var(--accent-ui); }
+html[data-theme="night"] .card:hover { border-color: rgba(82,200,255,.4); box-shadow: 0 0 18px rgba(82,200,255,.12); }
+html[data-theme="night"] .card-strip { box-shadow: 0 0 10px var(--accent); }
+html[data-theme="night"] .card[data-status="working"] { border-color: rgba(255,179,64,.45); box-shadow: 0 0 16px rgba(255,179,64,.14); }
+html[data-theme="night"] .card[data-status="waiting"] { box-shadow: 0 0 0 1px rgba(255,79,110,.5), 0 0 22px rgba(255,79,110,.3); }
+html[data-theme="night"] .chip[data-status="working"] { box-shadow: 0 0 10px rgba(255,179,64,.35); }
+html[data-theme="night"] .chip[data-status="waiting"] { box-shadow: 0 0 10px rgba(255,79,110,.35); }
 
-/* Frame */
-html[data-theme="night"] .topbar { background: #000; border-bottom-color: #2a2a2a; }
-html[data-theme="night"] .view-tabs button { text-transform: lowercase; letter-spacing: .04em; }
-html[data-theme="night"] .view-tabs button[aria-selected="true"] { color: var(--accent-ui); }
-html[data-theme="night"] .view-tabs button[aria-selected="true"]::before { content: "> "; }
-html[data-theme="night"] .view-tabs button[aria-selected="true"]::after { border-radius: 0; box-shadow: 0 0 8px var(--accent-ui); }
-html[data-theme="night"] .usage-panel { background: #000; border-left-color: #2a2a2a; }
-html[data-theme="night"] .card { background: #070707; }
-html[data-theme="night"] .card:hover { border-color: #5a5a5a; }
-html[data-theme="night"] .card-strip { height: 2px; box-shadow: 0 0 8px var(--accent); }
-html[data-theme="night"] .modal { background: #050505; border-color: #3a3a3a; border-radius: 6px; box-shadow: 0 0 0 1px #000, 0 20px 60px rgba(0,0,0,.8); }
-html[data-theme="night"] .modal-head h2 { color: var(--accent-ui); }
-html[data-theme="night"] .modal-head h2::before { content: "// "; opacity: .7; }
-html[data-theme="night"] .tile { background: #050505; border-radius: 4px; }
-html[data-theme="night"] .tile-head { background: #000; color: var(--text); border-bottom: 2px solid var(--accent); }
-html[data-theme="night"] .tile-name { color: var(--accent); text-shadow: none; }
-html[data-theme="night"] .tile-head .chip { background: transparent; color: var(--text); }
+/* Transcript: brighter text, the answer's edge glows */
+html[data-theme="night"] .transcript .md { color: #e7ebf3; }
+html[data-theme="night"] .transcript .t-assistant:not([data-final]) .md { color: #a4adbf; }
+html[data-theme="night"] .t-round { background: rgba(255,255,255,.022); }
+html[data-theme="night"] .transcript .t-round .t-assistant[data-final] { border-left-color: var(--accent-ui); box-shadow: -6px 0 14px -8px rgba(82,200,255,.6); }
+html[data-theme="night"] .md thead th { background: #161b29; }
 
-/* Transcript: white text, headings in the accent with their markdown marks, your turns as prompts */
-html[data-theme="night"] .transcript .md { color: #ececec; }
-html[data-theme="night"] .transcript .md :is(h1, h2, h3, h4) { color: var(--accent-ui); border: 0; }
-html[data-theme="night"] .transcript .md h1::before { content: "# "; opacity: .55; }
-html[data-theme="night"] .transcript .md h2::before { content: "## "; opacity: .55; }
-html[data-theme="night"] .transcript .md h3::before { content: "### "; opacity: .55; }
-html[data-theme="night"] .transcript .md h4::before { content: "#### "; opacity: .55; }
-html[data-theme="night"] .transcript .md strong { color: #fff; }
-html[data-theme="night"] .transcript .md li::marker { color: var(--accent-ui); }
-html[data-theme="night"] .transcript .md code { color: var(--green); background: #101010; }
-html[data-theme="night"] .transcript .t-assistant:not([data-final]) .md { color: #9a9a9a; }
-html[data-theme="night"] .t-round { background: #030303; border-color: #2c2c2c; border-radius: 4px; }
-html[data-theme="night"] .transcript .t-round .t-assistant[data-final] { border-left-color: var(--accent-ui); }
-html[data-theme="night"] .t-answer-head { color: var(--accent-ui); text-transform: lowercase; }
-html[data-theme="night"] .t-answer-head::before { content: "// "; opacity: .7; }
-html[data-theme="night"] .bubble { background: #0d0a00; border-color: #5c4a00; border-radius: 3px; color: #fff4cc; }
-html[data-theme="night"] .bubble-head { color: #ffcc00; text-transform: lowercase; }
-html[data-theme="night"] .bubble-head::before { content: "> "; }
-html[data-theme="night"] .md table { border-radius: 2px; }
-html[data-theme="night"] .md thead th { background: #141414; color: var(--accent-ui); }
-
-/* Overlay and dock panels */
-html[data-theme="night"] .ov-row { background: rgba(0,0,0,.95); border-color: #3a3a3a; border-radius: 6px; }
-html[data-theme="night"] .ov-cell { background: #0a0a0a; border-color: #2e2e2e; border-radius: 4px; }
-html[data-theme="night"] .ov-detail { background: rgba(0,0,0,.97); border-color: #3a3a3a; border-radius: 4px; }
-html[data-theme="night"] .ov-agents { border-radius: 2px; }
-html[data-theme="night"] .dock-card { background: #050505; border-radius: 4px; }
-/* Monospace is wider: keep the top bar on one line */
-html[data-theme="night"] .topbar { gap: 10px; padding: 8px 12px; }
-html[data-theme="night"] .start-menu button { white-space: nowrap; font-size: 0.78rem; padding-left: 9px; padding-right: 9px; }
-html[data-theme="night"] .topbar-settings { flex-wrap: nowrap; gap: 6px; }
-html[data-theme="night"] .topbar-settings .toggle, html[data-theme="night"] .topbar-settings .input.compact, html[data-theme="night"] .update-pill { font-size: 0.75rem; padding: 3px 8px; white-space: nowrap; }
-html[data-theme="night"] .view-tabs { gap: 16px; }
-html[data-theme="night"] .view-tabs button { font-size: 0.85rem; white-space: nowrap; }
+/* Overlay panel */
+html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 
 /* ---------- Settings menu (⚙) ---------- */
 .topbar-settings { justify-self: end; }
@@ -748,4 +696,3 @@ html[data-theme="night"] .view-tabs button { font-size: 0.85rem; white-space: no
 .settings-pop .toggle { justify-content: flex-start; }
 .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.8125rem; }
 .settings-version { padding-top: 6px; border-top: 1px solid var(--border); font-size: 0.7188rem; color: var(--muted); }
-html[data-theme="night"] .settings-pop { background: #050505; border-radius: 4px; }

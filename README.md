@@ -58,7 +58,7 @@ To drive a running app from scripts (screenshots, clicks):
 | **Docka** | Always-on-top strip at the right edge, the bottom, or the centre of the screen. A card bounces red when its session needs you. Click it to open the session. |
 | **Overlay** | On by default. A strip at the top centre: usage on a dark panel, then one icon per session that spins while it works and blinks yellow and red while it waits for you, with how many of its agents work (e.g. 2/4). Hover for a compact summary. A hovered icon takes the mouse: click opens the session in the app, right-click shows its work schema as a modal over the screen without bringing the app forward (live, with item details and comments). Everything else in the strip lets clicks through to the window below. |
 | **Start med Windows** | On by default (tray menu). At login the app starts in the system tray with the overlay; the tray icon opens the window. |
-| **⚙ Inställningar** | Nattläge (default: black, high contrast, monospace), Auto-uppdatera, dock position, version. |
+| **⚙ Inställningar** | Nattläge (default: deeper blacks, high contrast, glow), Auto-uppdatera, dock position, version. |
 | **Textstorlek** | Ctrl + plus/minus in the window (Ctrl + 0 resets); remembered. Text uses Inter, bundled with the app. |
 | **Stör ej** | No notifications or taskbar flashing; cards, dock and overlay still turn red. |
 | **Callouts** | Agents tag what matters with markdown alerts: **Risk** (red), **Varning** (amber), **Bra att veta** (purple), **Antagande** (blue), **Förslag** (green). The card shows the latest turn's tags until you dismiss them (×), the dock shows the most severe icon, and the transcript shows each one in place. |

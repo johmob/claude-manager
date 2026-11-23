@@ -74,7 +74,7 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
         <div className="settings-pop">
           <Toggle
             label="Nattläge"
-            title="Svart, hög kontrast och monospace"
+            title="Djupare svart, högre kontrast och glöd"
             on={settings.theme === 'night'}
             onChange={(on) => send('settings:update', { theme: on ? 'night' : 'standard' })}
           />
