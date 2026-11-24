@@ -190,3 +190,11 @@ export function createTodoWatcher(onTree: (sessionId: string, tree: TodoTree | n
     },
   };
 }
+
+/** Appended by the app to every subagent's task, so each subagent keeps its own items in the work schema current. */
+export const SUBAGENT_SCHEMA_BRIEF = `<cm-subagent-rules>
+Work schema (${TODO_RELATIVE_PATH}), if the project has one: the main agent gave you the ids of the items you work on.
+- First thing you do: read the file and set those items to "in_progress" (progress 0). Change nothing else.
+- Last thing you do, whether you finished, stopped or failed: read the file again just before, and set only those items' status ("done", or back to "not_started" if the work did not happen), progress and a one-to-three sentence note on where they stand. Change nothing else in the file.
+- Name the ids in your final report. If you were given no ids, leave the file alone.
+</cm-subagent-rules>`;

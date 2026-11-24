@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
-import { describeTool, savedUserText, splitCallouts, translate } from './index';
+import { briefSubagents, describeTool, savedUserText, splitCallouts, translate } from './index';
 
 const sdk = (message: object): SDKMessage => message as SDKMessage;
 
 describe('translate', () => {
+  it('gives every subagent the brief as context', async () => {
+    const hook = briefSubagents('REGLER');
+    const signal = new AbortController().signal;
+    expect(await hook({ hook_event_name: 'SubagentStart', agent_id: 'a', agent_type: 'general-purpose' } as never, undefined, { signal })).toEqual({ hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: 'REGLER' } });
+    expect(await hook({ hook_event_name: 'Stop' } as never, undefined, { signal })).toEqual({});
+  });
+
   it('reads what CronCreate asked for and the job it made', () => {
     const [use] = translate('s', sdk({ type: 'assistant', parent_tool_use_id: null, message: { content: [{ type: 'tool_use', id: 't9', name: 'CronCreate', input: { cron: '17 9 * * 1', prompt: 'Sammanfatta veckan', durable: true } }] } }));
     expect(use).toMatchObject({ type: 'tool_use', cron: { kind: 'create', cron: '17 9 * * 1', prompt: 'Sammanfatta veckan', recurring: true, durable: true } });

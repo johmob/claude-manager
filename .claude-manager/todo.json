@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T16:52:45.856Z",
+  "updated": "2026-11-24T16:59:44.827Z",
   "tracks": [
     {
       "id": "eng",
@@ -681,6 +681,12 @@
           "title": "Påminnelse när agenten inte underhåller trädet",
           "status": "done",
           "notes": "Agenterna slarvar med trädet och justerar pågår bara efter påminnelser. En tur med minst tre verktygsanrop som inte rörde arbetsschemat ger en dold påminnelse med användarens nästa meddelande: markera klart, pågår bara på det som pågår, lägg till och stryk. Inte provad med en riktig agent."
+        },
+        {
+          "id": "ui.16",
+          "title": "Subagenter markerar sina punkter först och sist",
+          "status": "done",
+          "notes": "Appen ger varje subagent fasta regler via en SubagentStart-hook: första åtgärden är att sätta sina punkter till pågår, sista (klar, stoppad eller misslyckad) att sätta status och en not. Provat med en riktig subagent; att ändra själva uppdraget med en PreToolUse-hook stoppades av auto-lägets granskning och användes inte. Grundregel 3 säger samma sak."
         }
       ]
     },

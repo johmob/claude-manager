@@ -289,6 +289,8 @@ export interface SessionStartSpec {
   appendSystemPrompt: string;
   resumeClaudeSessionId?: string;
   initialPrompt?: string;
+  /** Appended to the task of every subagent the session starts (the Agent tool), so it is always followed. */
+  subagentBrief?: string;
 }
 
 // ---------- Questions and permission requests ----------

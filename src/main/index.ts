@@ -47,7 +47,7 @@ import type {
 import { CALLOUT_PROTOCOL, createSessionEngine, loadHistory } from './modules/session-engine';
 import { createSessionModel } from './modules/session-model';
 import { createUsageMonitor } from './modules/usage-monitor';
-import { createTodoWatcher, mappingRequest, TODO_PROTOCOL, TODO_RELATIVE_PATH } from './modules/todo-tree';
+import { createTodoWatcher, mappingRequest, SUBAGENT_SCHEMA_BRIEF, TODO_PROTOCOL, TODO_RELATIVE_PATH } from './modules/todo-tree';
 import { createJsonStore } from './modules/json-store';
 import { currentColor, pickColor } from './modules/palette';
 import { createGroundRules, groundRulesEditorPrompt } from './modules/ground-rules';
@@ -907,6 +907,7 @@ function boot(): void {
       contextWindow: record.contextWindow,
       permissionMode: record.permissionMode,
       appendSystemPrompt: composeAppend(),
+      subagentBrief: SUBAGENT_SCHEMA_BRIEF,
       resumeClaudeSessionId: record.claudeSessionId,
       initialPrompt: prompt,
     });

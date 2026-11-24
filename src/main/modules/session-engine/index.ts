@@ -2,7 +2,7 @@
 // into the app's labelled SessionEvents. Holds no UI state; questions and permission requests
 // stay pending here until the host answers them.
 import { getSessionMessages, query } from '@anthropic-ai/claude-agent-sdk';
-import type { PermissionResult, Query, SDKMessage, SDKUserMessage, SessionMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { HookCallback, PermissionResult, Query, SDKMessage, SDKUserMessage, SessionMessage } from '@anthropic-ai/claude-agent-sdk';
 import type {
   Callout,
   CalloutKind,
@@ -116,6 +116,7 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
           stderrTail.splice(0, Math.max(0, stderrTail.length - STDERR_LINES));
         },
         canUseTool: (toolName, input, opts) => requestDecision(spec.id, pending, toolName, input, opts.requestId, opts.signal),
+        ...(spec.subagentBrief ? { hooks: { SubagentStart: [{ hooks: [briefSubagents(spec.subagentBrief)] }] } } : {}),
       },
     });
 
@@ -495,6 +496,15 @@ function cronJobOf(result: unknown): { cronJob?: { id: string; schedule: string;
   const r = asRecord(result);
   if (typeof r['id'] !== 'string' || typeof r['humanSchedule'] !== 'string') return {};
   return { cronJob: { id: r['id'], schedule: r['humanSchedule'], nextFireAt: typeof r['nextFireAt'] === 'number' ? r['nextFireAt'] : null } };
+}
+
+/**
+ * A SubagentStart hook that gives every subagent the session starts `brief` as extra context, so rules the
+ * subagent must follow reach it even when the main agent forgets to pass them on. The task itself is left as
+ * it is (an edited task would be held up by the auto mode's review).
+ */
+export function briefSubagents(brief: string): HookCallback {
+  return async (input) => (input.hook_event_name === 'SubagentStart' ? { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: brief } } : {});
 }
 
 function translateSystem(sessionId: string, m: Extract<SDKMessage, { type: 'system' }>): SessionEvent[] {
