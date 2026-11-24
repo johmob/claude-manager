@@ -82,7 +82,7 @@ describe('splitCallouts', () => {
       text: 'Done',
       callouts: [
         { kind: 'warning', title: 'Steg 2 misslyckades', text: '`settings-prod.json` finns inte.' },
-        { kind: 'note', title: 'Filen skapades från grunden', text: 'den innehåller bara `port`.' },
+        { kind: 'note', title: 'Filen skapades från grunden', text: 'Den innehåller bara `port`.' },
       ],
     });
   });
@@ -117,5 +117,11 @@ describe('savedUserText', () => {
     expect(savedUserText('s', notification)).toEqual([{ type: 'notice', sessionId: 's', text: 'Subagenten "B: Sensordrivrutin" är klar.', level: 'info' }]);
     expect(savedUserText('s', '<local-command-caveat>The command below was run directly</local-command-caveat>')).toEqual([]);
     expect(savedUserText('s', '<system-reminder>x</system-reminder>')).toEqual([]);
+  });
+});
+
+describe('callout text under a title', () => {
+  it('starts with a capital letter, since it shows as a paragraph of its own', () => {
+    expect(splitCallouts('> [!NOTE]\n> **Ligger kvar:** det skickades innan.').callouts).toEqual([{ kind: 'note', title: 'Ligger kvar', text: 'Det skickades innan.' }]);
   });
 });

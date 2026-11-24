@@ -329,8 +329,13 @@ function toCallout(kind: CalloutKind, lines: string[]): Callout {
   const body = lines.join('\n').trim();
   const titled = BOLD_TITLE.exec(body);
   return titled
-    ? { kind, title: titled[1]!.replace(/[:.]$/, '').trim(), text: titled[2]!.trim() }
+    ? { kind, title: titled[1]!.replace(/[:.]$/, '').trim(), text: sentenceCase(titled[2]!.trim()) }
     : { kind, title: '', text: body };
+}
+
+/** The text under a callout's title starts a paragraph of its own, so it starts with a capital letter. */
+function sentenceCase(text: string): string {
+  return text.charAt(0).toLocaleUpperCase('sv-SE') + text.slice(1);
 }
 
 function textEvents(sessionId: string, text: string, agentId: string | undefined): SessionEvent[] {
