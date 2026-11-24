@@ -3,6 +3,7 @@
 // check, failure, question, background …), and the questions and choices put to the user are listed with
 // their options and a short background. The UI acts on the tags (styling, folding, the question flow).
 // Builds the request and reads the reply; the composition root makes the call.
+import { ANSWER_ROOM_CHARS } from '../../../shared/answerRoom';
 import { BLOCK_TAGS, type BlockTag, type OpenQuestion, type StructuredRequest, type TaggedBlock } from '../../../shared/contracts';
 
 const MAX_MESSAGES = 12;
@@ -107,6 +108,7 @@ export function tagRequest(messages: string[][], cwd: string, work: string[] = [
     'Hur appen använder det du svarar:',
     '- Varje block får en tagg. Användaren läser chatten på en av tre nivåer. Minimal visar bara answer, question, assumption, fail, risk och warning. Moderat visar också result, pass, decision och next. Detaljerat visar allt.',
     '- Block som bara är plan, progress eller background tonas ned. Består ett meddelande bara av sådana fälls det in i rutan "Under arbetet", som visar det senaste meddelandet på två rader medan agenten arbetar och annars är ihopfälld. Där passar löpande berättande; det användaren måste göra eller veta hör inte hemma där.',
+    `- Svaret (det sista meddelandet) visar ungefär ${ANSWER_ROOM_CHARS} tecken. Block på användarens nivå visas alltid och resten fylls på i ordning upp till den längden. Ett kort svar visas därför helt; i ett långt svar ska bara riktig utfyllnad få taggen plan, progress eller background.`,
     '- Varje fråga i questions öppnas i ett eget fönster som användaren läser långt senare, utan resten av texten, bland frågor från andra projekt. text visas som en stor rubrik, brief som en kort ingress ovanför, och blocken i context visas under rubriken som underlag.',
     '',
     'Vad som står på spel: att dölja något användaren måste göra, svara på, bestämma eller känna till (nästa steg, vad som inte är klart, vad som är committat eller släppt, risker) är dyrt. Att visa en rad för mycket är billigt. Att ställa en fråga som inte är en äkta fråga är dyrt, eftersom den avbryter användaren; samma fråga två gånger likaså. Välj utifrån det, inte efter ytliga ord som frågetecken eller kolon.',

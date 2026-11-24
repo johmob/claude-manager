@@ -19,20 +19,22 @@ export function showImage(src: string, alt: string): void {
   window.dispatchEvent(new CustomEvent<Shown>(SHOW_IMAGE, { detail: { src, alt } }));
 }
 
-/** A local image in agent text: a preview; a click shows it large. Hidden when the file cannot be read. */
+/** A local image in agent text: a preview; a click shows it large. Sits in a fixed-height frame, so nothing moves when it loads; a missing file shows a placeholder of the same size. */
 export function LocalImage({ src, alt }: Shown) {
   const [failed, setFailed] = useState(false);
-  if (failed) return null;
+  if (failed) return <span className="md-img-frame md-img-missing">Bilden saknas</span>;
   return (
-    <img
-      className="md-img"
-      src={imageSrc(src)}
-      alt={alt}
-      title="Klicka för att visa stort"
-      loading="lazy"
-      onError={() => setFailed(true)}
-      onClick={() => showImage(src, alt)}
-    />
+    <span className="md-img-frame">
+      <img
+        className="md-img"
+        src={imageSrc(src)}
+        alt={alt}
+        title="Klicka för att visa stort"
+        loading="lazy"
+        onError={() => setFailed(true)}
+        onClick={() => showImage(src, alt)}
+      />
+    </span>
   );
 }
 

@@ -403,6 +403,21 @@ describe('a turn\'s end waits for its tags', () => {
     apply({ type: 'turn_started', prompt: 'mer' });
     expect(model.transcript('s1').find((e) => e.kind === 'assistant')).not.toHaveProperty('held');
   });
+
+  it('does not restyle text already shown when its tags arrive late', () => {
+    const { model, apply } = setup();
+    const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'text', text: 'Klart.' });
+    apply(finish);
+    const firstUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
+    const answer = model.transcript('s1').find((e) => e.kind === 'assistant')!;
+    apply({ type: 'turn_started', prompt: 'mer' });
+    const changed = model.applyTurnTags('s1', firstUser.id, [], [{ entryId: answer.id, blocks: [{ text: 'Klart.', tag: 'answer' }] }]);
+    expect(changed).toEqual([]);
+    expect(model.transcript('s1').find((e) => e.id === answer.id)).not.toHaveProperty('blocks');
+  });
 });
 
 describe('a message sent while the agent is busy', () => {

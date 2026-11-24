@@ -30,7 +30,7 @@ export function DockWindow() {
                   <CalloutIcon kind={s.callouts[0].kind} />
                 </span>
               )}
-              <StatusChip status={s.status} />
+              <StatusChip status={s.status} compacting={s.compacting} />
             </span>
             <span className="dock-task">{s.currentTask || ' '}</span>
           </span>

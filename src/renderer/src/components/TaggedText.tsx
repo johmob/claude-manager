@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react';
 import { QUIET_BLOCK_TAGS, TAG_LEVEL, tagShows, type BlockTag, type ChatDetail, type TaggedBlock } from '../../../shared/contracts';
 import { LevelDots, levelTitle } from './DetailLevel';
+import { shownBlocks } from '../../../shared/answerRoom';
 import { ChatDetailContext } from '../state/chatDetail';
 import { MarkdownText } from './MarkdownText';
 
@@ -31,17 +32,17 @@ export function hasWeight(blocks: TaggedBlock[] | undefined, detail: ChatDetail)
  * The agent's text, block by block as the turn's tags read it: each block marked by what it is (result,
  * passed check, failure, question …), with the label once per run of the same tag; narration is dimmed.
  * Each block carries one to three dots for the lowest detail it shows at (one: even in Minimal).
- * Blocks below the chat's detail are hidden behind "Visa N stycken till". Detaljerat, and untagged text
+ * Blocks below the chat's detail are hidden (an answer, given `room`, fills up with them while they fit) behind "Visa N stycken till". Detaljerat, and untagged text
  * (before the tags arrive), show as plain markdown.
  */
-export function TaggedText({ text, blocks }: { text: string; blocks?: TaggedBlock[] }) {
+export function TaggedText({ text, blocks, room }: { text: string; blocks?: TaggedBlock[]; room?: number }) {
   const detail = useContext(ChatDetailContext);
   const [all, setAll] = useState(false);
   // Detaljerat is the raw text, untagged; so is text whose tags have not arrived.
   if (!blocks?.length || detail === 'detailed') return <MarkdownText text={text} />;
-  const visible = blocks.filter((b) => b.tag === null || tagShows(b.tag, detail));
-  const hidden = blocks.length - visible.length;
-  const shown = all ? blocks : visible;
+  const fits = room === undefined ? blocks.map((b) => b.tag === null || tagShows(b.tag, detail)) : shownBlocks(blocks, detail, room);
+  const hidden = fits.filter((f) => !f).length;
+  const shown = all ? blocks : blocks.filter((_, i) => fits[i]);
   return (
     <div className="tagged">
       {shown.map((b, i) => {

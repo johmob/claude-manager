@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import iconPath from '../../resources/icon.png?asset';
 import { appContext, usageWeight, CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
-import { PASTE_MAX_BYTES, PASTE_TYPES } from '../shared/pastedImages';
+import { PASTE_FILE_MAX_BYTES, PASTE_MAX_BYTES, PASTE_TYPES } from '../shared/pastedImages';
 /** How long pasted images are kept in the temp folder. */
 const PASTE_KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 /** Tool calls in a turn that count as real work, after which the work schema should have been touched. */
@@ -1231,6 +1231,17 @@ function boot(): void {
     const dir = join(tmpdir(), 'claude-manager-paste', req.id);
     mkdirSync(dir, { recursive: true });
     const path = join(dir, `paste-${Date.now()}-${randomUUID().slice(0, 6)}.${ext}`);
+    writeFileSync(path, bytes);
+    return path.split('\\').join('/');
+  });
+
+  handle('session:paste-file', (req) => {
+    const bytes = Buffer.from(req.data, 'base64');
+    if (bytes.length > PASTE_FILE_MAX_BYTES) throw new Error('Filen är större än 10 MB.');
+    const name = basename(req.name.split('\\').join('/')).replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').slice(0, 100) || 'fil';
+    const dir = join(tmpdir(), 'claude-manager-paste', req.id);
+    mkdirSync(dir, { recursive: true });
+    const path = join(dir, `${Date.now()}-${name}`);
     writeFileSync(path, bytes);
     return path.split('\\').join('/');
   });

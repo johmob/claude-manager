@@ -97,7 +97,7 @@ export function SessionCard({ session, onOpen }: SessionCardProps) {
         <div className="card-top">
           <SessionMark name={session.name} icon={session.icon} size={18} className="card-mark" />
           {renaming ? <RenameField session={session} onDone={() => setRenaming(false)} /> : <span className="card-name" title={session.cwd}>{session.name}</span>}
-          <StatusChip status={session.status} />
+          <StatusChip status={session.status} compacting={session.compacting} />
         </div>
         <div className="card-sub">
           <ModelEffortPicker session={session} />

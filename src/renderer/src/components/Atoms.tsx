@@ -1,10 +1,13 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { FoldVertical } from 'lucide-react';
+import '../styles/compacting.css';
 import type { CompactProgress, EffortChoice, ModelChoice, SessionStatus, SessionSummary, TodoStatus } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { EFFORT_LABEL, STATUS_LABEL } from '../lib/format';
 import { effortOptions, modelOptions, useAccount } from '../state/account';
 
-export function StatusChip({ status }: { status: SessionStatus }) {
+export function StatusChip({ status, compacting }: { status: SessionStatus; compacting?: CompactProgress | null }) {
+  if (compacting) return <CompactChip progress={compacting} />;
   return (
     <span className="chip" data-status={status}>
       {STATUS_LABEL[status]}
@@ -85,7 +88,7 @@ function AgentList({ session }: { session: SessionSummary }) {
  * (the count when there are several). Hovering shows each agent's model, effort, context and task.
  */
 export function AgentDots({ session }: { session: SessionSummary }) {
-  if (session.compacting) return <CompactBadge progress={session.compacting} color={session.color} />;
+  if (session.compacting) return null;
   const count = session.activeAgents;
   if (count <= 0) return null;
   const dots = Array.from({ length: Math.min(count, 10) }, (_, i) => i);
@@ -116,11 +119,10 @@ function aboutText(ms: number): string {
 }
 
 /**
- * Compacting the conversation: a spinner, how long it usually takes and the time so far. The stream
- * reports no progress, so no share is shown; the expected time comes from the context's size and how
- * fast earlier compactions went.
+ * Compacting the conversation: replaces the status text while it runs. Shows the time so far; the
+ * tooltip says how long it usually takes (the stream reports no progress, so no share is shown).
  */
-export function CompactBadge({ progress, color }: { progress: CompactProgress; color: string }) {
+function CompactChip({ progress }: { progress: CompactProgress }) {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -128,12 +130,11 @@ export function CompactBadge({ progress, color }: { progress: CompactProgress; c
   }, []);
   const elapsed = now - progress.startedAt;
   const size = progress.preTokens ? ` ${Math.round(progress.preTokens / 1000)}k tokens.` : '';
+  const slow = elapsed > progress.expectedMs * 1.5 ? ' Tar längre än vanligt.' : '';
   return (
-    <span className="compact-badge" style={{ '--c': color } as CSSProperties} title={`Komprimerar samtalet.${size} Det brukar ta ${aboutText(progress.expectedMs)}, uppskattat från kontextens storlek och tidigare komprimeringar.`}>
-      <span className="compact-spin" aria-hidden />
-      <span className="compact-text">Komprimerar</span>
-      <span className="compact-about">{elapsed > progress.expectedMs * 1.5 ? 'tar längre än vanligt' : aboutText(progress.expectedMs)}</span>
-      <span className="compact-time">{clock(elapsed)}</span>
+    <span className="chip" data-status="compacting" title={`Komprimerar samtalet.${size} Det brukar ta ${aboutText(progress.expectedMs)}, uppskattat från kontextens storlek och tidigare komprimeringar.${slow}`}>
+      <FoldVertical size={12} className="chip-compress" aria-hidden />
+      Komprimerar {clock(elapsed)}
     </span>
   );
 }

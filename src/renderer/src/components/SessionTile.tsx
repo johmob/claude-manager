@@ -25,7 +25,7 @@ export function SessionTile({ session }: { session: SessionSummary }) {
         <div className="tile-title">
           <SessionMark name={session.name} icon={session.icon} size={18} className="tile-mark" />
           <span className="tile-name" title={session.cwd}>{session.name}</span>
-          <StatusChip status={session.status} />
+          <StatusChip status={session.status} compacting={session.compacting} />
         </div>
         <div className="tile-controls">
           <ModelEffortPicker session={session} />

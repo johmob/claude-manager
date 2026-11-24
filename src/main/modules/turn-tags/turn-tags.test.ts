@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ANSWER_ROOM_CHARS } from '../../../shared/answerRoom';
 import { messagesForTagging, questionDetail, readTags, splitBlocks, tagRequest, taggedBlocks } from './index';
 
 describe('turn tags', () => {
@@ -31,6 +32,10 @@ describe('turn tags', () => {
     expect(request).toMatchObject({ model: 'haiku', tools: [] });
     expect(tagRequest([['x']], 'C:\\tmp', ['cad.2 Handtag v4']).prompt).toContain('Pågående punkter i arbetsschemat:\n- cad.2 Handtag v4');
     expect(request.prompt).toContain('[1.1]\nJag startar E.\n\n[2.1]\nVälj 1 eller 1b.\n\n[2.2]\nBakgrund.');
+  });
+
+  it('tells the tagger how much of the answer shows', () => {
+    expect(tagRequest([['x']], 'C:\tmp').prompt).toContain(`ungefär ${ANSWER_ROOM_CHARS} tecken`);
   });
 
   it('keeps the last messages, dropping older ones when there are too many blocks', () => {

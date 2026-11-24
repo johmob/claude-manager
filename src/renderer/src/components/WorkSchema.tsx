@@ -438,7 +438,7 @@ export function WorkSchema({ session, onClose }: { session: SessionSummary; onCl
   return (
     <Modal title={`Arbetsschema – ${session.name}`} onClose={onClose} size="full">
       <div className="ws-session">
-        <StatusChip status={session.status} />
+        <StatusChip status={session.status} compacting={session.compacting} />
         {working && session.turnStartedAt !== null && <span className="muted">Turen har pågått {formatElapsed(now - session.turnStartedAt)}</span>}
         {working && session.currentTask && <span className="ws-session-task" title={session.currentTask}>Just nu: {session.currentTask}</span>}
         {todo && (

@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-24T20:03:07.213Z",
+  "updated": "2026-11-24T20:09:37.307Z",
   "tracks": [
     {
       "id": "design",
@@ -434,8 +434,8 @@
             {
               "id": "chat.1.9",
               "title": "Färdigformaterat innan det visas",
-              "status": "not_started",
-              "notes": "Användaren: text visas och ändras sedan (formatering, taggar, omflyttning) efter att den redan syns. Allt ska vara färdigformaterat när det visas: inget får byta utseende eller plats efteråt. Gäller både turens slut och det som visas under arbetet."
+              "status": "done",
+              "notes": "Användaren: text visas och ändras sedan (formatering, taggar, omflyttning) efter att den redan syns. Allt ska vara färdigformaterat när det visas: inget får byta utseende eller plats efteråt. Gäller både turens slut och det som visas under arbetet. || Sena taggar ändrar inte längre text som redan visas, callouts efter hållen text väntar i loggen, bilder har fast ram. Ej provat i dold testinstans. Provat dolt."
             }
           ]
         },
@@ -581,7 +581,7 @@
               "id": "chat.3.6",
               "title": "Dra in och klistra in filer",
               "status": "done",
-              "notes": "Klart i kod: frågorna besvaras i en ruta sist i chatten (desktop och mobil); helskärmsflödet och popupens frågevy är borta; overlay, kort, notiser och mobil öppnar chatten vid rutan. Rotorsaken (frågor lästes som tomma under taggning) är åtgärdad i session-model. Återstår: test i dold instans."
+              "notes": "Klart i kod: alla filer kan dras in eller klistras in (via sökväg från Explorer, annars kopia i temp, max 10 MB) och visas som chips; på mobilen finns en Fil-knapp. Provat dolt."
             }
           ]
         },
@@ -611,26 +611,27 @@
             {
               "id": "chat.4.4",
               "title": "Komprimera med förberedelse",
-              "status": "not_started",
-              "notes": "Användaren: knappen Komprimera ska först skicka \"Förbered för komprimering\" till agenten. När agenten svarar bedömer appen (Haiku) om svaret är jakande; i så fall skickar appen /compact. Är svaret tvetydigt visas det för användaren i stället, som får avgöra. Användaren: knappen får en trevlig liten ikon för något som komprimeras, t.ex. lucide fold-vertical eller shrink (pilar mot mitten). Beslut: ikonen fold-vertical (pilar mot mitten)."
+              "status": "in_progress",
+              "notes": "Användaren: knappen Komprimera ska först skicka \"Förbered för komprimering\" till agenten. När agenten svarar bedömer appen (Haiku) om svaret är jakande; i så fall skickar appen /compact. Är svaret tvetydigt visas det för användaren i stället, som får avgöra. Användaren: knappen får en trevlig liten ikon för något som komprimeras, t.ex. lucide fold-vertical eller shrink (pilar mot mitten). Beslut: ikonen fold-vertical (pilar mot mitten).",
+              "progress": 0
             },
             {
               "id": "chat.4.5",
               "title": "Komprimeringsstatus överallt",
-              "status": "not_started",
-              "notes": "Användaren: \"Komprimerar\" ska synas i blått som nu, men ersätta \"Arbetar\" i statusen i högra hörnet (inte visas bredvid). I overlayn ska en egen animation visas i stället för arbetsanimationen, t.ex. en animerad komprimeringsikon (samma fold-vertical som chat.4.4, pilarna som pulserar mot mitten)."
+              "status": "done",
+              "notes": "Användaren: \"Komprimerar\" ska synas i blått som nu, men ersätta \"Arbetar\" i statusen i högra hörnet (inte visas bredvid). I overlayn ska en egen animation visas i stället för arbetsanimationen, t.ex. en animerad komprimeringsikon (samma fold-vertical som chat.4.4, pilarna som pulserar mot mitten). Provat dolt."
             },
             {
               "id": "chat.4.6",
               "title": "Ingen dubblett av svaret",
-              "status": "not_started",
-              "notes": "Användaren: rutan Under arbetet visar huvudagentens senaste meddelande även när samma text redan står som Svar under den. När turen är klar och rutans text i stort sett är svaret ska rutan inte visa den (eller döljas)."
+              "status": "done",
+              "notes": "Användaren: rutan Under arbetet visar huvudagentens senaste meddelande även när samma text redan står som Svar under den. När turen är klar och rutans text i stort sett är svaret ska rutan inte visa den (eller döljas). || Rutan Under arbetet hoppar över meddelanden som liknar svaret och byter utan väntetid när svaret finns. Ej provat i dold testinstans. Provat dolt."
             },
             {
               "id": "chat.4.7",
               "title": "Rymligare svarsruta",
-              "status": "not_started",
-              "notes": "Användaren: får ofta klicka \"Visa ett stycke till\" (TaggedText döljer stycken under vald detaljnivå). Svarets synliga del ska bli större, och Haiku-taggaren (turn-tags) ska få veta hur mycket som ryms i den så att den väljer stycken som fyller den i stället för att gömma för mycket."
+              "status": "done",
+              "notes": "Användaren: får ofta klicka \"Visa ett stycke till\" (TaggedText döljer stycken under vald detaljnivå). Svarets synliga del ska bli större, och Haiku-taggaren (turn-tags) ska få veta hur mycket som ryms i den så att den väljer stycken som fyller den i stället för att gömma för mycket. || Svaret fylls upp till 1600 tecken med dolda stycken och taggaren får veta längden. Ej provat i dold testinstans. Provat dolt."
             }
           ]
         },

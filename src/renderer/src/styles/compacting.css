@@ -1,0 +1,23 @@
+/* Compacting: "Komprimerar" replaces "Arbetar" in the status; the overlay shows a squeezing icon. */
+.chip[data-status="compacting"] {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(91,156,255,.2); color: #7aa8ff; font-weight: 700;
+  animation: compact-glow 1.6s ease-in-out infinite;
+}
+.chip-compress { animation: compress-squeeze 1.2s ease-in-out infinite; }
+@keyframes compact-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(91,156,255,0); }
+  50% { box-shadow: 0 0 10px rgba(91,156,255,.45); }
+}
+.ov-cell[data-compacting] .ov-ring { display: none; }
+.ov-compress {
+  position: absolute; inset: 0; margin: auto; color: #5b9cff;
+  filter: drop-shadow(0 0 4px rgba(91,156,255,.7));
+  background: rgba(20,24,34,.55); border-radius: 50%; padding: 4px; box-sizing: content-box;
+  animation: compress-squeeze 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes compress-squeeze {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(.55); }
+}

@@ -595,7 +595,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
           s.questions = late;
           s.questionsId = `${now()}-${late.length}`;
         }
-        return setBlocks(s, blocks);
+        // Its text already shows, so it is not restyled now; the tags are kept in the tag memory for the next load.
+        return [];
       }
       // The agent's own question callouts went to the tagger as well, which drops repeats; its list stands.
       const asked = mergeQuestions(s.earlierQuestions, questions, s.answered);

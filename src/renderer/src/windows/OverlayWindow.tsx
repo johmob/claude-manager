@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { DayUsage, SessionSummary, UsageSnapshot, UsageWindow } from '../../../shared/contracts';
+import { FoldVertical } from 'lucide-react';
 import { AgentsIcon, ChatIcon } from '../components/Icons';
 import { QuickChatBody, useQuickChat } from '../components/QuickChat';
 import { QuickQuestion, questionsKey } from '../components/QuestionBox';
@@ -224,6 +225,7 @@ export function OverlayWindow() {
             key={s.id}
             className="ov-cell"
             data-status={s.status}
+            data-compacting={s.compacting ? '' : undefined}
             style={{ '--accent': s.color } as CSSProperties}
             onMouseEnter={() => setHovered(s.id)}
             onClick={() => send('window:show-session', { id: s.id })}
@@ -231,6 +233,7 @@ export function OverlayWindow() {
             <span className="ov-icon">
               <span className="ov-ring" />
               <SessionMark name={s.name} icon={s.icon} size={22} className="ov-letters" />
+              {s.compacting && <FoldVertical className="ov-compress" size={26} aria-hidden />}
               {STATUS_MARK[s.status] && <span className="ov-mark">{STATUS_MARK[s.status]}</span>}
             </span>
             <span className="ov-name">{shortName(s.name)}</span>

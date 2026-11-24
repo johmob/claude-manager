@@ -54,7 +54,7 @@ export function SessionInfo({ session, account }: { session: SessionSummary; acc
         <span className="si-dot" />
         <strong className="si-name">{session.name}</strong>
         {session.turnStartedAt !== null && <span className="si-time">{formatElapsed(now - session.turnStartedAt)}</span>}
-        <StatusChip status={session.status} />
+        <StatusChip status={session.status} compacting={session.compacting} />
       </div>
       {waiting && (
         <div className="si-wait">

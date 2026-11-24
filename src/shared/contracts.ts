@@ -906,6 +906,7 @@ export interface IpcInvokeMap {
   'session:send': { req: { id: string; text: string }; res: void };
   /** Saves a pasted image (base64) in a temp folder and returns its path. */
   'session:paste-image': { req: { id: string; mime: string; data: string }; res: string };
+  'session:paste-file': { req: { id: string; name: string; data: string }; res: string };
   'session:answer': { req: { id: string; requestId: string; answers: QuestionAnswers }; res: void };
   'session:permission': { req: { id: string; requestId: string; decision: PermissionDecision }; res: void };
   'session:interrupt': { req: { id: string }; res: void };
@@ -975,4 +976,6 @@ export type IpcEventChannel = keyof IpcEventMap;
 export interface RendererApi {
   invoke<K extends IpcInvokeChannel>(channel: K, req: IpcInvokeMap[K]['req']): Promise<IpcInvokeMap[K]['res']>;
   on<K extends IpcEventChannel>(channel: K, listener: (payload: IpcEventMap[K]) => void): () => void;
+  /** The path of a file dragged in from Explorer (desktop only). */
+  pathForFile?: (file: File) => string;
 }

@@ -1,13 +1,21 @@
 import { useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
-import { PASTE_MAX_BYTES, PASTE_TYPES, withImages } from '../../../shared/pastedImages';
+import { PASTE_FILE_MAX_BYTES, PASTE_MAX_BYTES, PASTE_TYPES, withAttachments } from '../../../shared/pastedImages';
 import { errorMessage, send } from '../lib/api';
+import { baseName } from '../lib/fileShare';
+import { imageSrc, localImageUrl } from '../lib/localImage';
 import { isRemote } from '../lib/platform';
 import { shrinkImage } from '../lib/shrinkImage';
+import '../styles/attach.css';
 
 interface Attached {
   path: string;
   preview: string;
+}
+
+interface AttachedFile {
+  path: string;
+  name: string;
 }
 
 function readAsDataUrl(file: File): Promise<string> {
@@ -50,43 +58,69 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
   const [text, setText] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [images, setImages] = useState<Attached[]>([]);
+  const [files, setFiles] = useState<AttachedFile[]>([]);
+  const [dragging, setDragging] = useState(false);
   const [problem, setProblem] = useState('');
   /** On the phone: Enter is a new line (the soft keyboard has no Ctrl), buttons send, and photos come from the camera or gallery. */
   const touch = isRemote && !compact;
   const camera = useRef<HTMLInputElement>(null);
   const gallery = useRef<HTMLInputElement>(null);
+  const anyFile = useRef<HTMLInputElement>(null);
 
-  /** Saves pasted or dropped image files through main and shows them as thumbnails until the message is sent. */
-  const attach = async (files: File[]): Promise<void> => {
+  /** Adds a file that already lies on disk (dragged from Explorer): images get a thumbnail, anything else a chip. */
+  const attachPath = (path: string): void => {
+    const norm = path.split('\\').join('/');
+    const url = localImageUrl(norm);
+    if (url) setImages((prev) => (prev.some((i) => i.path === norm) ? prev : [...prev, { path: norm, preview: imageSrc(url) }]));
+    else setFiles((prev) => (prev.some((f) => f.path === norm) ? prev : [...prev, { path: norm, name: baseName(norm) }]));
+  };
+
+  /** Attaches pasted or dropped files: by path when the file is on disk, otherwise a copy is saved through main. */
+  const attach = async (list: File[]): Promise<void> => {
     setProblem('');
-    for (const original of files) {
-      const file = isRemote ? await shrinkImage(original) : original;
-      if (!PASTE_TYPES[file.type]) continue;
-      if (file.size > PASTE_MAX_BYTES) {
-        setProblem('Bilden är större än 5 MB.');
+    for (const original of list) {
+      const path = isRemote ? '' : window.cm.pathForFile?.(original) ?? '';
+      if (path) {
+        attachPath(path);
         continue;
       }
       try {
-        const preview = await readAsDataUrl(file);
-        const path = await window.cm.invoke('session:paste-image', { id: session.id, mime: file.type, data: preview.slice(preview.indexOf(',') + 1) });
-        setImages((prev) => [...prev, { path, preview }]);
+        const file = isRemote && original.type.startsWith('image/') ? await shrinkImage(original) : original;
+        if (PASTE_TYPES[file.type]) {
+          if (file.size > PASTE_MAX_BYTES) {
+            setProblem('Bilden är större än 5 MB.');
+            continue;
+          }
+          const preview = await readAsDataUrl(file);
+          const saved = await window.cm.invoke('session:paste-image', { id: session.id, mime: file.type, data: preview.slice(preview.indexOf(',') + 1) });
+          setImages((prev) => [...prev, { path: saved, preview }]);
+        } else {
+          if (original.size > PASTE_FILE_MAX_BYTES) {
+            setProblem(`${original.name || 'Filen'} är större än 10 MB.`);
+            continue;
+          }
+          const data = (await readAsDataUrl(original)).split(',')[1] ?? '';
+          const saved = await window.cm.invoke('session:paste-file', { id: session.id, name: original.name || 'fil', data });
+          setFiles((prev) => [...prev, { path: saved, name: original.name || baseName(saved) }]);
+        }
       } catch (e) {
         setProblem(errorMessage(e));
       }
     }
   };
-  const imageFiles = (items: DataTransfer | null): File[] => [...(items?.files ?? [])].filter((f) => f.type.startsWith('image/'));
+  const droppedFiles = (items: DataTransfer | null): File[] => [...(items?.files ?? [])];
   const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>): void => {
-    const files = imageFiles(e.clipboardData);
-    if (files.length === 0) return;
+    const list = droppedFiles(e.clipboardData);
+    if (list.length === 0) return;
     e.preventDefault();
-    void attach(files);
+    void attach(list);
   };
   const onDrop = (e: DragEvent<HTMLDivElement>): void => {
-    const files = imageFiles(e.dataTransfer);
-    if (files.length === 0) return;
+    setDragging(false);
+    const list = droppedFiles(e.dataTransfer);
+    if (list.length === 0) return;
     e.preventDefault();
-    void attach(files);
+    void attach(list);
   };
 
   const suggestions =
@@ -97,12 +131,13 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
   const busy = session.status === 'working';
   /** Enter sends (it waits while the agent is busy); Ctrl+Enter stops what the agent is doing and has it do this instead. */
   const submit = (redirect = false): void => {
-    const value = withImages(text, images.map((i) => i.path));
+    const value = withAttachments(text, images.map((i) => i.path), files.map((f) => f.path));
     if (!value) return;
     if (redirect && busy) send('session:redirect', { id: session.id, text: value });
     else send('session:send', { id: session.id, text: value });
     setText('');
     setImages([]);
+    setFiles([]);
     setProblem('');
   };
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -113,13 +148,27 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
   };
 
   return (
-    <div className={compact ? 'chat-input compact' : touch ? 'chat-input touch' : 'chat-input'} onDragOver={(e) => e.dataTransfer.types.includes('Files') && e.preventDefault()} onDrop={onDrop}>
-      {(images.length > 0 || problem) && (
+    <div className={compact ? 'chat-input compact' : touch ? 'chat-input touch' : 'chat-input'} data-drag={dragging || undefined}
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes('Files')) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && setDragging(false)}
+      onDrop={onDrop}
+    >
+      {(images.length > 0 || files.length > 0 || problem) && (
         <div className="paste-strip">
           {images.map((img) => (
             <span className="paste-thumb" key={img.path}>
               <img src={img.preview} alt="Inklistrad bild" />
               <button type="button" aria-label="Ta bort bilden" title="Ta bort bilden" onClick={() => setImages((prev) => prev.filter((i) => i !== img))}>×</button>
+            </span>
+          ))}
+          {files.map((f) => (
+            <span className="attach-chip" key={f.path} title={f.path}>
+              <span className="attach-chip-name">{f.name}</span>
+              <button type="button" aria-label="Ta bort filen" title="Ta bort filen" onClick={() => setFiles((prev) => prev.filter((x) => x !== f))}>×</button>
             </span>
           ))}
           {problem && <span className="paste-problem">{problem}</span>}
@@ -157,10 +206,12 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
           <input ref={gallery} type="file" accept="image/*" multiple hidden onChange={(e) => { void attach([...(e.target.files ?? [])]); e.target.value = ''; }} />
           <button type="button" className="touch-btn" aria-label="Ta ett foto" onClick={() => camera.current?.click()}>Foto</button>
           <button type="button" className="touch-btn" aria-label="Välj bild från galleriet" onClick={() => gallery.current?.click()}>Bild</button>
+          <input ref={anyFile} type="file" multiple hidden onChange={(e) => { void attach([...(e.target.files ?? [])]); e.target.value = ''; }} />
+          <button type="button" className="touch-btn" aria-label="Bifoga en fil" onClick={() => anyFile.current?.click()}>Fil</button>
           <span className="spacer" />
-          {busy && <button type="button" className="touch-btn" disabled={!text.trim() && images.length === 0} onClick={() => submit(true)}>Avbryt och gör detta i stället</button>}
+          {busy && <button type="button" className="touch-btn" disabled={!text.trim() && images.length === 0 && files.length === 0} onClick={() => submit(true)}>Avbryt och gör detta i stället</button>}
           {busy && <button type="button" className="touch-btn danger" onClick={() => send('session:interrupt', { id: session.id })}>Avbryt</button>}
-          <button type="button" className="touch-btn primary" disabled={!text.trim() && images.length === 0} onClick={() => submit()}>{busy ? 'Köa' : 'Skicka'}</button>
+          <button type="button" className="touch-btn primary" disabled={!text.trim() && images.length === 0 && files.length === 0} onClick={() => submit()}>{busy ? 'Köa' : 'Skicka'}</button>
         </div>
       )}
       {!compact && !touch && (

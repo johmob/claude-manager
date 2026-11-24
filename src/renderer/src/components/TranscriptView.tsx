@@ -8,6 +8,8 @@ import { CalloutBox } from './CalloutBox';
 import { TaggedText, hasWeight } from './TaggedText';
 import { MarkdownText } from './MarkdownText';
 import { UserText } from './UserText';
+import { ANSWER_ROOM_CHARS } from '../../../shared/answerRoom';
+import { nearlySame } from '../lib/textMatch';
 
 function Thinking({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -127,8 +129,14 @@ function arrange(entries: TranscriptEntry[], finals: Set<string>, detail: ChatDe
     return groupTools(entries).map((item): Shown => (Array.isArray(item) ? { kind: 'tools', tools: item } : { kind: 'entry', entry: item }));
   }
   const shown: Shown[] = [];
+  // A callout after text that is still held would stand out at once and be pushed down when the answer
+  // appears above it; it folds into the log meanwhile and shows in its place after the answer at release.
+  let holding = false;
   for (const entry of entries) {
-    if (standsOut(entry, finals, detail) && entry.kind !== 'tool') {
+    if (entry.kind === 'user') holding = false;
+    else if (entry.kind === 'assistant' && entry.held && !entry.agentId) holding = true;
+    const waits = holding && entry.kind === 'callout';
+    if (!waits && standsOut(entry, finals, detail) && entry.kind !== 'tool') {
       shown.push({ kind: 'entry', entry });
       continue;
     }
@@ -153,6 +161,12 @@ function rounds(shown: Shown[]): Shown[][] {
   return result;
 }
 
+/** The answer text a round shows (none while it is still held back in the log). */
+function roundAnswer(round: Shown[], finals: Set<string>): string | undefined {
+  for (const item of round) if (item.kind === 'entry' && item.entry.kind === 'assistant' && finals.has(item.entry.id)) return item.entry.text;
+  return undefined;
+}
+
 /** How long a message stays in the status box before a newer one takes its place. */
 const STATUS_DWELL_MS = 30_000;
 
@@ -161,15 +175,28 @@ const STATUS_DWELL_MS = 30_000;
  * opens for more), never commands. A message stays at least half a minute, so the box does not flicker
  * when the agent writes in quick succession; then the newest one takes over.
  */
-function LatestAction({ entries, running, onOpen }: { entries: TranscriptEntry[]; running: boolean; onOpen: () => void }) {
-  const latest = [...entries].reverse().find((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim());
+function LatestAction({ entries, running, answer, onOpen }: { entries: TranscriptEntry[]; running: boolean; answer?: string; onOpen: () => void }) {
+  // The turn's answer shows below the log; a message that says the same is not repeated in the box.
+  const candidates = entries.filter((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim() && !(answer && nearlySame(e.text, answer)));
+  const latest = candidates[candidates.length - 1];
   const [shown, setShown] = useState<{ id: string; text: string; since: number } | null>(null);
+  const present = !!shown && candidates.some((e) => e.id === shown.id);
   useEffect(() => {
-    if (!latest || latest.id === shown?.id) return;
-    const wait = shown ? Math.max(0, shown.since + STATUS_DWELL_MS - Date.now()) : 0;
-    const timer = window.setTimeout(() => setShown({ id: latest.id, text: latest.text, since: Date.now() }), wait);
+    if (!latest) {
+      if (shown) setShown(null);
+      return;
+    }
+    if (latest.id === shown?.id) return;
+    // Switches at once when the shown message is gone from the box or the round has its answer; otherwise it stays its dwell.
+    const wait = !shown || !present || answer ? 0 : Math.max(0, shown.since + STATUS_DWELL_MS - Date.now());
+    const next = { id: latest.id, text: latest.text, since: Date.now() };
+    if (wait === 0) {
+      setShown(next);
+      return;
+    }
+    const timer = window.setTimeout(() => setShown({ ...next, since: Date.now() }), wait);
     return () => window.clearTimeout(timer);
-  }, [latest?.id, shown?.id]);
+  }, [latest?.id, shown?.id, present, !!answer]);
   const body = useRef<HTMLDivElement>(null);
   const [cut, setCut] = useState(false);
   // A long message fades out at the bottom; a short one (two points of a list) shows whole.
@@ -177,7 +204,7 @@ function LatestAction({ entries, running, onOpen }: { entries: TranscriptEntry[]
     const el = body.current;
     setCut(!!el && el.scrollHeight > el.clientHeight + 2);
   }, [shown?.id]);
-  if (!shown) return null;
+  if (!shown || !present) return null;
   return (
     <button type="button" key={shown.id} className="t-latest" data-running={running ? 'true' : undefined} data-cut={cut ? 'true' : undefined} title="Visa allt under arbetet" onClick={onOpen}>
       <div className="t-latest-body" ref={body}>
@@ -191,16 +218,18 @@ function LatestAction({ entries, running, onOpen }: { entries: TranscriptEntry[]
  * The agent's narration and commands along the way, folded to one quiet line
  * ("Under arbetet · 3 meddelanden · 5 kommandon"); a click shows them.
  */
-function WorkLog({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId: string }) {
+function WorkLog({ entries, sessionId, answer }: { entries: TranscriptEntry[]; sessionId: string; answer?: string }) {
   const [open, setOpen] = useState(false);
   const texts = entries.filter((e) => e.kind === 'assistant' && e.text.trim()).length;
   const tools = entries.filter((e): e is ToolEntry => e.kind === 'tool');
   const notices = entries.filter((e) => e.kind === 'system').length;
+  const callouts = entries.filter((e) => e.kind === 'callout').length;
   const running = tools.some((t) => t.status === 'running');
   const parts = [
     texts ? `${texts} ${texts === 1 ? 'meddelande' : 'meddelanden'}` : '',
     tools.length ? `${tools.length} ${tools.length === 1 ? 'kommando' : 'kommandon'}` : '',
     notices ? `${notices} ${notices === 1 ? 'notis' : 'notiser'}` : '',
+    callouts ? `${callouts} ${callouts === 1 ? 'ruta' : 'rutor'}` : '',
   ].filter(Boolean);
   if (!parts.length) return null;
   return (
@@ -210,7 +239,7 @@ function WorkLog({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId
         Under arbetet · {parts.join(' · ')}
         {running && <Spinner small />}
       </button>
-      {!open && <LatestAction entries={entries} running={running} onOpen={() => setOpen(true)} />}
+      {!open && <LatestAction entries={entries} running={running} answer={answer} onOpen={() => setOpen(true)} />}
       {open && (
         <div className="t-log-body">
           {groupTools(entries).map((item) =>
@@ -247,7 +276,7 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
         <div className="t-assistant" data-final={final ? 'true' : undefined}>
           {final && <div className="t-answer-head">Svar{time && ` · ${time}`}</div>}
           <Thinking text={entry.thinking} />
-          <TaggedText text={entry.text} blocks={entry.blocks} />
+          <TaggedText text={entry.text} blocks={entry.blocks} room={final ? ANSWER_ROOM_CHARS : undefined} />
         </div>
       );
     case 'callout':
@@ -288,19 +317,22 @@ export function TranscriptView({ entries, sessionId, footer, footerKey }: { entr
   const detail = useContext(ChatDetailContext);
   return (
     <div className="transcript" ref={ref} onScroll={onScroll}>
-      {rounds(arrange(entries, finals, detail)).map((round) => (
+      {rounds(arrange(entries, finals, detail)).map((round) => {
+        const answer = roundAnswer(round, finals);
+        return (
         <section key={keyOf(round[0]!)} className="t-round">
           {round.map((item) =>
             item.kind === 'tools' ? (
               <ToolGroup key={item.tools[0]!.id} tools={item.tools} />
             ) : item.kind === 'log' ? (
-              <WorkLog key={item.entries[0]!.id} entries={item.entries} sessionId={sessionId} />
+              <WorkLog key={item.entries[0]!.id} entries={item.entries} sessionId={sessionId} answer={answer} />
             ) : (
               <Entry key={item.entry.id} entry={item.entry} sessionId={sessionId} final={detail !== 'detailed' && finals.has(item.entry.id)} />
             ),
           )}
         </section>
-      ))}
+        );
+      })}
       {footer}
     </div>
   );

@@ -1,0 +1,35 @@
+/* Attached files: chips in the message box and in the chat bubble, and the drop highlight. */
+.chat-input[data-drag] {
+  outline: 2px dashed var(--accent, #5b9cff);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+.attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 2px 8px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 999px;
+  font-size: 12px;
+}
+.attach-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attach-chip button {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.user-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
