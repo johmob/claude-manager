@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T16:26:22.616Z",
+  "updated": "2026-11-24T16:37:22.437Z",
   "tracks": [
     {
       "id": "eng",
@@ -979,7 +979,7 @@
               "title": "Mikroapp: pushtest i Brave",
               "status": "in_progress",
               "progress": 80,
-              "notes": "Byggd i tools/push-test (egen package.json, inga ändringar i appen): HTTPS med eget CA-certifikat, installerbar sida, service worker och testnotiser nu, om 30 s och om 5 min. Kvar: köra den på hemdatorn och prova på telefonen; committat i tools/push-test."
+              "notes": "Byggd i tools/push-test (port ***REMOVED***, egen package.json). Guide för hemdatorn i docs/HOME-SETUP.md och skriptet tools/home-setup.ps1 (installerar appen, öppnar brandväggen, startar pushtestet). Kvar: köra det hemma och prova på telefonen."
             }
           ]
         }
