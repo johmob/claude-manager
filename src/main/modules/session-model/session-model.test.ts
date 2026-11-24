@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionEvent, SessionRecord, TodoNode, TodoTree } from '../../../shared/contracts';
-import { createSessionModel, findOpenQuestions } from './index';
+import { createSessionModel } from './index';
 
 const record: SessionRecord = {
   id: 's1',
@@ -173,60 +173,15 @@ describe('session-model', () => {
 describe('questions left for the user', () => {
   const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
 
-  it('finds questions, and items listed under question or assumption headings', () => {
-    const text = [
-      'Klart med steg 1.',
-      '',
-      '**Öppna frågor**',
-      '1. Vilken baudrate ska gälla',
-      '2. **Ska jag köra B först?**',
-      '',
-      'Antaganden, rätta om fel:',
-      '- Kortet är rev B',
-      '- Displayen är urkopplad',
-      'Sammanfattningsvis gick allt bra.',
-      '- En vanlig punkt',
-      '```',
-      'if (x?) y',
-      '```',
-      'Vill du att jag fortsätter?',
-    ].join('\n');
-    expect(findOpenQuestions(text).map(({ kind, text: t, context }) => ({ kind, text: t, context }))).toEqual([
-      { kind: 'question', text: 'Vilken baudrate ska gälla', context: 'Öppna frågor' },
-      { kind: 'question', text: 'Ska jag köra B först?', context: 'Öppna frågor' },
-      { kind: 'assumption', text: 'Kortet är rev B', context: 'Antaganden, rätta om fel' },
-      { kind: 'assumption', text: 'Displayen är urkopplad', context: 'Antaganden, rätta om fel' },
-      { kind: 'question', text: 'Vill du att jag fortsätter?', context: '' },
-    ]);
-  });
-
-  it('does not take a plain "Frågor" section title as questions to the user', () => {
-    const text = ['**Frågor**', '- Ja/nej-frågor får knapparna Ja och Nej.', '- Öppna frågor får inga knappar.'].join('\n');
-    expect(findOpenQuestions(text)).toEqual([]);
-    expect(findOpenQuestions(['**Frågor till dig**', '- Vilken port ska gälla'].join('\n')).map((q) => q.text)).toEqual(['Vilken port ska gälla']);
-  });
-
-  it('gives a question the text around it, so options it names come with it', () => {
-    const text = ['## Bakgrund', 'Allt byggdes.', '', '## Val', 'Jag ser två vägar:', '- A: snabbt men dyrt', '- B: billigt men långsamt', '', 'Vill du ha A eller B?', '', '## Sist', 'Klart.'].join('\n');
-    const [question] = findOpenQuestions(text);
-    expect(question).toMatchObject({ kind: 'question', text: 'Vill du ha A eller B?' });
-    expect(question?.detail).toBe('Jag ser två vägar:\n- A: snabbt men dyrt\n- B: billigt men långsamt');
-  });
-
-  it('waits for the user when the final answer leaves questions, until the next message', () => {
+  it('never reads plain text as questions by rules: a report with headings and lists does not wait', () => {
     const { model, apply } = setup();
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'kör' });
-    apply({ type: 'text', text: 'Är det rätt fil?' }); // an earlier text is not the final answer
-    apply({ type: 'text', text: 'Jag har två frågor:\n1. Ska jag byta till rev C?\n2. Behåller vi 9600 baud' });
+    apply({ type: 'text', text: ['Slutkörningen gav 26 av 30 OK. E rättar de fyra som återstår och bygger om:', '', '- Räfflorna slutar nu före huset.', '- Nätfelen är rättade i formen.', '', 'Ska jag fortsätta?'].join('\n') });
     apply(finish);
-    const summary = model.summary('s1');
-    expect(summary).toMatchObject({ status: 'waiting', questionsId: '1000' });
-    expect(summary?.questions.map((q) => q.text)).toEqual(['Ska jag byta till rev C?', 'Behåller vi 9600 baud']);
-    expect(summary?.callouts[0]).toMatchObject({ kind: 'question', title: '2 frågor till dig' });
-    apply({ type: 'turn_started', prompt: 'ja, och ja' });
-    expect(model.summary('s1')).toMatchObject({ status: 'working', questions: [] });
+    expect(model.summary('s1')).toMatchObject({ status: 'done', questions: [], callouts: [] });
   });
+
 
   it('counts tagged questions and assumption notes, ignores subagent text; dismissing ends the wait', () => {
     const { model, apply } = setup();
@@ -273,20 +228,13 @@ describe('usage limit', () => {
   });
 });
 
-describe('question split from a statement on the same line', () => {
-  it('keeps only the question as its text and the statement as background', () => {
-    const [q] = findOpenQuestions('Testet gick bra och allt är sparat. Ska jag fortsätta med nästa steg?');
-    expect(q).toMatchObject({ text: 'Ska jag fortsätta med nästa steg?', detail: 'Testet gick bra och allt är sparat.' });
-  });
-});
-
 describe('open questions across turns', () => {
   it('keeps them through a later turn without questions that the user did not start', () => {
     const { model, apply } = setup();
     const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'kör' });
-    apply({ type: 'text', text: 'Ska jag fortsätta?' });
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'Ska jag fortsätta?' } });
     apply(finish);
     // A subagent finishes and the agent writes again on its own.
     apply({ type: 'text', text: 'Subagenten är klar.' });
@@ -302,11 +250,13 @@ describe('questions already answered', () => {
     const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'kör' });
-    apply({ type: 'text', text: 'Ska jag använda SPI-bussen för givaren?' });
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'Ska jag använda SPI-bussen för givaren?' } });
     apply(finish);
     apply({ type: 'turn_started', prompt: 'Svar: ja' });
-    apply({ type: 'text', text: 'Öppna frågor:\n1. Ska jag använda SPI-bussen för givaren? (besvarad)\n2. Vilken baudrate ska gälla' });
+    apply({ type: 'text', text: 'Öppna frågor: SPI (besvarad), baudrate.' });
     apply(finish);
+    const lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
+    model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Ska jag använda SPI-bussen för givaren? (besvarad)', context: '', detail: '', brief: '', options: [] }, { kind: 'question', text: 'Vilken baudrate ska gälla', context: '', detail: '', brief: '', options: [] }], []);
     expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Vilken baudrate ska gälla']);
   });
 });
@@ -320,7 +270,7 @@ describe('usage limit after a restart', () => {
 });
 
 describe('turn tags from a cheap model', () => {
-  it('replace the text rules questions, keep the agent own tagged ones, and pin messages', () => {
+  it('add the questions the model found, keep the agent own tagged ones, and pin messages', () => {
     const { model, apply } = setup();
     const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
     apply({ type: 'started' });

@@ -158,10 +158,9 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     };
     const system = (text: string, level: 'info' | 'warning' | 'error'): TranscriptEntry[] => add({ kind: 'system', text, level });
     /**
-     * A finished turn that leaves questions or assumptions for the user waits for an answer. Tagged ones
-     * ([!QUESTION], and [!NOTE] for assumptions) count as they are; those left as plain text in the final
-     * answer (lines ending in "?", lists under question or assumption headings) are also gathered into
-     * one box, so they stand out in the transcript. The user answers them all in the question flow.
+     * A finished turn whose agent tagged questions ([!QUESTION]) or assumptions to confirm ([!NOTE]) waits
+     * for an answer. Plain text is never read as questions by rules: a cheap model tags the turn afterwards
+     * (applyTurnTags), since only reading the text with understanding tells a question from a report.
      */
     const collectQuestions = (): TranscriptEntry[] => {
       // The quick chat is answered right where it is asked.
@@ -172,28 +171,14 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), context: '', detail: '', brief: '', options: [] }] : [],
       );
       s.taggedQuestions = tagged;
-      const found = findOpenQuestions(s.turnText);
-      const seen = new Set<string>();
-      const asked = [...tagged, ...found]
-        .filter((q) => !seen.has(q.text) && seen.add(q.text))
-        .filter((q) => !alreadyAnswered(s.answered, q.text))
-        .slice(0, MAX_QUESTIONS);
+      const asked = tagged.filter((q) => !alreadyAnswered(s.answered, q.text)).slice(0, MAX_QUESTIONS);
       // A turn the user did not start (e.g. after a subagent finished) without questions leaves the open
       // ones as they are: they are still unanswered. Only new questions replace them.
       if (!asked.length) return [];
       s.questions = asked;
       s.questionsId = String(at);
       s.questionsAnswer = s.turnText;
-      if (!found.length) return [];
-      const assumptions = found.filter((q) => q.kind === 'assumption').length;
-      const callout: Callout = {
-        kind: 'question',
-        title: assumptions === found.length ? 'Antaganden att bekräfta' : found.length === 1 ? 'Fråga till dig' : `${found.length} frågor till dig`,
-        text: found.map((q) => `- ${q.kind === 'assumption' && assumptions < found.length ? 'Antagande: ' : ''}${q.text}`).join('\n'),
-      };
-      s.callouts.push(callout);
-      s.calloutsBefore = s.callouts.length;
-      return add({ kind: 'callout', callout });
+      return [];
     };
 
     switch (event.type) {
@@ -458,101 +443,8 @@ function alreadyAnswered(answered: string[], text: string): boolean {
   const q = normalizeQuestion(text);
   return answered.some((a) => a === q || (Math.min(a.length, q.length) >= 20 && (a.includes(q) || q.includes(a))));
 }
-const QUESTION_END = /\?["”'»)]*$/;
-const QUESTION_HEADING = /(?:öppna|obesvarade)\s+fråg|(?:jag har|några|ett par|en|två|tre|fyra|fem|\d+)\s+(?:\w+\s+)?fråg|fråg\w*\s+(?:till|för|åt)\s+(?:dig|er)|att\s+(?:svara|ta\s+ställning)|open questions|questions?\s+for\s+you/i;
-const ASSUMPTION_HEADING = /antag|assum|rätta|bekräfta|stämmer det/i;
-const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+(.*)$/;
-
-function clean(text: string): string {
-  return text.replace(/^\s*>\s?/, '').replace(/\*\*|__|`/g, '').trim();
-}
-
 function calloutText(c: Callout): string {
   return c.title && c.text ? `${c.title}: ${c.text}` : c.title || c.text;
-}
-
-/** The text of a heading line: "## Frågor", "**Antaganden:**" or a short line ending in a colon. */
-function headingText(raw: string): string | null {
-  const match =
-    /^\s*#{1,6}\s+(.+?)\s*#*\s*$/.exec(raw) ??
-    /^\s*(?:\*\*|__)(.+?)(?:\*\*|__)\s*:?\s*$/.exec(raw) ??
-    /^\s*(?![-*+]\s|\d+[.)]\s|>)(.{2,80}):\s*$/.exec(raw);
-  return match ? clean(match[1]!).replace(/:$/, '').trim() : null;
-}
-
-const MAX_DETAIL = 3000;
-
-interface AnswerLine {
-  raw: string;
-  /** Inside a code block (or a fence line itself). */
-  code: boolean;
-  heading: string | null;
-  /** A real heading (# or a bold line): sections for the text around a question end here, unlike "Two ways:" lines. */
-  boundary: boolean;
-}
-
-function classifyLines(text: string): AnswerLine[] {
-  let inFence = false;
-  return text.split(/\r?\n/).map((raw) => {
-    if (/^\s*(```|~~~)/.test(raw)) {
-      inFence = !inFence;
-      return { raw, code: true, heading: null, boundary: false };
-    }
-    const boundary = !inFence && (/^\s*#{1,6}\s/.test(raw) || /^\s*(?:\*\*|__).+(?:\*\*|__)\s*:?\s*$/.test(raw));
-    return { raw, code: inFence, heading: inFence ? null : headingText(raw), boundary };
-  });
-}
-
-/** The section a line sits in (between the headings around it), without the line itself: what the user needs to answer it. */
-function sectionAround(lines: AnswerLine[], at: number): string {
-  let start = at;
-  while (start > 0 && !lines[start - 1]!.boundary) start--;
-  let end = at + 1;
-  while (end < lines.length && !lines[end]!.boundary) end++;
-  const detail = lines
-    .slice(start, end)
-    .filter((_, k) => start + k !== at)
-    .map((l) => l.raw)
-    .join('\n')
-    .trim();
-  return detail.length > MAX_DETAIL ? `${detail.slice(0, MAX_DETAIL)}…` : detail;
-}
-
-/**
- * What an answer asks of the user: lines ending in a question mark (with the section around them, so
- * "A or B?" comes with what A and B are), and every item listed under a heading about questions
- * ("Öppna frågor") or assumptions ("Antaganden, rätta om fel"). Code blocks are skipped; a paragraph or
- * another heading ends a list.
- */
-export function findOpenQuestions(text: string): OpenQuestion[] {
-  const lines = classifyLines(text);
-  const found: OpenQuestion[] = [];
-  let section: { kind: OpenQuestion['kind']; context: string } | null = null;
-  lines.forEach((l, i) => {
-    if (l.code || !l.raw.trim()) return;
-    if (l.heading !== null && !QUESTION_END.test(l.heading)) {
-      section = ASSUMPTION_HEADING.test(l.heading)
-        ? { kind: 'assumption', context: l.heading }
-        : QUESTION_HEADING.test(l.heading)
-          ? { kind: 'question', context: l.heading }
-          : null;
-      return;
-    }
-    const item = LIST_ITEM.exec(l.raw);
-    const line = clean(item ? item[1]! : l.raw);
-    if (item && section) {
-      if (line) found.push({ kind: section.kind, text: line, context: section.context, detail: '', brief: '', options: [] });
-      return;
-    }
-    if (!item && !/^\s/.test(l.raw)) section = null;
-    if (line.length < 6 || !QUESTION_END.test(line)) return;
-    // "Testet gick bra. Ska jag fortsätta?": the question is the last sentence; what came before is background.
-    const split = /^(.*[.!:])\s+([^.!:?]*\?["”'»)]*)$/.exec(line);
-    const around = sectionAround(lines, i);
-    const detail = split ? [split[1]!, around].filter(Boolean).join('\n\n') : around;
-    found.push({ kind: 'question', text: split ? split[2]!.trim() : line, context: '', detail, brief: '', options: [] });
-  });
-  return found;
 }
 
 /**

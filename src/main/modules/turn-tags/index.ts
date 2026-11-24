@@ -48,7 +48,8 @@ export function tagRequest(messages: string[], cwd: string): StructuredRequest {
   const prompt = [
     'Nedan är en AI-agents meddelanden till användaren under en arbetstur, numrerade. Tagga dem; skriv inte om något.',
     '1. questions: varje fråga eller val agenten vill att användaren svarar på eller tar ställning till, och varje antagande användaren ska bekräfta.',
-    '   Ta inte med frågor som agenten själv besvarar i samma tur. För varje:',
+    '   Bara det som uttryckligen ber användaren svara, välja eller bekräfta något. Lägesrapporter, resultat, listor över vad som gjorts eller ska göras, rubriker och förklaringar är aldrig frågor, inte heller när de står i punktlistor eller efter ett kolon.',
+    '   Ta inte med frågor som agenten själv besvarar i samma tur. Hellre en fråga för lite än en påhittad. För varje:',
     '   text: frågan med agentens egna ord, kort; kind: "question" eller "assumption";',
     '   options: svarsalternativen om agenten gav några (t.ex. ["1", "1b"] eller ["A", "B"]), annars [];',
     '   brief: en till två meningar, högst 200 tecken, med det användaren behöver veta för att svara direkt, bara från texten;',

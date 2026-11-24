@@ -467,7 +467,8 @@ function boot(): void {
   /**
    * Has a cheap model tag the main agent's messages of the turn just finished: the questions and choices
    * put to the user (with options and a short background) and the messages the user must see. The text is
-   * never rewritten; until the tags arrive (or if the call fails) the text rules' findings stand.
+   * never rewritten. Apart from what the agent tagged itself ([!QUESTION], [!NOTE]), these are the only questions:
+   * plain text is never read as questions by rules.
    */
   async function tagTurn(id: string): Promise<void> {
     const transcript = model.transcript(id);
@@ -485,13 +486,13 @@ function boot(): void {
       const keep = tags.keep.map((n) => entries[n - 1]!.id);
       for (const entry of model.applyTurnTags(id, lastUser?.id ?? null, questions, keep)) windows.send('session:transcript-upsert', { id, entry });
       const after = model.summary(id);
-      // Questions the text rules missed still get the user's attention.
+      // New questions get the user's attention.
       if (after && after.questions.length && after.questionsId !== before?.questionsId && !after.pendingCount) {
         notifier.alert({ sessionId: id, title: `${after.name} har ${after.questions.length} frågor till dig`, body: after.questions.slice(0, 3).map((q) => q.text).join('\n'), urgent: true });
       }
       scheduleSync();
     } catch {
-      // Without tags the text rules' findings stand.
+      // Without tags only the questions the agent tagged itself stand.
     }
   }
 

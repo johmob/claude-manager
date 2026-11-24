@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T05:53:03Z",
+  "updated": "2026-11-24T05:56:19Z",
   "tracks": [
     {
       "id": "eng",
@@ -347,8 +347,9 @@
           "items": [
             {
               "id": "ui.6.1",
-              "title": "Hitta frågor och antaganden (rubriker, frågetecken, QUESTION/NOTE)",
-              "status": "done"
+              "title": "Hitta frågor och antaganden (agentens taggar och Haiku)",
+              "status": "done",
+              "notes": "Frågor kommer bara från agentens egna [!QUESTION]/[!NOTE] och från Haikus läsning av turen. Textreglerna (frågetecken, rubriker) är borttagna. Användaren: de tog en lägesrapport för frågor (\"E rättar de fyra som återstår:\"). Klart, inte släppt än."
             },
             {
               "id": "ui.6.2",
