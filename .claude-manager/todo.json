@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T07:58:27Z",
+  "updated": "2026-11-24T08:11:10Z",
   "tracks": [
     {
       "id": "eng",
@@ -560,7 +560,7 @@
               "status": "done",
               "id": "life.3.5",
               "title": "Uppdateringar installeras vid omstart eller med Installera nu",
-              "notes": "Användaren: räcker med \"ny version · Installera nu\" i toppraden, och installation vid varje omstart om valt i inställningarna. Frågerutan och notisen borttagna. Appen startar aldrig om själv. Klart."
+              "notes": "Användaren: räcker med \"ny version · Installera nu\" i toppraden, och installation vid varje omstart om valt i inställningarna. Frågerutan och notisen borttagna. Appen startar aldrig om själv. Klart. Bugg rättad i 0.1.15: appen fastnade på första nedladdade versionen (0.1.8) och letade inte efter nyare."
             }
           ]
         }
