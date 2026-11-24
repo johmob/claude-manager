@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T12:39:15.221Z",
+  "updated": "2026-11-24T12:50:28.447Z",
   "tracks": [
     {
       "id": "eng",
@@ -585,6 +585,12 @@
               "notes": "SessionMark i kortets och rutans rubrik, overlay-bollen och frågerutan, i kortets färg; initialer som reserv. Klart, inte släppt än."
             }
           ]
+        },
+        {
+          "id": "ui.9",
+          "title": "Utred röststyrning",
+          "status": "not_started",
+          "notes": "Användaren: utred om Claude API (eller annan väg) kan användas för röststyrning, så användaren kan prata i stället för att skriva; appen visar fortfarande bara text. Att utreda: tal till text (API-stöd, lokalt i Windows, kostnad), push-to-talk eller alltid lyssnande, och svar som tal eller bara text."
         }
       ]
     },
@@ -849,6 +855,29 @@
           "title": "Jobb visar läge och detaljer vid klick",
           "status": "done",
           "notes": "Användaren: tydligt om ett jobb är aktivt, inget Kör nu på aktiva jobb, klick ger ett litet kort på plats med kort beskrivning. Jobb har nu fältet description som agenterna fyller i. Testat dolt."
+        }
+      ]
+    },
+    {
+      "id": "mob",
+      "title": "Mobil – fjärrstyrning",
+      "owner": "main",
+      "notes": "Användaren: om några dagar en app för att styra från mobilen. Den ska visa och styra alla projekt från flera datorer samtidigt, t.ex. jobbdatorn och den privata datorn med var sitt Claude-konto.",
+      "items": [
+        {
+          "id": "mob.1",
+          "title": "Utred och planera",
+          "status": "not_started",
+          "notes": "Användaren: två Claude-konton, två datorer, en mobil. Att utreda: hur datorerna når mobilen (relätjänst, tunnel, molnsynk), inloggning och säkerhet (jobbdatorns nätverk, Zscaler), webbapp/PWA eller egen app, och vad som ska gå att göra (läsa, svara på frågor, skicka meddelanden, se användning per konto)."
+        },
+        {
+          "id": "mob.2",
+          "title": "Flera datorer och konton i samma vy",
+          "status": "not_started",
+          "dependsOn": [
+            "mob.1"
+          ],
+          "notes": "Projekt från båda datorerna visas tillsammans, märkta med dator och konto, och användningen visas per konto."
         }
       ]
     }
