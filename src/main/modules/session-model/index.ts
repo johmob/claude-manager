@@ -325,6 +325,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       startedAt: s.startedAt,
       lastError: s.lastError,
       limitResetsAt: s.limitResetsAt,
+      icon: record.icon ?? null,
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
       questions: s.questions,
       questionsId: s.questionsId,

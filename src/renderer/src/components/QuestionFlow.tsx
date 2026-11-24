@@ -3,6 +3,7 @@ import type { OpenQuestion, SessionSummary } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { quickAnswers } from '../lib/quickAnswers';
 import { MarkdownText } from './MarkdownText';
+import { SessionMark } from './SessionMark';
 import { Modal } from './Modal';
 
 /** Opens the question flow for a session; provided by the window that shows it. */
@@ -199,7 +200,7 @@ function QuestionSource({ session, about }: { session: SessionSummary; about: st
   const where = about || session.currentTask;
   return (
     <div className="q-source" style={{ '--c': session.color } as CSSProperties}>
-      <span className="q-source-name">{session.name}</span>
+      <span className="q-source-name"><SessionMark name={session.name} icon={session.icon} size={15} className="q-source-mark" />{session.name}</span>
       {where && <span className="q-source-about">{where}</span>}
     </div>
   );

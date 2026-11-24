@@ -9,6 +9,7 @@ import { ChatInput } from './ChatInput';
 import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
 import { TaggedText } from './TaggedText';
+import { SessionMark } from './SessionMark';
 import { useTranscript } from '../state/useTranscript';
 import { QuestionsButton } from './QuestionFlow';
 import { SchemaButton } from './SchemaButton';
@@ -108,7 +109,7 @@ export function SessionCard({ session, onOpen, roomy = false }: SessionCardProps
       <div className="card-strip" />
       <div className="card-main">
         <div className="card-top">
-          <span className="name-dot" />
+          <SessionMark name={session.name} icon={session.icon} size={18} className="card-mark" />
           {renaming ? <RenameField session={session} onDone={() => setRenaming(false)} /> : <span className="card-name" title={session.cwd}>{session.name}</span>}
           <StatusChip status={session.status} />
         </div>

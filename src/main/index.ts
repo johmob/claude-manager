@@ -7,7 +7,7 @@ import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import iconPath from '../../resources/icon.png?asset';
-import { CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, THEME_CHOICES } from '../shared/contracts';
+import { CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
@@ -47,6 +47,7 @@ import { createUpdater } from './modules/updater';
 import { createKeepAwake } from './modules/keep-awake';
 import { messagesForTagging, readTags, splitBlocks, tagRequest, taggedBlocks } from './modules/turn-tags';
 import { createTagMemory } from './modules/tag-memory';
+import { iconRequest, readIcon } from './modules/icon-picker';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 
@@ -155,6 +156,7 @@ function boot(): void {
     // The map is done once the agent has written it, even if its turn goes on: the card and schema stop
     // saying "Kartlägger". The model switch back and the held first message still wait for the turn's end.
     if (tree && mappingTurn(id)) model.setMapping(id, false);
+    if (tree) void pickIcon(id, tree);
     scheduleSync();
   });
   const usage = createUsageMonitor({
@@ -550,6 +552,27 @@ function boot(): void {
       const blocks = tags && splitBlocks(e.text);
       return blocks && blocks.length === tags.length ? [{ entryId: e.id, blocks: taggedBlocks(blocks, tags) }] : [];
     });
+  }
+
+  const pickingIcon = new Set<string>();
+  /** Gives a card without an icon one that suits its project, once it has a work schema to go by. */
+  async function pickIcon(id: string, tree: TodoTree): Promise<void> {
+    const record = findRecord(id);
+    if (!record || record.icon || record.kind === 'quick' || pickingIcon.has(id)) return;
+    pickingIcon.add(id);
+    try {
+      const titles = [tree.title, ...tree.tracks.flatMap((t) => [`${t.id} ${t.title}`, ...t.children.map((c) => `${c.id} ${c.title}`)])].filter(Boolean);
+      const icon = readIcon(await structuredQuery(iconRequest(record.name, titles, userData)));
+      const latest = findRecord(id);
+      if (icon && latest && !latest.icon) {
+        saveRecord({ ...latest, icon });
+        scheduleSync();
+      }
+    } catch {
+      // Initials show until the next schema change tries again.
+    } finally {
+      pickingIcon.delete(id);
+    }
   }
 
   /** The work schema's items in progress ("cad.2.1 Kåpan"), so the tagger can tie a question to its step. */
@@ -1008,6 +1031,10 @@ function validRecords(raw: unknown): SessionRecord[] | null {
     const limitResetsAt = typeof r['limitResetsAt'] === 'string' ? r['limitResetsAt'] : null;
     // Sessions saved with the earlier bright colours get their muted counterparts.
     const color = currentColor(String(r['color']));
-    return [{ ...(r as unknown as SessionRecord), color, effort, focused, lastActiveAt, contextWindow, tokensUsed, limitResetsAt }];
+    const icon = SESSION_ICONS.find((i) => i === r['icon']);
+    const record: SessionRecord = { ...(r as unknown as SessionRecord), color, effort, focused, lastActiveAt, contextWindow, tokensUsed, limitResetsAt };
+    if (icon) record.icon = icon;
+    else delete record.icon;
+    return [record];
   });
 }

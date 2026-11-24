@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T06:07:34Z",
+  "updated": "2026-11-24T06:11:36Z",
   "tracks": [
     {
       "id": "eng",
@@ -393,21 +393,20 @@
             {
               "id": "ui.7.1",
               "title": "Ikonpool (lucide, kurerat urval)",
-              "status": "in_progress",
-              "progress": 0,
-              "notes": "Ett åttiotal ikoner som passar projekt: elektronik, mekanik, mjukvara, data, fordon, natur m.m."
+              "status": "done",
+              "notes": "Cirka 180 lucide-ikoner (MIT) i SESSION_ICONS; bara poolen importeras. Klart, inte släppt än."
             },
             {
               "id": "ui.7.2",
               "title": "Haiku väljer ikon efter kartläggningen",
-              "status": "not_started",
-              "notes": "Sparas i kortets post. Även befintliga kort med schema men utan ikon får en."
+              "status": "done",
+              "notes": "icon-picker: Haiku väljer från projektnamn och schema första gången ett schema finns; sparas i kortets post. Provat: ett sugkoppsgripdon fick \"grab\". Klart, inte släppt än."
             },
             {
               "id": "ui.7.3",
               "title": "Visa ikonen i frågerutan, rubriken och overlay-bollen",
-              "status": "not_started",
-              "notes": "Initialer som reserv när ikon saknas."
+              "status": "done",
+              "notes": "SessionMark i kortets och rutans rubrik, overlay-bollen och frågerutan, i kortets färg; initialer som reserv. Klart, inte släppt än."
             }
           ]
         }

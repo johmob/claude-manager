@@ -226,7 +226,7 @@ textarea.input { resize: vertical; }
 .tile-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .tile-name { font-size: 0.95rem; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
-.tile-name::before { content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: var(--accent); vertical-align: 1px; }
+
 .tile .pending-wrap { flex: none; max-height: 45%; overflow-y: auto; }
 
 .transcript { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -835,7 +835,15 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 /* Which chat asks, and about what */
 .q-source { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin: 2px 0 8px; min-width: 0; }
 .q-source-name { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--text); }
-.q-source-name::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
 .q-source-about { color: var(--muted); }
 .q-source-about::before { content: '›'; margin-right: 8px; color: var(--muted); }
 .ov-q .q-source { font-size: 0.78rem; margin: 0 0 6px; }
+
+/* Session mark: the card's icon (or initials) in its colour */
+.session-mark { flex: none; color: var(--mark, var(--accent)); }
+.session-mark-letters { display: inline-grid; place-items: center; min-width: 1.5em; height: 1.5em; padding: 0 2px; border-radius: 6px; font-size: 0.62rem; font-weight: 800; letter-spacing: .02em; color: var(--text); background: color-mix(in srgb, var(--mark, var(--accent)) 45%, transparent); }
+.card-mark, .tile-mark { margin-right: 2px; }
+.q-source-mark { color: var(--c); }
+.q-source-mark.session-mark-letters { background: color-mix(in srgb, var(--c) 45%, transparent); }
+.ov-letters.session-mark { color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
+.ov-letters.session-mark-letters { background: none; font-size: 0.8125rem; min-width: 0; height: auto; padding: 0; }

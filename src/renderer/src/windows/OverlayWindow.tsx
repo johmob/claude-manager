@@ -5,10 +5,11 @@ import { QuickChatBody, useQuickChat } from '../components/QuickChat';
 import { QuickQuestion, questionsKey } from '../components/QuestionFlow';
 import { InfoBar, InfoRow, SessionInfo } from '../components/SessionInfo';
 import { send } from '../lib/api';
-import { formatReset, monogram } from '../lib/format';
+import { formatReset } from '../lib/format';
 import { usageLevel } from '../lib/usage';
 import { useAppState } from '../state/useAppState';
 import { useTheme } from '../lib/theme';
+import { SessionMark } from '../components/SessionMark';
 
 const MAX_NAME = 10;
 
@@ -163,7 +164,7 @@ export function OverlayWindow() {
           >
             <span className="ov-icon">
               <span className="ov-ring" />
-              <span className="ov-letters">{monogram(s.name)}</span>
+              <SessionMark name={s.name} icon={s.icon} size={22} className="ov-letters" />
               {STATUS_MARK[s.status] && <span className="ov-mark">{STATUS_MARK[s.status]}</span>}
             </span>
             <span className="ov-name">{shortName(s.name)}</span>

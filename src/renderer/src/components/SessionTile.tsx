@@ -9,6 +9,7 @@ import { QuestionsButton } from './QuestionFlow';
 import { SchemaButton } from './SchemaButton';
 import { TranscriptView } from './TranscriptView';
 import { WorkSchema } from './WorkSchema';
+import { SessionMark } from './SessionMark';
 
 /** One focus-mode tile: header (name on its own row, controls below), live transcript, pending input, message box. */
 export function SessionTile({ session }: { session: SessionSummary }) {
@@ -18,6 +19,7 @@ export function SessionTile({ session }: { session: SessionSummary }) {
     <section className="tile" style={{ '--accent': session.color } as CSSProperties}>
       <header className="tile-head">
         <div className="tile-title">
+          <SessionMark name={session.name} icon={session.icon} size={18} className="tile-mark" />
           <span className="tile-name" title={session.cwd}>{session.name}</span>
           <StatusChip status={session.status} />
         </div>
