@@ -2,6 +2,7 @@ import { useContext, useLayoutEffect, useRef, useState } from 'react';
 import type { ChatDetail } from '../../../shared/contracts';
 import { ChatDetailContext } from '../state/chatDetail';
 import type { TranscriptEntry } from '../../../shared/contracts';
+import { send } from '../lib/api';
 import { Spinner } from './Atoms';
 import { CalloutBox } from './CalloutBox';
 import { TaggedText, hasWeight } from './TaggedText';
@@ -191,7 +192,15 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
       return (
         <div className="t-user" data-queued={entry.queued ? 'true' : undefined}>
           <div className="bubble">
-            <div className="bubble-head">Du{time && ` · ${time}`}{entry.queued && <span className="bubble-queued"> · väntar på att läsas</span>}</div>
+            <div className="bubble-head">
+              Du{time && ` · ${time}`}
+              {entry.queued && <span className="bubble-queued"> · väntar på att läsas</span>}
+              {entry.queued && (
+                <button type="button" className="link-btn bubble-now" title="Avbryt det agenten gör nu, så tar den det här meddelandet direkt" onClick={() => send('session:redirect', { id: sessionId })}>
+                  Avbryt och läs nu
+                </button>
+              )}
+            </div>
             {entry.text}
           </div>
         </div>

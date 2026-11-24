@@ -374,6 +374,16 @@ function boot(): void {
   }
 
   /** Sends a message to a session, starting (resuming) it first when it is not running. */
+  /** A message from the user. Work done outside the app since the agent last worked here goes along with it. */
+  function sendFromUser(id: string, text: string): void {
+    const drift = model.summary(id)?.drift;
+    if (drift) {
+      model.setDrift(id, null);
+      scheduleSync();
+    }
+    sendToSession(id, drift ? `${describeDrift(drift)}\n\n---\n\n${text}` : text);
+  }
+
   function sendToSession(id: string, text: string): void {
     if (engine.isRunning(id)) engine.send(id, text);
     else run(requireRecord(id), text);
@@ -941,14 +951,12 @@ function boot(): void {
 
   handle('session:map-project', (req) => startMapping(req.id, req.guidance));
 
-  handle('session:send', (req) => {
-    // Work done outside the app since the agent last worked here: it reads the change list with the message.
-    const drift = model.summary(req.id)?.drift;
-    if (drift) {
-      model.setDrift(req.id, null);
-      scheduleSync();
-    }
-    sendToSession(req.id, drift ? `${describeDrift(drift)}\n\n---\n\n${req.text}` : req.text);
+  handle('session:send', (req) => sendFromUser(req.id, req.text));
+
+  handle('session:redirect', async (req) => {
+    // The running turn stops; the message waiting (or this one) is what the agent takes up next.
+    if (engine.isRunning(req.id) && model.summary(req.id)?.status === 'working') await engine.interrupt(req.id);
+    if (req.text?.trim()) sendFromUser(req.id, req.text);
   });
 
   handle('session:drift', (req) => {

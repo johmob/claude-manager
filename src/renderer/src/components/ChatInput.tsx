@@ -38,16 +38,19 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
       ? session.slashCommands.map(normalizeCommand).filter((c) => c.startsWith(text) && c !== text).slice(0, 6)
       : [];
 
-  const submit = (): void => {
+  const busy = session.status === 'working';
+  /** Enter sends (it waits while the agent is busy); Ctrl+Enter stops what the agent is doing and has it do this instead. */
+  const submit = (redirect = false): void => {
     const value = text.trim();
     if (!value) return;
-    send('session:send', { id: session.id, text: value });
+    if (redirect && busy) send('session:redirect', { id: session.id, text: value });
+    else send('session:send', { id: session.id, text: value });
     setText('');
   };
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      submit();
+      submit(e.ctrlKey);
     }
   };
 
@@ -63,7 +66,15 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
       <textarea
         rows={compact ? 1 : 2}
         value={text}
-        placeholder={compact ? 'Skriv till agenten… (Enter skickar)' : 'Skriv till agenten… (Enter skickar, Skift+Enter ny rad)'}
+        placeholder={
+          busy
+            ? compact
+              ? 'Skriv… (Enter: köa, Ctrl+Enter: avbryt och gör detta)'
+              : 'Skriv till agenten… (Enter: läses när den är klar, Ctrl+Enter: avbryt och gör detta i stället)'
+            : compact
+              ? 'Skriv till agenten… (Enter skickar)'
+              : 'Skriv till agenten… (Enter skickar, Skift+Enter ny rad)'
+        }
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKey}
       />

@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T07:30:10Z",
+  "updated": "2026-11-24T07:43:26Z",
   "tracks": [
     {
       "id": "eng",
@@ -425,6 +425,18 @@
               "title": "Oläst meddelande nedtonat tills agenten läst det",
               "status": "done",
               "notes": "Användaren: meddelanden skrivna medan agenten arbetar ska synas gråare/kursiva tills de lästs. Klart, inte släppt."
+            },
+            {
+              "id": "ui.6.14",
+              "title": "Detaljerat som rå ström",
+              "status": "done",
+              "notes": "Användaren: Detaljerat ska vara ofiltrerat som Claude Code; kommandon får vara hopfällda. Klart."
+            },
+            {
+              "id": "ui.6.15",
+              "title": "Avbryt och jobba med senaste meddelandet",
+              "status": "done",
+              "notes": "Användaren: kommando för att stoppa agenten och ta senaste meddelandet. Ctrl+Enter i skrivrutan, och \"Avbryt och läs nu\" på köat meddelande. Provat dolt med en riktig tur. Klart."
             }
           ]
         },

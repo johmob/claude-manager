@@ -739,6 +739,8 @@ export interface IpcInvokeMap {
   'session:answer': { req: { id: string; requestId: string; answers: QuestionAnswers }; res: void };
   'session:permission': { req: { id: string; requestId: string; decision: PermissionDecision }; res: void };
   'session:interrupt': { req: { id: string }; res: void };
+  /** Stops what the agent is doing and has it work on this message instead (or on the one already waiting, without text). */
+  'session:redirect': { req: { id: string; text?: string }; res: void };
   'session:set-model': { req: { id: string; model: ModelChoice }; res: void };
   'session:set-effort': { req: { id: string; effort: EffortChoice }; res: void };
   'session:set-context-window': { req: { id: string; window: ContextWindowChoice }; res: void };
