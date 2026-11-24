@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T06:11:36Z",
+  "updated": "2026-11-24T06:15:41Z",
   "tracks": [
     {
       "id": "eng",
@@ -382,6 +382,12 @@
               "title": "Frågerutan visar chatt och vad frågan gäller",
               "status": "done",
               "notes": "Användaren: \"Är skruvarna M3?\" går inte att svara på utan att veta vilken modell. Rutan visar chattens namn och delmomentet (Haikus \"about\", annars pågående punkt); Haiku och protokollet ska skriva fristående frågor. Klart, inte släppt än."
+            },
+            {
+              "id": "ui.6.8",
+              "title": "Obesvarade frågor sparas över omstart",
+              "status": "done",
+              "notes": "Användaren: ja. Sparas i kortets post när de ändras och läggs tillbaka vid start. Provat: kortet väntar och visar \"Svara på 1 fråga\" efter omstart. Klart, inte släppt än."
             }
           ]
         },

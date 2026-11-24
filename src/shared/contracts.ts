@@ -42,6 +42,15 @@ export interface SessionRecord {
   limitResetsAt: string | null;
   /** Chosen from SESSION_ICONS once the project has a work schema; absent until then (initials show instead). */
   icon?: SessionIconName;
+  /** Questions the latest turn left unanswered, kept across restarts; absent when there are none. */
+  openQuestions?: SavedQuestions;
+}
+
+export interface SavedQuestions {
+  id: string;
+  /** The agent's answer they came from. */
+  answer: string;
+  questions: OpenQuestion[];
 }
 
 /** The icons a card can get (lucide names), picked by a cheap model to suit the project. */

@@ -9,6 +9,7 @@ import type {
   SessionEvent,
   SessionRecord,
   SessionStatus,
+  SavedQuestions,
   SessionSummary,
   TaggedBlock,
   TodoNode,
@@ -39,6 +40,8 @@ export interface SessionModel {
   applyTurnTags(id: string, afterEntryId: string | null, questions: OpenQuestion[], blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[];
   /** Puts tagged blocks on assistant entries (e.g. saved tags after a restart). Returns the entries that changed. */
   setBlocks(id: string, blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[];
+  /** Puts back questions left unanswered before a restart. */
+  setQuestions(id: string, saved: SavedQuestions): void;
   setMapping(id: string, mapping: boolean): void;
   /** Marks a session as stopped by the usage limit (from its saved record, after a restart). */
   setLimit(id: string, resetsAt: string): void;
@@ -388,6 +391,13 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     setBlocks: (id, blocks) => {
       const s = states.get(id);
       return s ? setBlocks(s, blocks) : [];
+    },
+    setQuestions: (id, saved) => {
+      const s = states.get(id);
+      if (!s || s.questions.length) return;
+      s.questions = saved.questions;
+      s.questionsId = saved.id;
+      s.questionsAnswer = saved.answer;
     },
     setMapping: (id, mapping) => {
       const s = states.get(id);

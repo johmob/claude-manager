@@ -289,3 +289,12 @@ describe('turn tags from a cheap model', () => {
     expect(model.summary('s1')?.status).toBe('waiting');
   });
 });
+
+describe('questions after a restart', () => {
+  it('saved open questions make a session that is not running wait again', () => {
+    const { model } = setup();
+    const q = { kind: 'question' as const, text: 'cad.1 Kåpan: M3 eller M4?', about: 'cad.1 Kåpan', detail: '', brief: '', options: ['M3', 'M4'] };
+    model.setQuestions('s1', { id: '42', answer: 'Svaret.', questions: [q] });
+    expect(model.summary('s1')).toMatchObject({ status: 'waiting', questionsId: '42', questionsAnswer: 'Svaret.', questions: [q] });
+  });
+});

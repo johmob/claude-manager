@@ -23,7 +23,10 @@ import type {
   NewSessionOptions,
   SessionEvent,
   SessionKind,
+  OpenQuestion,
+  SavedQuestions,
   SessionRecord,
+  SessionSummary,
   TaggedBlock,
   TodoNode,
   TodoTree,
@@ -209,6 +212,8 @@ function boot(): void {
     loadSavedHistory(record);
     // A session stopped by the usage limit before a restart still continues once it resets.
     if (record.limitResetsAt !== null) model.setLimit(record.id, record.limitResetsAt);
+    // Questions left unanswered before a restart still wait for the user.
+    if (record.openQuestions) model.setQuestions(record.id, record.openQuestions);
   }
   notifier.setDoNotDisturb(settings.doNotDisturb);
   usage.start();
@@ -307,6 +312,7 @@ function boot(): void {
       windows.setOverlay(settings.overlayVisible, summaries.length + 1);
       tray.setWaiting(summaries.filter((s) => s.status === 'waiting').length);
       windows.send('state:quick', model.summary(QUICK_ID) ?? null);
+      rememberQuestions(summaries);
     }, SYNC_DELAY_MS);
   }
 
@@ -523,6 +529,18 @@ function boot(): void {
   }
 
   /** Saves the usage-limit mark with the card when it changes, so it survives a restart. */
+  /** Saves each card's open questions when they change, so they survive a restart (an update installs by restarting). */
+  function rememberQuestions(summaries: SessionSummary[]): void {
+    saveRecords(
+      summaries.flatMap((s) => {
+        const record = findRecord(s.id);
+        if (!record || (record.openQuestions?.id ?? '') === (s.questions.length ? s.questionsId : '')) return [];
+        const { openQuestions: _old, ...rest } = record;
+        return [s.questions.length ? { ...rest, openQuestions: { id: s.questionsId, answer: s.questionsAnswer, questions: s.questions } } : rest];
+      }),
+    );
+  }
+
   function rememberLimit(id: string): void {
     const record = findRecord(id);
     const limit = model.summary(id)?.limitResetsAt ?? null;
@@ -1014,6 +1032,23 @@ function validSettings(r: unknown): AppSettings | null {
 }
 
 /** Keeps well-formed records and fills in fields that older records lack. */
+function validSavedQuestions(raw: unknown): SavedQuestions | null {
+  if (!isRecord(raw) || typeof raw['id'] !== 'string' || typeof raw['answer'] !== 'string' || !Array.isArray(raw['questions'])) return null;
+  const questions = raw['questions'].flatMap((q): OpenQuestion[] =>
+    isRecord(q) && typeof q['text'] === 'string'
+      ? [{
+          kind: q['kind'] === 'assumption' ? 'assumption' : 'question',
+          text: q['text'],
+          about: typeof q['about'] === 'string' ? q['about'] : '',
+          detail: typeof q['detail'] === 'string' ? q['detail'] : '',
+          brief: typeof q['brief'] === 'string' ? q['brief'] : '',
+          options: Array.isArray(q['options']) ? q['options'].filter((o): o is string => typeof o === 'string') : [],
+        }]
+      : [],
+  );
+  return questions.length ? { id: raw['id'], answer: raw['answer'], questions } : null;
+}
+
 function validRecords(raw: unknown): SessionRecord[] | null {
   if (!Array.isArray(raw)) return null;
   return raw.flatMap((r): SessionRecord[] => {
@@ -1035,6 +1070,9 @@ function validRecords(raw: unknown): SessionRecord[] | null {
     const record: SessionRecord = { ...(r as unknown as SessionRecord), color, effort, focused, lastActiveAt, contextWindow, tokensUsed, limitResetsAt };
     if (icon) record.icon = icon;
     else delete record.icon;
+    const saved = validSavedQuestions(r['openQuestions']);
+    if (saved) record.openQuestions = saved;
+    else delete record.openQuestions;
     return [record];
   });
 }
