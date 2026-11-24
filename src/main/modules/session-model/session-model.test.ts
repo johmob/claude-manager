@@ -270,7 +270,7 @@ describe('usage limit after a restart', () => {
 });
 
 describe('turn tags from a cheap model', () => {
-  it('add the questions the model found, keep the agent own tagged ones, and pin messages', () => {
+  it('add the questions the model found, keep the agent own tagged ones, and tag the blocks', () => {
     const { model, apply } = setup();
     const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
     apply({ type: 'started' });
@@ -282,8 +282,9 @@ describe('turn tags from a cheap model', () => {
     const transcript = model.transcript('s1');
     const lastUser = transcript.filter((e) => e.kind === 'user').pop()!;
     const choice = transcript.find((e) => e.kind === 'assistant' && e.text.startsWith('E väntar'))!;
-    const changed = model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Greppet: 1 eller 1b?', context: '', detail: '', brief: 'Två varianter.', options: ['1', '1b'] }], [choice.id]);
+    const changed = model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Greppet: 1 eller 1b?', context: '', detail: '', brief: 'Två varianter.', options: ['1', '1b'] }], [{ entryId: choice.id, blocks: [{ text: 'E väntar på ditt val mellan 1 och 1b.', tag: 'question' }] }]);
     expect(changed.map((e) => e.id)).toEqual([choice.id]);
+    expect(model.transcript('s1').find((e) => e.id === choice.id)).toMatchObject({ blocks: [{ tag: 'question' }] });
     expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Får jag beställa kortet?', 'Greppet: 1 eller 1b?']);
     expect(model.summary('s1')?.status).toBe('waiting');
   });

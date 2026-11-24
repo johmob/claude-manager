@@ -1,22 +1,33 @@
-// turn-tags: after a turn, a cheap model tags the main agent's messages, without rewriting them: which
-// questions and choices are put to the user (with their options and a short background) and which messages
-// the user must see. The UI acts on the tags (question flow, never folding those messages). Builds the
-// request and reads the reply; the composition root makes the call.
-import type { OpenQuestion, StructuredRequest } from '../../../shared/contracts';
+// turn-tags: after a turn, a cheap model reads the main agent's messages and tags them, without rewriting
+// anything: every block (paragraph, list, table, code block) gets a tag saying what it is (result, passed
+// check, failure, question, background …), and the questions and choices put to the user are listed with
+// their options and a short background. The UI acts on the tags (styling, folding, the question flow).
+// Builds the request and reads the reply; the composition root makes the call.
+import { BLOCK_TAGS, type BlockTag, type OpenQuestion, type StructuredRequest, type TaggedBlock } from '../../../shared/contracts';
 
 const MAX_MESSAGES = 12;
-const MAX_MESSAGE_CHARS = 4000;
+const MAX_BLOCKS = 80;
+const MAX_BLOCK_CHARS = 1500;
 const MAX_BRIEF_CHARS = 240;
 
 export interface TurnTags {
   questions: Array<Omit<OpenQuestion, 'context' | 'detail'> & { message: number }>;
-  /** 1-based numbers of the messages the user must see. */
-  keep: number[];
+  /** Per message, per block: its tag (null when the model gave none). */
+  tags: Array<Array<BlockTag | null>>;
 }
 
 const SCHEMA = {
   type: 'object',
   properties: {
+    blocks: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { id: { type: 'string' }, tag: { type: 'string', enum: [...BLOCK_TAGS] } },
+        required: ['id', 'tag'],
+        additionalProperties: false,
+      },
+    },
     questions: {
       type: 'array',
       items: {
@@ -32,29 +43,78 @@ const SCHEMA = {
         additionalProperties: false,
       },
     },
-    keep: { type: 'array', items: { type: 'integer' } },
   },
-  required: ['questions', 'keep'],
+  required: ['blocks', 'questions'],
   additionalProperties: false,
 };
 
-/** The messages that go along: the last ones of the turn, each cut to a sane length. */
-export function messagesForTagging(texts: string[]): string[] {
-  return texts.slice(-MAX_MESSAGES).map((t) => (t.length > MAX_MESSAGE_CHARS ? `${t.slice(0, MAX_MESSAGE_CHARS)}…` : t));
+const HEADING = /^\s*(?:#{1,6}\s.+|(?:\*\*|__)[^\n]+(?:\*\*|__)\s*:?|[^\n]{1,100}:)\s*$/;
+
+/**
+ * A message split into blocks at blank lines, never inside a code block. A lone heading (or a short line
+ * ending in a colon) stays with the block after it.
+ */
+export function splitBlocks(text: string): string[] {
+  const blocks: string[] = [];
+  let current: string[] = [];
+  let inFence = false;
+  const flush = (): void => {
+    if (current.some((l) => l.trim())) blocks.push(current.join('\n').trim());
+    current = [];
+  };
+  for (const line of text.split(/\r?\n/)) {
+    if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+    if (!inFence && !line.trim()) {
+      const filled = current.filter((l) => l.trim());
+      if (filled.length === 1 && HEADING.test(filled[0]!)) {
+        current.push(line);
+        continue;
+      }
+      flush();
+      continue;
+    }
+    current.push(line);
+  }
+  flush();
+  return blocks;
 }
 
-export function tagRequest(messages: string[], cwd: string): StructuredRequest {
-  const numbered = messages.map((m, i) => `[${i + 1}]\n${m}`).join('\n\n');
+/** The last messages of the turn that fit, each split into blocks; older messages go first when there are too many blocks. */
+export function messagesForTagging(texts: string[]): string[][] {
+  const split = texts.slice(-MAX_MESSAGES).map(splitBlocks);
+  let total = split.reduce((n, b) => n + b.length, 0);
+  while (split.length > 1 && total > MAX_BLOCKS) total -= split.shift()!.length;
+  return split;
+}
+
+export function tagRequest(messages: string[][], cwd: string): StructuredRequest {
+  const numbered = messages
+    .map((blocks, m) => blocks.map((b, i) => `[${m + 1}.${i + 1}]\n${b.length > MAX_BLOCK_CHARS ? `${b.slice(0, MAX_BLOCK_CHARS)}…` : b}`).join('\n\n'))
+    .join('\n\n');
   const prompt = [
-    'Nedan är en AI-agents meddelanden till användaren under en arbetstur, numrerade. Tagga dem; skriv inte om något.',
-    '1. questions: varje fråga eller val agenten vill att användaren svarar på eller tar ställning till, och varje antagande användaren ska bekräfta.',
-    '   Bara det som uttryckligen ber användaren svara, välja eller bekräfta något. Lägesrapporter, resultat, listor över vad som gjorts eller ska göras, rubriker och förklaringar är aldrig frågor, inte heller när de står i punktlistor eller efter ett kolon.',
+    'Nedan är en AI-agents meddelanden till användaren under en arbetstur, uppdelade i block med nummer [meddelande.block]. Tagga dem; skriv inte om något.',
+    '1. blocks: en tagg för varje block, med blockets nummer som id (t.ex. "2.3"). Välj den som bäst beskriver vad blocket är för användaren:',
+    '   answer: ett direkt svar på det användaren frågade.',
+    '   result: vad som gjorts, byggts eller ändrats; ett utfall.',
+    '   pass: en kontroll, ett test eller en verifiering som gick igenom.',
+    '   fail: något som misslyckades, är trasigt eller inte fungerar.',
+    '   warning: en begränsning, något som hoppades över, är osäkert eller bör bevakas.',
+    '   risk: något destruktivt, oåterkalleligt eller säkerhetsrelaterat.',
+    '   question: ber uttryckligen användaren svara eller välja.',
+    '   assumption: något agenten antagit som användaren bör bekräfta eller rätta.',
+    '   decision: ett val agenten gjort på egen hand.',
+    '   next: ett förslag på nästa steg.',
+    '   plan: vad agenten ska göra härnäst.',
+    '   progress: rutinmässig lägesrapport på vägen.',
+    '   background: förklaring, sammanhang, resonemang.',
+    '   Ett block med blandat innehåll får taggen för det viktigaste det innehåller (fail före warning före result).',
+    '2. questions: varje fråga eller val agenten uttryckligen ber användaren svara på eller ta ställning till, och varje antagande användaren ska bekräfta.',
+    '   Lägesrapporter, resultat, listor över vad som gjorts eller ska göras, rubriker och förklaringar är aldrig frågor, inte heller i punktlistor eller efter ett kolon.',
     '   Ta inte med frågor som agenten själv besvarar i samma tur. Hellre en fråga för lite än en påhittad. För varje:',
     '   text: frågan med agentens egna ord, kort; kind: "question" eller "assumption";',
     '   options: svarsalternativen om agenten gav några (t.ex. ["1", "1b"] eller ["A", "B"]), annars [];',
     '   brief: en till två meningar, högst 200 tecken, med det användaren behöver veta för att svara direkt, bara från texten;',
     '   message: numret på meddelandet där frågan står.',
-    '2. keep: numren på meddelanden användaren måste se: med frågor eller val, beslut, resultat, problem, bilder eller länkar. Utelämna rena lägesrapporter.',
     'Svara med JSON.',
     '',
     numbered,
@@ -62,12 +122,22 @@ export function tagRequest(messages: string[], cwd: string): StructuredRequest {
   return { prompt, schema: SCHEMA, model: 'haiku', cwd, tools: [], maxTurns: 3 };
 }
 
-/** The tags from the reply, checked against the number of messages; null when the reply is unusable. */
-export function readTags(reply: unknown, count: number): TurnTags | null {
+/** The tags from the reply, checked against the messages' blocks; null when the reply is unusable. */
+export function readTags(reply: unknown, blockCounts: number[]): TurnTags | null {
   if (typeof reply !== 'object' || reply === null) return null;
-  const r = reply as { questions?: unknown; keep?: unknown };
-  if (!Array.isArray(r.questions) || !Array.isArray(r.keep)) return null;
-  const inRange = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= count;
+  const r = reply as { blocks?: unknown; questions?: unknown };
+  if (!Array.isArray(r.blocks) || !Array.isArray(r.questions)) return null;
+  const tags = blockCounts.map((n) => Array.from({ length: n }, (): BlockTag | null => null));
+  for (const b of r.blocks) {
+    if (typeof b !== 'object' || b === null) continue;
+    const { id, tag } = b as { id?: unknown; tag?: unknown };
+    const at = typeof id === 'string' ? /^(\d+)\.(\d+)$/.exec(id.trim()) : null;
+    if (!at || !(BLOCK_TAGS as readonly unknown[]).includes(tag)) continue;
+    const row = tags[Number(at[1]) - 1];
+    const i = Number(at[2]) - 1;
+    if (row && i >= 0 && i < row.length) row[i] = tag as BlockTag;
+  }
+  const inRange = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= blockCounts.length;
   const questions = r.questions.flatMap((q): TurnTags['questions'] => {
     if (typeof q !== 'object' || q === null) return [];
     const x = q as Record<string, unknown>;
@@ -84,5 +154,10 @@ export function readTags(reply: unknown, count: number): TurnTags | null {
       },
     ];
   });
-  return { questions, keep: [...new Set(r.keep.filter(inRange))] };
+  return { questions, tags };
+}
+
+/** A message's blocks with their tags, for the transcript. */
+export function taggedBlocks(blocks: string[], tags: Array<BlockTag | null>): TaggedBlock[] {
+  return blocks.map((text, i) => ({ text, tag: tags[i] ?? null }));
 }

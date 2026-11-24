@@ -814,3 +814,20 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 /* Overlay hover panel: actions instead of right-click */
 .ov-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); }
 .card-main { cursor: default; }
+
+/* Tagged blocks: each block of agent text marked by what it is (turn-tags) */
+.tagged { display: flex; flex-direction: column; gap: 8px; }
+.tb { --c: transparent; position: relative; padding-left: 11px; border-left: 2px solid var(--c); }
+.tb .md > :first-child { margin-top: 0; }
+.tb .md > :last-child { margin-bottom: 0; }
+.tb-label { color: var(--c); font-size: 0.6563rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 2px; }
+.tb[data-tag="answer"] { --c: color-mix(in srgb, var(--text) 35%, transparent); }
+.tb[data-tag="result"] { --c: var(--c-note); }
+.tb[data-tag="pass"] { --c: var(--c-tip); }
+.tb[data-tag="fail"] { --c: var(--c-caution); background: color-mix(in srgb, var(--c) 8%, transparent); border-radius: 0 6px 6px 0; padding-block: 4px; }
+.tb[data-tag="warning"] { --c: var(--c-warning); }
+.tb[data-tag="risk"] { --c: var(--c-caution); border-left-width: 3px; background: color-mix(in srgb, var(--c) 12%, transparent); border-radius: 0 6px 6px 0; padding-block: 4px; }
+.tb[data-tag="question"], .tb[data-tag="assumption"] { --c: var(--c-question); background: color-mix(in srgb, var(--c) 8%, transparent); border-radius: 0 6px 6px 0; padding-block: 4px; }
+.tb[data-tag="decision"] { --c: var(--c-important); }
+.tb[data-tag="next"] { --c: color-mix(in srgb, var(--c-tip) 60%, transparent); }
+.tb[data-quiet="true"] { --c: color-mix(in srgb, var(--muted) 30%, transparent); color: var(--muted); }

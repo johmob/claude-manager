@@ -8,7 +8,7 @@ import { CalloutBox } from './CalloutBox';
 import { ChatInput } from './ChatInput';
 import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
-import { MarkdownText } from './MarkdownText';
+import { TaggedText } from './TaggedText';
 import { useTranscript } from '../state/useTranscript';
 import { QuestionsButton } from './QuestionFlow';
 import { SchemaButton } from './SchemaButton';
@@ -27,7 +27,7 @@ function LatestAnswer({ sessionId }: { sessionId: string }) {
   if (!latest || latest.kind !== 'assistant') return <div className="card-latest card-latest-empty">Inget svar ännu.</div>;
   return (
     <div className="card-latest">
-      <MarkdownText text={latest.text} />
+      <TaggedText text={latest.text} blocks={latest.blocks} />
     </div>
   );
 }

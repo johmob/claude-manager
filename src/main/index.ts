@@ -42,7 +42,7 @@ import { probeAccount, UNVERIFIED_ACCOUNT } from './modules/account';
 import { bringIntoFocus, expireFocus } from './modules/focus-rules';
 import { createUpdater } from './modules/updater';
 import { createKeepAwake } from './modules/keep-awake';
-import { messagesForTagging, readTags, tagRequest } from './modules/turn-tags';
+import { messagesForTagging, readTags, tagRequest, taggedBlocks } from './modules/turn-tags';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 
@@ -466,7 +466,8 @@ function boot(): void {
 
   /**
    * Has a cheap model tag the main agent's messages of the turn just finished: the questions and choices
-   * put to the user (with options and a short background) and the messages the user must see. The text is
+   * put to the user (with options and a short background) and what each block of text is (result, passed check,
+   * failure, background …), which the transcript styles and folds by. The text is
    * never rewritten. Apart from what the agent tagged itself ([!QUESTION], [!NOTE]), these are the only questions:
    * plain text is never read as questions by rules.
    */
@@ -475,16 +476,16 @@ function boot(): void {
     const lastUser = [...transcript].reverse().find((e) => e.kind === 'user');
     const from = lastUser ? transcript.indexOf(lastUser) + 1 : 0;
     const all = transcript.slice(from).filter((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim());
-    const texts = messagesForTagging(all.map((e) => e.text));
-    const entries = all.slice(-texts.length);
+    const messages = messagesForTagging(all.map((e) => e.text));
+    const entries = all.slice(-messages.length);
     if (!entries.length) return;
     const before = model.summary(id);
     try {
-      const tags = readTags(await structuredQuery(tagRequest(texts, userData)), entries.length);
+      const tags = readTags(await structuredQuery(tagRequest(messages, userData)), messages.map((m) => m.length));
       if (!tags) return;
       const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, context: '', detail: entries[q.message - 1]?.text ?? '', brief: q.brief, options: q.options }));
-      const keep = tags.keep.map((n) => entries[n - 1]!.id);
-      for (const entry of model.applyTurnTags(id, lastUser?.id ?? null, questions, keep)) windows.send('session:transcript-upsert', { id, entry });
+      const blocks = entries.map((e, i) => ({ entryId: e.id, blocks: taggedBlocks(messages[i]!, tags.tags[i]!) }));
+      for (const entry of model.applyTurnTags(id, lastUser?.id ?? null, questions, blocks)) windows.send('session:transcript-upsert', { id, entry });
       const after = model.summary(id);
       // New questions get the user's attention.
       if (after && after.questions.length && after.questionsId !== before?.questionsId && !after.pendingCount) {

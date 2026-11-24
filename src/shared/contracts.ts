@@ -332,10 +332,39 @@ export interface SessionSummary {
   slashCommands: string[];
 }
 
+/**
+ * What a block (a paragraph, list, table or code block) of the main agent's text is, as a cheap model
+ * reads it after the turn. The UI styles each block by its tag and folds messages that only hold the
+ * quiet ones.
+ */
+export const BLOCK_TAGS = [
+  'answer', // a direct answer to what the user asked
+  'result', // what was done or built, an outcome
+  'pass', // a check, test or verification that passed
+  'fail', // something that failed, broke or does not work
+  'warning', // a limitation, something skipped, uncertain or worth watching
+  'risk', // destructive, irreversible or security-related
+  'question', // asks the user to answer or choose
+  'assumption', // something taken for granted that the user should confirm
+  'decision', // a choice the agent made on its own
+  'next', // a suggested next step
+  'plan', // what the agent is about to do
+  'progress', // routine status along the way
+  'background', // explanation, context, reasoning
+] as const;
+export type BlockTag = (typeof BLOCK_TAGS)[number];
+/** Tags that are only narration: a message holding nothing else folds into "Under arbetet". */
+export const QUIET_BLOCK_TAGS: readonly BlockTag[] = ['plan', 'progress', 'background'];
+
+export interface TaggedBlock {
+  text: string;
+  tag: BlockTag | null;
+}
+
 export type TranscriptEntry =
   | { id: string; kind: 'user'; text: string; at: number }
-  /** `pinned`: tagged as something the user must see (a question, decision, result, image or link); never folded away. */
-  | { id: string; kind: 'assistant'; text: string; thinking: string; agentId?: string; pinned?: boolean; at: number }
+  /** `blocks`: the text split into blocks with their tags, once the turn has been tagged. */
+  | { id: string; kind: 'assistant'; text: string; thinking: string; agentId?: string; blocks?: TaggedBlock[]; at: number }
   | { id: string; kind: 'tool'; name: string; summary: string; status: 'running' | 'ok' | 'error'; thinking: string; agentId?: string; at: number }
   | { id: string; kind: 'question'; text: string; answer: string | null; at: number }
   | { id: string; kind: 'callout'; callout: Callout; at: number }

@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import type { TranscriptEntry } from '../../../shared/contracts';
 import { Spinner } from './Atoms';
 import { CalloutBox } from './CalloutBox';
-import { MarkdownText } from './MarkdownText';
+import { TaggedText, hasWeight } from './TaggedText';
 
 function Thinking({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -88,7 +88,7 @@ function finalAnswers(entries: TranscriptEntry[]): Set<string> {
 /** Text with a link, a web address, a local file path or an image: never folded away. */
 const SHOWS_MEDIA = /\]\(|https?:\/\/|file:\/\/|[a-zA-Z]:[\\/][^\s]*\.(?:png|jpe?g|gif|webp|bmp|svg|mp4|webm|mov|pdf)/i;
 
-/** What always shows: your messages, each turn's answer, what was tagged as important, links and images, callouts, questions and problems. */
+/** What always shows: your messages, each turn's answer, text tagged as more than narration, links and images, callouts, questions and problems. */
 function standsOut(entry: TranscriptEntry, finals: Set<string>): boolean {
   switch (entry.kind) {
     case 'user':
@@ -96,7 +96,7 @@ function standsOut(entry: TranscriptEntry, finals: Set<string>): boolean {
     case 'question':
       return true;
     case 'assistant':
-      return finals.has(entry.id) || !!entry.pinned || SHOWS_MEDIA.test(entry.text);
+      return finals.has(entry.id) || hasWeight(entry.blocks) || SHOWS_MEDIA.test(entry.text);
     case 'system':
       return entry.level !== 'info';
     case 'tool':
@@ -187,7 +187,7 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
         <div className="t-assistant" data-final={final ? 'true' : undefined}>
           {final && <div className="t-answer-head">Svar{time && ` · ${time}`}</div>}
           <Thinking text={entry.thinking} />
-          <MarkdownText text={entry.text} />
+          <TaggedText text={entry.text} blocks={entry.blocks} />
         </div>
       );
     case 'callout':

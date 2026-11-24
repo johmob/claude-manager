@@ -10,6 +10,7 @@ import type {
   SessionRecord,
   SessionStatus,
   SessionSummary,
+  TaggedBlock,
   TodoNode,
   TodoTree,
   TranscriptEntry,
@@ -31,11 +32,11 @@ export interface SessionModel {
   markSeen(id: string): void;
   dismissCallouts(id: string): void;
   /**
-   * A cheap model's tags for the latest turn: its questions (replacing those found by the text rules, keeping
-   * the agent's own tagged ones) and the messages to keep visible. Ignored if a new turn has started since
-   * (`afterEntryId` is no longer the latest message from the user). Returns the entries that changed.
+   * A cheap model's tags for the latest turn: its questions (added to the agent's own tagged ones) and the
+   * tagged blocks of its messages. Ignored if a new turn has started since (`afterEntryId` is no longer the
+   * latest message from the user). Returns the entries that changed.
    */
-  applyTurnTags(id: string, afterEntryId: string | null, questions: OpenQuestion[], keep: string[]): TranscriptEntry[];
+  applyTurnTags(id: string, afterEntryId: string | null, questions: OpenQuestion[], blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[];
   setMapping(id: string, mapping: boolean): void;
   /** Marks a session as stopped by the usage limit (from its saved record, after a restart). */
   setLimit(id: string, resetsAt: string): void;
@@ -372,7 +373,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       const s = states.get(id);
       if (s) s.mapping = mapping;
     },
-    applyTurnTags: (id, afterEntryId, questions, keep) => {
+    applyTurnTags: (id, afterEntryId, questions, blocks) => {
       const s = states.get(id);
       if (!s || s.turnActive) return [];
       const lastUser = [...s.transcript].reverse().find((e) => e.kind === 'user');
@@ -384,12 +385,14 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         .slice(0, MAX_QUESTIONS);
       if (JSON.stringify(asked.map((q) => q.text)) !== JSON.stringify(s.questions.map((q) => q.text))) s.questionsId = String(now());
       s.questions = asked;
+      const tagged = new Map(blocks.map((b) => [b.entryId, b.blocks]));
       const changed: TranscriptEntry[] = [];
       s.transcript = s.transcript.map((e) => {
-        if (e.kind !== 'assistant' || e.pinned || !keep.includes(e.id)) return e;
-        const pinned = { ...e, pinned: true };
-        changed.push(pinned);
-        return pinned;
+        const these = tagged.get(e.id);
+        if (e.kind !== 'assistant' || !these) return e;
+        const next = { ...e, blocks: these };
+        changed.push(next);
+        return next;
       });
       return changed;
     },
