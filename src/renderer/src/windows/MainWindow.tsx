@@ -65,7 +65,7 @@ export function MainWindow() {
         {view === 'overview' ? (
           <OverviewView sessions={sessions} usage={usage} onDialog={setDialog} />
         ) : (
-          <FocusView sessions={focused} />
+          <FocusView sessions={focused} all={sessions} />
         )}
       </main>
       {dialog && <StartDialog kind={dialog} settings={settings} onClose={() => setDialog(null)} />}

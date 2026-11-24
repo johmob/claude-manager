@@ -11,6 +11,7 @@ import type {
   SessionStatus,
   SavedQuestions,
   ProjectDrift,
+  ScheduledJobView,
   SessionSummary,
   TaggedBlock,
   TodoNode,
@@ -48,6 +49,8 @@ export interface SessionModel {
   endTagging(id: string, afterEntryId: string | null): TranscriptEntry[];
   /** Work done on the project outside the app (null: none, or dealt with). */
   setDrift(id: string, drift: ProjectDrift | null): void;
+  /** The project's scheduled jobs as the side panel shows them. */
+  setSchedule(id: string, jobs: ScheduledJobView[], problem: string): void;
   /** Puts back questions left unanswered before a restart. */
   setQuestions(id: string, saved: SavedQuestions): void;
   setMapping(id: string, mapping: boolean): void;
@@ -94,6 +97,8 @@ interface SessionState {
    */
   tagging: boolean;
   drift: ProjectDrift | null;
+  schedule: ScheduledJobView[];
+  scheduleProblem: string;
   /** Questions the user has already replied to in this session (normalised), so a repeat is not asked again. */
   answered: string[];
   mapping: boolean;
@@ -139,6 +144,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       earlierQuestions: [],
       tagging: false,
       drift: null,
+      schedule: [],
+      scheduleProblem: '',
       answered: [],
       mapping: false,
       context: null,
@@ -389,6 +396,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       limitResetsAt: s.limitResetsAt,
       icon: record.icon ?? null,
       drift: s.drift,
+      schedule: s.schedule,
+      scheduleProblem: s.scheduleProblem,
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
       questions: s.tagging ? [] : s.questions,
       questionsId: s.questionsId,
@@ -452,6 +461,12 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     setBlocks: (id, blocks) => {
       const s = states.get(id);
       return s ? setBlocks(s, blocks) : [];
+    },
+    setSchedule: (id, jobs, problem) => {
+      const s = states.get(id);
+      if (!s) return;
+      s.schedule = jobs;
+      s.scheduleProblem = problem;
     },
     setDrift: (id, drift) => {
       const s = states.get(id);

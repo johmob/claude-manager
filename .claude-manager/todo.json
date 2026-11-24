@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T08:38:28Z",
+  "updated": "2026-11-24T08:50:22Z",
   "tracks": [
     {
       "id": "eng",
@@ -322,6 +322,12 @@
               "title": "Andel av dagens tokens som appens egna hjälpanrop förbrukat",
               "status": "done",
               "notes": "Användaren: vill se att den sammanfattande agenten inte tar flera % av kvoten. Visar appens egna hjälpanrop som andel av dagens användning, vägd som kvoten (modell och cache), inte råa tokens. Klart, inte släppt än."
+            },
+            {
+              "id": "ui.4.8",
+              "title": "Dra overlayen fritt i den svarta bakgrunden",
+              "status": "not_started",
+              "notes": "Användaren: klicka på overlayens svarta bakgrund och dra runt den fritt; klick ska inte gå igenom till det som ligger under den."
             }
           ]
         },
@@ -669,6 +675,53 @@
             "dist.6"
           ],
           "notes": "Releaser publiceras med npm run release; appen uppdaterar sig själv när den är ledig."
+        }
+      ]
+    },
+    {
+      "id": "sched",
+      "title": "Schemalagda jobb",
+      "owner": "main",
+      "notes": "Användaren: agenternas återkommande jobb ska synas i en sidomeny i Fokus, sorterade per projekt med hur ofta de körs. Valt: appen äger och kör jobben (överlever omstarter); två slag: lokalt kommando utan agent och agentuppgift.",
+      "items": [
+        {
+          "id": "sched.1",
+          "title": "Jobbfil per projekt (.claude-manager/schedule.json)",
+          "status": "done",
+          "notes": "Format: id, namn, cron, slag (command/agent), kommando eller uppgift, påslagen, väck agenten vid fel. Appen läser och bevakar filen."
+        },
+        {
+          "id": "sched.2",
+          "title": "Körning i appen",
+          "status": "done",
+          "dependsOn": [
+            "sched.1"
+          ],
+          "notes": "Croner tolkar cron; appen kollar var 30:e sekund, kör kommandon med PowerShell i projektmappen (logg i job-runs.json), skickar agentuppgifter som appens sammanhang. Klart."
+        },
+        {
+          "id": "sched.3",
+          "title": "Sidomeny i Fokus",
+          "status": "done",
+          "dependsOn": [
+            "sched.2"
+          ],
+          "notes": "Smal flik till höger i Fokus som fälls ut; jobb per projekt med rytm i klartext, nästa/senaste körning, Lokalt/Agent, Kör nu, Pausa/Starta, Ta bort. Provat dolt: ett minutjobb kördes av appen. Klart."
+        },
+        {
+          "id": "sched.4",
+          "title": "Grundregel och protokoll för agenterna",
+          "status": "done",
+          "dependsOn": [
+            "sched.1"
+          ],
+          "notes": "Agenterna ska lägga återkommande jobb i jobbfilen i stället för CronCreate, och välja lokalt kommando när ingen bedömning behövs. Användaren: viktigt att agenterna vet hur det fungerar och vilka verktyg som finns, så att de kan schemalägga på uppdrag eller eget initiativ och välja det sätt som löser problemet bäst. Klart: SCHEDULE_PROTOCOL i varje sessions systemprompt beskriver appens schema, CronCreate, Monitor och Windows Schemaläggaren och när vart och ett passar."
+        },
+        {
+          "id": "sched.5",
+          "title": "Visa agenternas CronCreate-jobb",
+          "status": "not_started",
+          "notes": "Jobb skapade med CronCreate syns märkta \"bara i sessionen\". Inte gjort än: kräver att appen fångar CronCreate-anropens indata."
         }
       ]
     }

@@ -28,6 +28,8 @@ import type {
   SessionRecord,
   SessionSummary,
   DayUsage,
+  JobRun,
+  ScheduledJob,
   TokenUsage,
   TaggedBlock,
   TodoNode,
@@ -55,6 +57,7 @@ import { createTagMemory } from './modules/tag-memory';
 import { iconRequest, readIcon } from './modules/icon-picker';
 import { addTokens, localDate, todayOf } from './modules/day-tokens';
 import { describeDrift, driftSince, markAt, markOf } from './modules/project-drift';
+import { SCHEDULE_PROTOCOL, createScheduler, describeCron, nextRunOf, readJobs, runCommand, writeJobs } from './modules/scheduler';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 
@@ -121,6 +124,8 @@ function usageNote(file: string): string {
   return `# Plan usage\nThe plan's current usage is in ${file.replace(/\\/g, '/')}: percent used of the 5-hour and the weekly limit, and when each resets (updated every few minutes). Read it before you send out subagents or start a large piece of work.`;
 }
 
+/** How often the side panel's schedule (next runs, file changes) is refreshed. */
+const SCHEDULE_REFRESH_MS = 30_000;
 /** How often the projects are checked for work done outside the app. */
 const DRIFT_CHECK_MS = 10 * 60_000;
 /** What the agent is asked to do with the change list when the user chooses "Uppdatera schemat". */
@@ -243,6 +248,13 @@ function boot(): void {
   // Work done on the projects outside the app, now and every little while.
   void checkDrift();
   setInterval(() => void checkDrift(), DRIFT_CHECK_MS);
+  // Scheduled jobs: run when due, and shown in Fokus with their next and last runs.
+  const jobRunsStore = createJsonStore<Record<string, JobRun>>(join(userData, 'job-runs.json'), {});
+  let jobRuns = jobRunsStore.read();
+  // One run per project folder, even when several cards show the same project.
+  createScheduler({ projects: () => [...new Map(activeRecords().filter((r) => r.kind !== 'quick').map((r) => [r.cwd.toLowerCase(), { sessionId: r.id, cwd: r.cwd }])).values()], onDue: (sessionId, cwd, job) => void runJob(sessionId, cwd, job) });
+  refreshSchedules();
+  setInterval(refreshSchedules, SCHEDULE_REFRESH_MS);
   notifier.setDoNotDisturb(settings.doNotDisturb);
   usage.start();
   // Sessions without work for days leave Fokus: checked at start and then every hour.
@@ -609,7 +621,7 @@ function boot(): void {
   }
 
   function composeAppend(): string {
-    return [groundRules.read().trim(), TODO_PROTOCOL, CALLOUT_PROTOCOL, usageNote(usageFile)].join('\n\n');
+    return [groundRules.read().trim(), TODO_PROTOCOL, CALLOUT_PROTOCOL, SCHEDULE_PROTOCOL, usageNote(usageFile)].join('\n\n');
   }
 
   /** The plan's usage as agents read it: percent used of each limit and when it resets. */
@@ -651,6 +663,50 @@ function boot(): void {
     } finally {
       pickingIcon.delete(id);
     }
+  }
+
+  function jobKey(sessionId: string, jobId: string): string {
+    return `${sessionId}:${jobId}`;
+  }
+
+  /** Shows each project's jobs with their rhythm, next run and last run. */
+  function refreshSchedules(): void {
+    let changed = false;
+    for (const record of activeRecords()) {
+      const { jobs, problem } = readJobs(record.cwd);
+      const views = jobs.map((job) => ({
+        ...job,
+        rhythm: describeCron(job.cron),
+        nextRun: job.enabled ? (nextRunOf(job.cron, new Date())?.toISOString() ?? null) : null,
+        lastRun: jobRuns[jobKey(record.id, job.id)] ?? null,
+      }));
+      const before = model.summary(record.id);
+      if (JSON.stringify(before?.schedule) !== JSON.stringify(views) || before?.scheduleProblem !== problem) {
+        model.setSchedule(record.id, views, problem);
+        changed = true;
+      }
+    }
+    if (changed) scheduleSync();
+  }
+
+  /**
+   * A job is due: a command runs here in the project folder (no agent, no tokens) and, if it fails and
+   * asks for it, tells the agent; a task goes to the project's agent as a message from the app.
+   */
+  async function runJob(sessionId: string, cwd: string, job: ScheduledJob): Promise<void> {
+    if (job.kind === 'agent') {
+      jobRuns = { ...jobRuns, [jobKey(sessionId, job.id)]: { at: new Date().toISOString(), ok: true, output: '', durationMs: 0 } };
+      jobRunsStore.write(jobRuns);
+      sendToSession(sessionId, appContext(`Schemalagt jobb: ${job.name}`, `Schemalagt jobb "${job.name}" (${describeCron(job.cron)}):\n\n${job.prompt}`));
+    } else {
+      const run = await runCommand(cwd, job.command);
+      jobRuns = { ...jobRuns, [jobKey(sessionId, job.id)]: run };
+      jobRunsStore.write(jobRuns);
+      if (!run.ok && job.wakeAgentOnFailure) {
+        sendToSession(sessionId, appContext(`Schemalagt jobb misslyckades: ${job.name}`, `Det schemalagda kommandot "${job.name}" misslyckades.\n\nKommando: ${job.command}\n\nUtdata (slutet):\n${run.output || '(ingen)'}\n\nUndersök felet och rätta det om du kan; säg kort vad som hände.`));
+      }
+    }
+    refreshSchedules();
   }
 
   /** Notes the project's git state as the app leaves it after a turn, so later changes made elsewhere stand out. */
@@ -964,6 +1020,17 @@ function boot(): void {
     // The running turn stops; the message waiting (or this one) is what the agent takes up next.
     if (engine.isRunning(req.id) && model.summary(req.id)?.status === 'working') await engine.interrupt(req.id);
     if (req.text?.trim()) sendFromUser(req.id, req.text);
+  });
+
+  handle('schedule:act', async (req) => {
+    const record = requireRecord(req.id);
+    const { jobs } = readJobs(record.cwd);
+    const job = jobs.find((j) => j.id === req.jobId);
+    if (!job) return;
+    if (req.action === 'run') await runJob(record.id, record.cwd, job);
+    else if (req.action === 'delete') writeJobs(record.cwd, jobs.filter((j) => j.id !== job.id));
+    else writeJobs(record.cwd, jobs.map((j) => (j.id === job.id ? { ...j, enabled: req.action === 'resume' } : j)));
+    refreshSchedules();
   });
 
   handle('session:drift', (req) => {

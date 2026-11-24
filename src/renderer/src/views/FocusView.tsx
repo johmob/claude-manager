@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
 import { SessionTile } from '../components/SessionTile';
+import { SchedulePanel } from '../components/SchedulePanel';
 
 /** Columns for 1..6 tiles: 1x1, 2x1, 3x1, 2x2, 3x2, 3x2. */
 function columnsFor(n: number): number {
@@ -8,13 +9,15 @@ function columnsFor(n: number): number {
   return n === 4 ? 2 : 3;
 }
 
-export function FocusView({ sessions }: { sessions: SessionSummary[] }) {
+/** The focused sessions as tiles, with the schedule of every project in a side panel. */
+export function FocusView({ sessions, all }: { sessions: SessionSummary[]; all: SessionSummary[] }) {
   const cols = columnsFor(sessions.length);
   const rows = Math.max(1, Math.ceil(sessions.length / cols));
   const style: CSSProperties = { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` };
 
   return (
     <div className="focus">
+      <div className="focus-main">
       {sessions.length === 0 ? (
         <div className="empty-state">
           <p>Inget i Fokus just nu. En session kommer hit av sig själv när du skriver till den (eller klickar på Öppna chatten på kortet), och lämnar efter några dagar utan arbete.</p>
@@ -24,6 +27,8 @@ export function FocusView({ sessions }: { sessions: SessionSummary[] }) {
           {sessions.map((s) => <SessionTile key={s.id} session={s} />)}
         </div>
       )}
+      </div>
+      <SchedulePanel sessions={all} />
     </div>
   );
 }

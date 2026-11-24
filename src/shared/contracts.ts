@@ -48,6 +48,38 @@ export interface SessionRecord {
   mark?: ProjectMark;
 }
 
+/** A job the app runs on a schedule (from the project's .claude-manager/schedule.json). */
+export interface ScheduledJob {
+  id: string;
+  name: string;
+  /** 5-field cron in local time. */
+  cron: string;
+  /** "command": a shell command run by the app without an agent; "agent": a task sent to the project's agent. */
+  kind: 'command' | 'agent';
+  command: string;
+  prompt: string;
+  enabled: boolean;
+  /** For commands: tell the agent when the command fails. */
+  wakeAgentOnFailure: boolean;
+}
+
+/** One run of a scheduled job. */
+export interface JobRun {
+  at: string;
+  ok: boolean;
+  /** The end of the command's output (empty for agent tasks). */
+  output: string;
+  durationMs: number;
+}
+
+/** A scheduled job as the side panel shows it. */
+export interface ScheduledJobView extends ScheduledJob {
+  /** How often, in words ("Vardagar 08:57"). */
+  rhythm: string;
+  nextRun: string | null;
+  lastRun: JobRun | null;
+}
+
 /** A project's git state: HEAD and a fingerprint of its uncommitted changes. */
 export interface ProjectMark {
   head: string;
@@ -564,6 +596,9 @@ export interface SessionSummary {
   icon: SessionIconName | null;
   /** Work done on the project outside the app since the app last saw it; null when none. */
   drift: ProjectDrift | null;
+  /** The project's scheduled jobs, and a problem with its schedule file ('' when fine). */
+  schedule: ScheduledJobView[];
+  scheduleProblem: string;
   /** Questions and assumptions the latest turn left for the user; empty once answered or dismissed. */
   questions: OpenQuestion[];
   /** Changes with every turn that leaves new questions, so a set put off can be told from a new one. */
@@ -767,6 +802,8 @@ export interface IpcInvokeMap {
   'session:map-project': { req: { id: string; guidance: string }; res: void };
   /** What to do about work done outside the app: update the schema from the change list, map it anew, or let it be. */
   'session:drift': { req: { id: string; action: 'update' | 'remap' | 'ignore' }; res: void };
+  /** A scheduled job: run it now, pause or resume it, or remove it from the project's schedule. */
+  'schedule:act': { req: { id: string; jobId: string; action: 'run' | 'pause' | 'resume' | 'delete' }; res: void };
   'session:dismiss-callouts': { req: { id: string }; res: void };
   'ground-rules:edit': { req: { instructions: string }; res: string };
   'settings:update': { req: Partial<AppSettings>; res: AppSettings };

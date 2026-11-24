@@ -217,7 +217,8 @@ textarea.input { resize: vertical; }
 /* Todo */
 
 /* ---------- Focus ---------- */
-.focus { display: flex; flex-direction: column; height: 100%; }
+.focus { display: flex; height: 100%; }
+.focus-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .focus-bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); }
 .tile-grid { flex: 1; min-height: 0; display: grid; gap: 8px; padding: 8px; }
 .tile { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -895,3 +896,25 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .topbar-settings { grid-column: 4; }
 @media (max-width: 1180px) { .topbar { grid-template-columns: auto auto auto minmax(0, 1fr); } }
 .topbar-sep { width: 1px; height: 26px; align-self: center; background: var(--border); }
+
+/* Fokus side panel: scheduled jobs by project */
+.sp-strip { flex: none; width: 30px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 0; border: 0; border-left: 1px solid var(--border); background: var(--bg-elev); color: var(--muted); cursor: pointer; }
+.sp-strip:hover { color: var(--text); }
+.sp-strip-label { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.78rem; font-weight: 650; letter-spacing: .04em; }
+.sp-count { min-width: 18px; padding: 1px 5px; border-radius: 999px; background: var(--accent-ui); color: #05060b; font-size: 0.7rem; font-weight: 800; text-align: center; }
+.sp { flex: none; width: 320px; overflow-y: auto; border-left: 1px solid var(--border); background: var(--bg-elev); padding: 10px 12px 16px; }
+.sp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sp-empty { font-size: 0.82rem; line-height: 1.45; }
+.sp-project { margin-top: 12px; }
+.sp-project-head { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 0.86rem; padding-bottom: 5px; border-bottom: 1px solid color-mix(in srgb, var(--c) 40%, transparent); }
+.sp-project ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sp-problem { color: var(--c-warning); font-size: 0.78rem; margin: 6px 0 0; }
+.sp-job { padding: 7px 9px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border); font-size: 0.8rem; display: flex; flex-direction: column; gap: 3px; }
+.sp-job[data-paused] { opacity: .55; }
+.sp-job-head, .sp-job-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.sp-job-name { font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-kind { flex: none; font-size: 0.66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px; color: var(--c-tip); background: color-mix(in srgb, var(--c-tip) 14%, transparent); }
+.sp-kind[data-kind="agent"] { color: var(--c-important); background: color-mix(in srgb, var(--c-important) 14%, transparent); }
+.sp-job-meta [data-failed] { color: var(--c-caution); }
+.sp-actions { display: inline-flex; gap: 12px; white-space: nowrap; }
+.sp-actions .link-btn { font-size: 0.74rem; }
