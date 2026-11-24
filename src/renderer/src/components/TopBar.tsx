@@ -130,7 +130,7 @@ export function TopBar({ settings, update, view, onView, onDialog }: TopBarProps
           type="button"
           className={settings.keepAwake ? 'toggle on icon-toggle' : 'toggle icon-toggle'}
           aria-pressed={settings.keepAwake}
-          title={settings.keepAwake ? 'Håller datorn vaken (ingen vila, skärmen släcks inte). Klicka för att stänga av.' : 'Håll datorn vaken, så att agenterna kan arbeta i natt'}
+          title={settings.keepAwake ? 'Håller datorn vaken och olåst (ingen vila, ingen skärmsläckning, ingen utloggning vid inaktivitet). Klicka för att stänga av.' : 'Håll datorn vaken och olåst, så att agenterna kan arbeta i natt'}
           onClick={() => send('settings:update', { keepAwake: !settings.keepAwake })}
         >
           <NoSleepIcon />

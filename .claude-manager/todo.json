@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-23T23:49:11Z",
+  "updated": "2026-11-24T05:53:03Z",
   "tracks": [
     {
       "id": "eng",
@@ -336,7 +336,7 @@
               "status": "done",
               "id": "ui.5.3",
               "title": "Håll vaken-knapp bredvid Stör ej",
-              "notes": "Hindrar viloläge och skärmsläckning (powerSaveBlocker). Rår inte på lås som företagets policy tvingar fram. Klart, inte släppt än."
+              "notes": "Hindrar viloläge och skärmsläckning (powerSaveBlocker) och trycker Shift varannan minut så att låsning vid inaktivitet aldrig slår till. Användaren: Shift-loopen i PowerShell fungerar perfekt hos dem. Klart, inte släppt än."
             }
           ]
         },
