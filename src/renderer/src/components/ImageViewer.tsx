@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { imageSrc } from '../lib/localImage';
 import { Modal } from './Modal';
 
 const SHOW_IMAGE = 'cm:show-image';
@@ -20,7 +21,7 @@ export function LocalImage({ src, alt }: Shown) {
   return (
     <img
       className="md-img"
-      src={src}
+      src={imageSrc(src)}
       alt={alt}
       title="Klicka för att visa stort"
       loading="lazy"
@@ -41,7 +42,7 @@ export function ImageViewer() {
   if (!shown) return null;
   return (
     <Modal title={shown.alt || 'Bild'} onClose={() => setShown(null)} size="full">
-      <img className="image-view" src={shown.src} alt={shown.alt} />
+      <img className="image-view" src={imageSrc(shown.src)} alt={shown.alt} />
     </Modal>
   );
 }

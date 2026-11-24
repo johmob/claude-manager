@@ -5,6 +5,8 @@ import type {
   OpenQuestion,
   Callout,
   CompactProgress,
+  CronCall,
+  SessionCron,
   ContextUsage,
   PendingInput,
   SessionEvent,
@@ -94,6 +96,9 @@ interface SessionState {
   subagentInfo: Map<string, AgentInfo>;
   /** Agent calls by tool use id: the model and kind they asked for, until their subagent starts. */
   spawns: Map<string, { model: string; agentType: string }>;
+  /** CronCreate calls by tool use id, until their result names the job. */
+  cronCalls: Map<string, CronCall>;
+  sessionCrons: SessionCron[];
   /** Subagents of the current turn, running or finished (and those still running from earlier turns). */
   turnAgents: Set<string>;
   turnStartedAt: number | null;
@@ -158,6 +163,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       subagents: new Set(),
       subagentInfo: new Map(),
       spawns: new Map(),
+      cronCalls: new Map(),
+      sessionCrons: [],
       turnAgents: new Set(),
       turnStartedAt: null,
       compacting: null,
@@ -291,13 +298,19 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       case 'tool_use':
         markActive(event.summary ? `${event.name}: ${event.summary}` : event.name);
         if (event.spawn) s.spawns.set(event.toolUseId, event.spawn);
+        if (event.cron?.kind === 'create') s.cronCalls.set(event.toolUseId, event.cron);
+        if (event.cron?.kind === 'delete') s.sessionCrons = s.sessionCrons.filter((j) => j.id !== (event.cron as { id: string }).id);
         if (event.name === 'AskUserQuestion') return [];
         return add(
           { kind: 'tool', name: event.name, summary: event.summary, status: 'running', thinking: takeThinking(), agentId: event.agentId },
           event.toolUseId,
         );
-      case 'tool_result':
+      case 'tool_result': {
+        const call = s.cronCalls.get(event.toolUseId);
+        s.cronCalls.delete(event.toolUseId);
+        if (call?.kind === 'create' && event.cronJob) s.sessionCrons = [...s.sessionCrons.filter((j) => j.id !== event.cronJob!.id), { id: event.cronJob.id, cron: call.cron, schedule: event.cronJob.schedule, prompt: call.prompt, recurring: call.recurring, durable: call.durable, nextFireAt: event.cronJob.nextFireAt }];
         return update(event.toolUseId, (e) => (e.kind === 'tool' ? { ...e, status: event.isError ? 'error' : 'ok' } : e));
+      }
       case 'input_requested': {
         s.pending.push(event.pending);
         if (event.pending.kind === 'question') {
@@ -402,6 +415,9 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.subagents.clear();
         s.subagentInfo.clear();
         s.spawns.clear();
+        s.cronCalls.clear();
+        // Session-only jobs end with the session; durable ones Claude Code keeps in its own file.
+        s.sessionCrons = s.sessionCrons.filter((j) => j.durable);
         s.turnAgents.clear();
         s.pendingThinking = '';
         s.tagging = false;
@@ -465,6 +481,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         ...s.subagentInfo.values(),
       ],
       schedule: s.schedule,
+      sessionCrons: s.sessionCrons,
       scheduleProblem: s.scheduleProblem,
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
       questions: s.tagging ? [] : s.questions,

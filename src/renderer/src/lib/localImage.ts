@@ -1,3 +1,5 @@
+import { isRemote } from './platform';
+
 const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
 
 /** A file: URL or a Windows path (drive or network share), possibly percent-encoded by the markdown parser. */
@@ -37,4 +39,15 @@ export function localImageUrl(ref: string): string | null {
  */
 export function wrapLocalImageLinks(text: string): string {
   return text.replace(/\]\(((?:[a-zA-Z]:[\\/]|file:\/\/)[^)\n<>]*?\.(?:png|jpe?g|gif|webp|bmp|svg))\)/gi, '](<$1>)');
+}
+
+const LOCAL_IMAGE_PREFIX = 'cm-img://local/';
+
+/**
+ * The address an <img> should load. Inside the app cm-img:// works as it is; through the remote shim the
+ * browser cannot open that scheme, so it goes to the computer's authenticated /img route instead.
+ */
+export function imageSrc(src: string, remote = isRemote): string {
+  if (!remote || !src.startsWith(LOCAL_IMAGE_PREFIX)) return src;
+  return `/img?path=${src.slice(LOCAL_IMAGE_PREFIX.length)}`;
 }

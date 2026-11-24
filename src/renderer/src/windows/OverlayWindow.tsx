@@ -5,7 +5,7 @@ import { QuickChatBody, useQuickChat } from '../components/QuickChat';
 import { QuickQuestion, questionsKey } from '../components/QuestionFlow';
 import { InfoBar, InfoRow, SessionInfo } from '../components/SessionInfo';
 import { send } from '../lib/api';
-import { formatReset } from '../lib/format';
+import { countdown, formatReset } from '../lib/format';
 import { usageLevel } from '../lib/usage';
 import { useAppState } from '../state/useAppState';
 import { useTheme } from '../lib/theme';
@@ -19,12 +19,6 @@ function shortName(name: string): string {
 
 /** Small mark on the icon for states that need a glance: waiting, done, error. */
 const STATUS_MARK: Partial<Record<SessionSummary['status'], string>> = { waiting: '!', done: '✓', error: '×', limited: '⏸' };
-
-/** Hours and minutes left, "17:29"; "0:00" once passed. */
-function countdown(resetsAt: string, now: number): string {
-  const minutes = Math.max(0, Math.ceil((new Date(resetsAt).getTime() - now) / 60_000));
-  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
-}
 
 /** Ticks every half minute while it is needed, so a countdown stays current. */
 function useNow(active: boolean): number {

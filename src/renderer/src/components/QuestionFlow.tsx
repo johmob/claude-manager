@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type CSSProperties } from 'react';
 import type { OpenQuestion, SessionSummary } from '../../../shared/contracts';
 import { send } from '../lib/api';
+import { isRemote } from '../lib/platform';
 import { quickAnswers } from '../lib/quickAnswers';
 import { MarkdownText } from './MarkdownText';
 import { SessionMark } from './SessionMark';
@@ -213,12 +214,12 @@ function QuestionFlow({ session, queue, onClose, onSent }: { session: SessionSum
               key={`${session.id}:${at}`}
               className="input qf-answer"
               rows={4}
-              autoFocus
+              autoFocus={!isRemote}
               value={answers[at] ?? ''}
-              placeholder={q.kind === 'assumption' ? 'Rätta här om det är fel… (Enter: nästa, Skift+Enter: ny rad)' : 'Ditt svar… (Enter: nästa, Skift+Enter: ny rad)'}
+              placeholder={q.kind === 'assumption' ? (isRemote ? 'Rätta här om det är fel…' : 'Rätta här om det är fel… (Enter: nästa, Skift+Enter: ny rad)') : isRemote ? 'Ditt svar…' : 'Ditt svar… (Enter: nästa, Skift+Enter: ny rad)'}
               onChange={(e) => void answerAt(at, e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey && !isRemote) {
                   e.preventDefault();
                   next();
                 }

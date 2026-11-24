@@ -7,23 +7,23 @@ export const ChatDetailContext = createContext<ChatDetail>('moderate');
 const KEY = 'chat-detail:';
 const CHANGED = 'cm:chat-detail';
 
-function read(sessionId: string): ChatDetail {
+function read(sessionId: string, fallback: ChatDetail): ChatDetail {
   try {
     const saved = localStorage.getItem(KEY + sessionId);
-    return CHAT_DETAILS.find((d) => d === saved) ?? 'moderate';
+    return CHAT_DETAILS.find((d) => d === saved) ?? fallback;
   } catch {
-    return 'moderate';
+    return fallback;
   }
 }
 
 /**
  * Each chat's own detail level, remembered in browser storage (shared by the app's windows), so the chat
- * window and its card follow the same choice. Moderat until chosen.
+ * window and its card follow the same choice. Moderat until chosen (the phone starts at Minimal).
  */
-export function useChatDetail(sessionId: string): [ChatDetail, (detail: ChatDetail) => void] {
-  const [detail, setDetail] = useState<ChatDetail>(() => read(sessionId));
+export function useChatDetail(sessionId: string, fallback: ChatDetail = 'moderate'): [ChatDetail, (detail: ChatDetail) => void] {
+  const [detail, setDetail] = useState<ChatDetail>(() => read(sessionId, fallback));
   useEffect(() => {
-    const sync = (): void => setDetail(read(sessionId));
+    const sync = (): void => setDetail(read(sessionId, fallback));
     sync();
     window.addEventListener(CHANGED, sync);
     window.addEventListener('storage', sync);
@@ -31,7 +31,7 @@ export function useChatDetail(sessionId: string): [ChatDetail, (detail: ChatDeta
       window.removeEventListener(CHANGED, sync);
       window.removeEventListener('storage', sync);
     };
-  }, [sessionId]);
+  }, [sessionId, fallback]);
   const choose = (next: ChatDetail): void => {
     try {
       localStorage.setItem(KEY + sessionId, next);

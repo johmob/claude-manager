@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T16:01:28.805Z",
+  "updated": "2026-11-24T16:26:22.616Z",
   "tracks": [
     {
       "id": "eng",
@@ -663,6 +663,12 @@
           "title": "Overlayn flimrar inte när den dras",
           "status": "done",
           "notes": "När appen uppdaterade overlayn under en dragning placerades den en bildruta på den gamla platsen (mitt upptill), som en spökbild. Nu stannar den där den är så länge den dras."
+        },
+        {
+          "id": "ui.13",
+          "title": "Inklistrade bilder städas bort",
+          "status": "done",
+          "notes": "Inklistrade bilder i temp-mappen som är äldre än 30 dagar tas bort när appen startar."
         }
       ]
     },
@@ -733,7 +739,7 @@
               "id": "life.2.6",
               "title": "Code Mode: bevaka stöd i Agent SDK",
               "status": "not_started",
-              "notes": "Användaren: hade experimentläget i Claude Codes json-fil, drog betydligt mindre tokens. Det är Code Mode: env CLAUDE_CODE_EXPERIMENTAL_CODE_MODE=1 i ~/.claude/settings.json. Enligt dokumentationen bara i interaktiv terminal, inte Desktop/bakgrund. Provat med Agent SDK (Haiku, env satt): inget REPL-verktyg, alltså inte aktivt i appens sessioner. Påslaget globalt gör att terminalsessioner bara kan återupptas med Code Mode på, vilket kan krocka med Befintligt projekt i appen. Användaren valde: stanna på SDK:n och kontrollera stödet för Code Mode vid varje ny Agent SDK-version (prova med env CLAUDE_CODE_EXPERIMENTAL_CODE_MODE=1 och se om verktyget REPL dyker upp i init). Slå på det i appen när det fungerar."
+              "notes": "Användaren: hade experimentläget i Claude Codes json-fil, drog betydligt mindre tokens. Det är Code Mode: env CLAUDE_CODE_EXPERIMENTAL_CODE_MODE=1 i ~/.claude/settings.json. Enligt dokumentationen bara i interaktiv terminal, inte Desktop/bakgrund. Provat med Agent SDK (Haiku, env satt): inget REPL-verktyg, alltså inte aktivt i appens sessioner. Påslaget globalt gör att terminalsessioner bara kan återupptas med Code Mode på, vilket kan krocka med Befintligt projekt i appen. Användaren valde: stanna på SDK:n och kontrollera stödet för Code Mode vid varje ny Agent SDK-version (prova med env CLAUDE_CODE_EXPERIMENTAL_CODE_MODE=1 och se om verktyget REPL dyker upp i init). Slå på det i appen när det fungerar. 2026-11-24: Agent SDK uppgraderat till 0.3.331; fortfarande inget Code Mode i SDK:ns typer."
             }
           ]
         },
@@ -919,8 +925,8 @@
         {
           "id": "sched.5",
           "title": "Visa agenternas CronCreate-jobb",
-          "status": "not_started",
-          "notes": "Jobb skapade med CronCreate syns märkta \"bara i sessionen\". Inte gjort än: kräver att appen fångar CronCreate-anropens indata."
+          "status": "done",
+          "notes": "Jobb som agenten lägger med Claude Codes CronCreate visas i Schemalagt, märkta Sessionen eller Claude Code (beständiga), med schema, nästa körning och meddelandet; borttagna med CronDelete försvinner, och sessionsjobb försvinner när sessionen avslutas. Inte provat med en riktig agent."
         },
         {
           "id": "sched.6",
@@ -939,7 +945,7 @@
         {
           "id": "mob.1",
           "title": "Utred och planera",
-          "status": "not_started",
+          "status": "done",
           "notes": "Bara hemdatorn och det privata kontot; inga jobbprojekt i mobilen och ingen koppling mellan datorerna. Koncept: appen på hemdatorn får ett litet API (websocket med parnyckel) som bara lyssnar på VPN-gränssnittet, och mobilen är en webbapp som telefonen öppnar över VPN. Den visar översikt, frågor och chatt och kan skicka meddelanden; allt körs på hemdatorn. Användaren: mobilen kör redan VPN och når hemnätverket, så ingen relätjänst eller tunnel behöver byggas; appen behöver bara lyssna på hemnätverket (med parnyckel) och servera webbappen. VPN slutar i hemmaroutern, så mobilen kommer in som en klient på hemnätverket: appen lyssnar på hemdatorns LAN-adress, släpper bara in hemnätets och VPN-nätets adresser, och kräver parnyckeln. Ingenting öppnas mot internet. Brandväggsregel i Windows för porten behövs. Beslut: installerbar webbapp (PWA) som hemdatorn serverar, inget app-skal till att börja med. Telefonen kör GrapheneOS (Android utan Google-tjänster): eget certifikat installeras som användar-CA; notiser via ntfy (fungerar utan Googles push), inte Web Push."
         },
         {
@@ -954,8 +960,8 @@
         {
           "id": "mob.3",
           "title": "Mobilvyer: översikt, frågor, chatt, schema",
-          "status": "not_started",
-          "notes": "Översikt: projektkort med ikon, status, vad agenten gör nu och antal frågor, användning överst med nedräkning. Frågor: samma frågeflöde, en i taget, stora svarsknappar. Chatt: nivå Minimal som standard, rutan Under arbetet, skicka, avbryt och gör detta, bilder från kameran; tal via telefonens egen diktering. Schema: trädet som en hopfällbar lista i stället för organisationsschema.",
+          "status": "done",
+          "notes": "Mobil layout (MobileWindow) när gränssnittet körs via fjärrskalet: översikt med användning och nedräkning, \"Svara på N frågor\" med det vanliga frågeflödet i helskärm, chatt i Minimal med kamera/galleri, avbryt-och-gör-detta och Under arbetet, samt schemat som hopfällbar lista per spår (delad logik i lib/todoTree). Bilder visas via /img på värden, texten överlever återanslutning och manifest/ikoner finns för hemskärmen. Verifierat i en dold testinstans med skärmbilder.",
           "dependsOn": [
             "mob.2"
           ]

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import type { ScheduledJobView, SessionSummary } from '../../../shared/contracts';
+import type { ScheduledJobView, SessionCron, SessionSummary } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { SessionMark } from './SessionMark';
 
@@ -111,6 +111,39 @@ function Job({ session, job }: { session: SessionSummary; job: ScheduledJobView 
   );
 }
 
+/** A job the agent made with Claude Code's CronCreate: shown, but run and kept by Claude Code, not the app. */
+function SessionCronJob({ job }: { job: SessionCron }) {
+  const [open, setOpen] = useState(false);
+  const next = job.nextFireAt ? whenNext(new Date(job.nextFireAt).toISOString()) : '';
+  return (
+    <li className="sp-job sp-cron" data-open={open ? 'true' : undefined}>
+      <div className="sp-job-head sp-job-click" title="Visa detaljer" onClick={() => setOpen((o) => !o)}>
+        <span className="sp-job-name">{job.prompt.split(/\r?\n/)[0] || job.cron}</span>
+        <span className="sp-kind" data-kind="session" title={job.durable ? 'Claude Code kör det och sparar det i projektets .claude/scheduled_tasks.json' : 'Claude Code kör det bara så länge sessionen är igång'}>
+          {job.durable ? 'Claude Code' : 'Sessionen'}
+        </span>
+      </div>
+      <div className="sp-state" data-on="true">
+        <span className="sp-state-dot" aria-hidden />
+        <span><b>Aktiv</b> · {job.schedule}{next ? ` · nästa ${next}` : ''}</span>
+      </div>
+      {open && (
+        <div className="sp-pop">
+          <p className="sp-pop-desc">{job.durable ? 'Lagt av agenten med Claude Codes egen schemaläggning. Det sparas av Claude Code och körs när sessionen är igång.' : 'Lagt av agenten med Claude Codes egen schemaläggning. Det försvinner när sessionen avslutas eller appen startas om.'}{job.recurring ? ' Återkommande; Claude Code avslutar det efter 30 dagar.' : ' Körs en gång.'}</p>
+          <dl className="sp-pop-facts">
+            <dt>När</dt>
+            <dd>{job.schedule} <span className="muted">({job.cron})</span></dd>
+            <dt>Id</dt>
+            <dd>{job.id}</dd>
+          </dl>
+          <div className="sp-pop-label">Meddelande till agenten</div>
+          <pre className="sp-pop-run">{job.prompt}</pre>
+        </div>
+      )}
+    </li>
+  );
+}
+
 /**
  * Everything scheduled, by project: a narrow strip on the right of Fokus that folds out. Each job shows how
  * often it runs, when next, how the last run went, whether it runs locally or by the agent, and can be run
@@ -122,9 +155,9 @@ export function SchedulePanel({ sessions }: { sessions: SessionSummary[] }) {
     localStorage.setItem(OPEN_KEY, String(!open));
     setOpen(!open);
   };
-  const projects = sessions.filter((s) => s.schedule.length || s.scheduleProblem);
-  const count = projects.reduce((n, s) => n + s.schedule.length, 0);
-  const active = projects.some((s) => s.schedule.some((j) => j.enabled && j.nextRun));
+  const projects = sessions.filter((s) => s.schedule.length || s.sessionCrons.length || s.scheduleProblem);
+  const count = projects.reduce((n, s) => n + s.schedule.length + s.sessionCrons.length, 0);
+  const active = projects.some((s) => s.sessionCrons.length > 0 || s.schedule.some((j) => j.enabled && j.nextRun));
   if (!open) {
     return (
       <button type="button" className="sp-strip" title="Schemalagda jobb" onClick={toggle}>
@@ -149,7 +182,10 @@ export function SchedulePanel({ sessions }: { sessions: SessionSummary[] }) {
               <span>{s.name}</span>
             </div>
             {s.scheduleProblem && <p className="sp-problem">{s.scheduleProblem}</p>}
-            <ul>{s.schedule.map((job) => <Job key={job.id} session={s} job={job} />)}</ul>
+            <ul>
+              {s.schedule.map((job) => <Job key={job.id} session={s} job={job} />)}
+              {s.sessionCrons.map((job) => <SessionCronJob key={job.id} job={job} />)}
+            </ul>
           </section>
         ))
       )}

@@ -45,6 +45,12 @@ export const PERMISSION_LABEL: Record<PermissionChoice, string> = {
   plan: 'Planeringsläge',
 };
 
+/** Hours and minutes left until an instant, "17:29"; "0:00" once passed. */
+export function countdown(resetsAt: string, now: number): string {
+  const minutes = Math.max(0, Math.ceil((new Date(resetsAt).getTime() - now) / 60_000));
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
 const pad = (n: number): string => String(n).padStart(2, '0');
 
 /** "m:ss" or "h:mm:ss". */

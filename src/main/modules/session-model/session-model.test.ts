@@ -35,6 +35,22 @@ function setup() {
 }
 
 describe('session-model', () => {
+  it('lists the jobs the agent made with CronCreate until deleted, and drops session-only ones when the session ends', () => {
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    apply({ type: 'tool_use', toolUseId: 'a', name: 'CronCreate', summary: '', cron: { kind: 'create', cron: '17 9 * * 1', prompt: 'P', recurring: true, durable: false } });
+    apply({ type: 'tool_result', toolUseId: 'a', isError: false, cronJob: { id: 'j1', schedule: 'måndagar', nextFireAt: null } });
+    apply({ type: 'tool_use', toolUseId: 'b', name: 'CronCreate', summary: '', cron: { kind: 'create', cron: '43 8 * * *', prompt: 'Q', recurring: true, durable: true } });
+    apply({ type: 'tool_result', toolUseId: 'b', isError: false, cronJob: { id: 'j2', schedule: 'dagligen', nextFireAt: null } });
+    expect(model.summary('s1')?.sessionCrons.map((j) => j.id)).toEqual(['j1', 'j2']);
+    apply({ type: 'tool_use', toolUseId: 'c', name: 'CronDelete', summary: '', cron: { kind: 'delete', id: 'j2' } });
+    expect(model.summary('s1')?.sessionCrons.map((j) => j.id)).toEqual(['j1']);
+    apply({ type: 'tool_use', toolUseId: 'd', name: 'CronCreate', summary: '', cron: { kind: 'create', cron: '1 1 * * *', prompt: 'R', recurring: true, durable: true } });
+    apply({ type: 'tool_result', toolUseId: 'd', isError: false, cronJob: { id: 'j3', schedule: 'natt', nextFireAt: null } });
+    apply({ type: 'exited' });
+    expect(model.summary('s1')?.sessionCrons.map((j) => j.id)).toEqual(['j3']);
+  });
+
   it('shows compacting with an estimate from the context size, and its result when done', () => {
     const { model, apply } = setup();
     apply({ type: 'started' });

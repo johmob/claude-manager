@@ -1024,3 +1024,7 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 /* A used-up usage window in the overlay: a countdown to its reset in place of the bar */
 .ov-usage-spent { grid-template-columns: 16px 1fr; }
 .ov-countdown { color: var(--u); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+
+/* Jobs the agent scheduled with Claude Code's CronCreate */
+.sp-kind[data-kind="session"] { background: rgba(125,138,166,.18); color: var(--blue-grey); }
+.sp-cron { border-style: dashed; }

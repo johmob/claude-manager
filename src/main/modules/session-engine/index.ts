@@ -6,6 +6,7 @@ import type { PermissionResult, Query, SDKMessage, SDKUserMessage, SessionMessag
 import type {
   Callout,
   CalloutKind,
+  CronCall,
   EffortChoice,
   ModelChoice,
   PermissionDecision,
@@ -442,7 +443,8 @@ export function translate(sessionId: string, m: SDKMessage): SessionEvent[] {
           const summary = describeTool(block.name, input);
           // An Agent call carries the model and kind of the subagent it starts.
           const spawn = block.name === 'Agent' || block.name === 'Task' ? { model: typeof input['model'] === 'string' ? input['model'] : '', agentType: typeof input['subagent_type'] === 'string' ? input['subagent_type'] : '' } : undefined;
-          return [{ type: 'tool_use', sessionId, toolUseId: block.id, name: block.name, summary: firstLine(summary), agentId, ...(spawn ? { spawn } : {}) }];
+          const cron = cronCall(block.name, input);
+          return [{ type: 'tool_use', sessionId, toolUseId: block.id, name: block.name, summary: firstLine(summary), agentId, ...(spawn ? { spawn } : {}), ...(cron ? { cron } : {}) }];
         }
         return [];
       });
@@ -451,7 +453,7 @@ export function translate(sessionId: string, m: SDKMessage): SessionEvent[] {
       const content = m.message.content;
       if (typeof content === 'string') return [];
       return content.flatMap((block): SessionEvent[] =>
-        block.type === 'tool_result' ? [{ type: 'tool_result', sessionId, toolUseId: block.tool_use_id, isError: block.is_error === true }] : [],
+        block.type === 'tool_result' ? [{ type: 'tool_result', sessionId, toolUseId: block.tool_use_id, isError: block.is_error === true, ...cronJobOf(m.tool_use_result) }] : [],
       );
     }
     case 'result':
@@ -477,6 +479,22 @@ export function translate(sessionId: string, m: SDKMessage): SessionEvent[] {
     default:
       return [];
   }
+}
+
+/** What a CronCreate or CronDelete call asks for. */
+function cronCall(name: string, input: Record<string, unknown>): CronCall | undefined {
+  if (name === 'CronCreate' && typeof input['cron'] === 'string') {
+    return { kind: 'create', cron: input['cron'], prompt: typeof input['prompt'] === 'string' ? input['prompt'] : '', recurring: input['recurring'] !== false, durable: input['durable'] === true };
+  }
+  if (name === 'CronDelete' && typeof input['id'] === 'string') return { kind: 'delete', id: input['id'] };
+  return undefined;
+}
+
+/** The job a CronCreate call made, from its structured result. */
+function cronJobOf(result: unknown): { cronJob?: { id: string; schedule: string; nextFireAt: number | null } } {
+  const r = asRecord(result);
+  if (typeof r['id'] !== 'string' || typeof r['humanSchedule'] !== 'string') return {};
+  return { cronJob: { id: r['id'], schedule: r['humanSchedule'], nextFireAt: typeof r['nextFireAt'] === 'number' ? r['nextFireAt'] : null } };
 }
 
 function translateSystem(sessionId: string, m: Extract<SDKMessage, { type: 'system' }>): SessionEvent[] {

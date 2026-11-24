@@ -1,7 +1,7 @@
 // Composition root: the only place that knows every module. It wires modules together with
 // callbacks and data, owns persistence of records/settings, and serves the renderer's IPC.
 import { app, dialog, ipcMain, nativeImage, shell } from 'electron';
-import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync, type Dirent } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { homedir, tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
@@ -10,6 +10,8 @@ import iconPath from '../../resources/icon.png?asset';
 import { appContext, usageWeight, CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
 import { PASTE_MAX_BYTES, PASTE_TYPES } from '../shared/pastedImages';
+/** How long pasted images are kept in the temp folder. */
+const PASTE_KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 import type {
   AppSettings,
   TranscriptEntry,
@@ -65,7 +67,7 @@ import { addTokens, localDate, todayOf } from './modules/day-tokens';
 import { describeDrift, driftSince, markAt, markOf } from './modules/project-drift';
 import { SCHEDULE_PROTOCOL, createScheduler, describeCron, nextRunOf, readJobs, runCommand, writeJobs } from './modules/scheduler';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
-import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
+import { readLocalImage, registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 import { createRemoteHost } from './modules/remote-host';
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -989,6 +991,7 @@ function boot(): void {
           dir: join(userData, 'remote'),
           rendererRoot: join(__dirname, '../renderer'),
           invoke: (channel, req) => callRemote(channel, req),
+          readImage: readLocalImage,
           log: (what, data) => appLog.write(what, data),
         });
         await remote.start(port);
@@ -1181,6 +1184,9 @@ function boot(): void {
   handle('session:map-project', (req) => startMapping(req.id, req.guidance));
 
   handle('session:send', (req) => sendFromUser(req.id, req.text));
+
+  // Pasted images older than a month go, so the temp folder does not grow for ever (chats older than that show them as missing).
+  pruneOld(join(tmpdir(), 'claude-manager-paste'), PASTE_KEEP_MS);
 
   handle('session:paste-image', (req) => {
     const ext = PASTE_TYPES[req.mime];
@@ -1447,4 +1453,26 @@ function validRecords(raw: unknown): SessionRecord[] | null {
     else delete record.openQuestions;
     return [record];
   });
+}
+
+/** Removes files under `dir` not changed for `maxAgeMs`, and folders left empty. Errors are ignored. */
+function pruneOld(dir: string, maxAgeMs: number): void {
+  const cutoff = Date.now() - maxAgeMs;
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    const path = join(dir, entry.name);
+    try {
+      if (entry.isDirectory()) {
+        pruneOld(path, maxAgeMs);
+        if (!readdirSync(path).length) rmSync(path, { recursive: true });
+      } else if (statSync(path).mtimeMs < cutoff) rmSync(path);
+    } catch {
+      // In use or gone: try again next start.
+    }
+  }
 }

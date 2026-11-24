@@ -536,6 +536,20 @@ export interface AgentInfo {
   summary: string;
 }
 
+export type CronCall = { kind: 'create'; cron: string; prompt: string; recurring: boolean; durable: boolean } | { kind: 'delete'; id: string };
+
+/** A job the agent scheduled with Claude Code's own CronCreate: it lives in the session (or Claude Code's file when durable), not in the app's schedule. */
+export interface SessionCron {
+  id: string;
+  cron: string;
+  /** In words, as Claude Code put it. */
+  schedule: string;
+  prompt: string;
+  recurring: boolean;
+  durable: boolean;
+  nextFireAt: number | null;
+}
+
 export interface CompactProgress {
   /** ms epoch. */
   startedAt: number;
@@ -556,8 +570,10 @@ export type SessionEvent =
   | { type: 'turn_started'; sessionId: string; prompt: string }
   | { type: 'thinking'; sessionId: string; text: string; agentId?: string }
   | { type: 'text'; sessionId: string; text: string; agentId?: string }
-  | { type: 'tool_use'; sessionId: string; toolUseId: string; name: string; summary: string; spawn?: { model: string; agentType: string }; agentId?: string }
-  | { type: 'tool_result'; sessionId: string; toolUseId: string; isError: boolean }
+  /** `cron`: what a CronCreate call asked for, or which job a CronDelete removes. */
+  | { type: 'tool_use'; sessionId: string; toolUseId: string; name: string; summary: string; spawn?: { model: string; agentType: string }; cron?: CronCall; agentId?: string }
+  /** `cronJob`: the job a CronCreate call made (its id and schedule in words). */
+  | { type: 'tool_result'; sessionId: string; toolUseId: string; isError: boolean; cronJob?: { id: string; schedule: string; nextFireAt: number | null } }
   | { type: 'input_requested'; sessionId: string; pending: PendingInput }
   | { type: 'input_resolved'; sessionId: string; requestId: string; answer: string }
   /** `toolUseId`: the Agent call that started it (its model is on that call); `agentType`: the kind of subagent. */
@@ -665,6 +681,8 @@ export interface SessionSummary {
   todoLabels: Record<string, string>;
   /** The project's scheduled jobs, and a problem with its schedule file ('' when fine). */
   schedule: ScheduledJobView[];
+  /** Jobs the agent made with CronCreate in this session. */
+  sessionCrons: SessionCron[];
   scheduleProblem: string;
   /** Questions and assumptions the latest turn left for the user; empty once answered or dismissed. */
   questions: OpenQuestion[];

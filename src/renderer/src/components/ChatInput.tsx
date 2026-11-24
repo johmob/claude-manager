@@ -1,7 +1,9 @@
-import { useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
+import { useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
 import { PASTE_MAX_BYTES, PASTE_TYPES, withImages } from '../../../shared/pastedImages';
 import { errorMessage, send } from '../lib/api';
+import { isRemote } from '../lib/platform';
+import { shrinkImage } from '../lib/shrinkImage';
 
 interface Attached {
   path: string;
@@ -49,11 +51,16 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
   const [menuOpen, setMenuOpen] = useState(false);
   const [images, setImages] = useState<Attached[]>([]);
   const [problem, setProblem] = useState('');
+  /** On the phone: Enter is a new line (the soft keyboard has no Ctrl), buttons send, and photos come from the camera or gallery. */
+  const touch = isRemote && !compact;
+  const camera = useRef<HTMLInputElement>(null);
+  const gallery = useRef<HTMLInputElement>(null);
 
   /** Saves pasted or dropped image files through main and shows them as thumbnails until the message is sent. */
   const attach = async (files: File[]): Promise<void> => {
     setProblem('');
-    for (const file of files) {
+    for (const original of files) {
+      const file = isRemote ? await shrinkImage(original) : original;
       if (!PASTE_TYPES[file.type]) continue;
       if (file.size > PASTE_MAX_BYTES) {
         setProblem('Bilden är större än 5 MB.');
@@ -99,14 +106,14 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
     setProblem('');
   };
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (!touch && e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       submit(e.ctrlKey);
     }
   };
 
   return (
-    <div className={compact ? 'chat-input compact' : 'chat-input'} onDragOver={(e) => e.dataTransfer.types.includes('Files') && e.preventDefault()} onDrop={onDrop}>
+    <div className={compact ? 'chat-input compact' : touch ? 'chat-input touch' : 'chat-input'} onDragOver={(e) => e.dataTransfer.types.includes('Files') && e.preventDefault()} onDrop={onDrop}>
       {(images.length > 0 || problem) && (
         <div className="paste-strip">
           {images.map((img) => (
@@ -129,7 +136,9 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
         rows={compact ? 1 : 2}
         value={text}
         placeholder={
-          busy
+          touch
+            ? 'Skriv till agenten…'
+            : busy
             ? compact
               ? 'Skriv… (Enter: köa, Ctrl+Enter: avbryt och gör detta)'
               : 'Skriv till agenten… (Enter: läses när den är klar, Ctrl+Enter: avbryt och gör detta i stället)'
@@ -140,8 +149,21 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKey}
         onPaste={onPaste}
+        enterKeyHint={touch ? 'enter' : 'send'}
       />
-      {!compact && (
+      {touch && (
+        <div className="chat-touch-bar">
+          <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { void attach([...(e.target.files ?? [])]); e.target.value = ''; }} />
+          <input ref={gallery} type="file" accept="image/*" multiple hidden onChange={(e) => { void attach([...(e.target.files ?? [])]); e.target.value = ''; }} />
+          <button type="button" className="touch-btn" aria-label="Ta ett foto" onClick={() => camera.current?.click()}>Foto</button>
+          <button type="button" className="touch-btn" aria-label="Välj bild från galleriet" onClick={() => gallery.current?.click()}>Bild</button>
+          <span className="spacer" />
+          {busy && <button type="button" className="touch-btn" disabled={!text.trim() && images.length === 0} onClick={() => submit(true)}>Avbryt och gör detta i stället</button>}
+          {busy && <button type="button" className="touch-btn danger" onClick={() => send('session:interrupt', { id: session.id })}>Avbryt</button>}
+          <button type="button" className="touch-btn primary" disabled={!text.trim() && images.length === 0} onClick={() => submit()}>{busy ? 'Köa' : 'Skicka'}</button>
+        </div>
+      )}
+      {!compact && !touch && (
         <div className="chat-input-side">
           <button type="button" className="icon-btn" title="Kommandon" aria-label="Kommandon" onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
           {menuOpen && <ActionsMenu session={session} onClose={() => setMenuOpen(false)} />}

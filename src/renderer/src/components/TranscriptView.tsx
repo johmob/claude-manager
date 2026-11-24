@@ -3,7 +3,7 @@ import type { ChatDetail } from '../../../shared/contracts';
 import { ChatDetailContext } from '../state/chatDetail';
 import type { TranscriptEntry } from '../../../shared/contracts';
 import { splitImageRefs } from '../../../shared/pastedImages';
-import { localImageUrl } from '../lib/localImage';
+import { imageSrc, localImageUrl } from '../lib/localImage';
 import { send } from '../lib/api';
 import { Spinner } from './Atoms';
 import { CalloutBox } from './CalloutBox';
@@ -232,7 +232,7 @@ function UserText({ text }: { text: string }) {
       {images.length > 0 && (
         <div className="user-images">
           {images.map((path) => (
-            <img key={path} src={localImageUrl(path) ?? ''} alt="Inklistrad bild" title={path} />
+            <img key={path} src={imageSrc(localImageUrl(path) ?? '')} alt="Inklistrad bild" title={path} />
           ))}
         </div>
       )}

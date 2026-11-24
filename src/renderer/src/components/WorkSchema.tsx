@@ -6,6 +6,7 @@ import { useNow } from '../lib/useNow';
 import { Spinner, StatusChip, TodoIcon } from './Atoms';
 import { useAccount } from '../state/account';
 import { Modal } from './Modal';
+import { arrangeLevel, leavesOf, withoutDone, workStateOf } from '../lib/todoTree';
 
 const STATUS_TEXT: Record<TodoNode['status'], string> = { done: 'Klar', in_progress: 'Pågår', not_started: 'Ej påbörjad' };
 
@@ -69,40 +70,9 @@ function shownTitle(node: TodoNode, ctx: ChartContext): string {
   return ctx.labels[node.id] ?? node.title;
 }
 
-const OTHER_TITLE = 'Övrigt';
-
-/** Finished items, and the agent-written "Klart (…)" summary items, are shown as one folded row instead of as items. */
-const isDoneRow = (node: TodoNode): boolean => node.status === 'done' || node.title.startsWith('Klart (');
-
-/**
- * The items of one level in reading order. A level is either all groups or all leaves: loose items
- * beside groups are gathered under one group "Övrigt", last. Finished items are set aside for the folded row.
- */
-function arrangeLevel(parent: TodoNode): { open: TodoNode[]; done: TodoNode[] } {
-  const done = parent.children.filter(isDoneRow);
-  const rest = parent.children.filter((c) => !isDoneRow(c));
-  const groups = rest.filter((c) => c.children.length);
-  const loose = rest.filter((c) => !c.children.length);
-  if (!groups.length || !loose.length) return { open: rest, done };
-  const other: TodoNode = {
-    id: `${parent.id}.other`,
-    title: OTHER_TITLE,
-    status: loose.some((l) => l.status === 'in_progress') ? 'in_progress' : 'not_started',
-    progress: Math.round(loose.reduce((sum, l) => sum + l.progress, 0) / loose.length),
-    owner: '',
-    dependsOn: [],
-    blocked: false,
-    notes: '',
-    focus: false,
-    children: loose,
-  };
-  return { open: [...groups, other], done };
-}
-
 /** In progress somewhere in the item, and whether an agent is working now ("live") or not ("rest"). */
 function workState(node: TodoNode, ctx: ChartContext): 'live' | 'rest' | undefined {
-  if (!leavesOf(node).some((l) => l.status === 'in_progress')) return undefined;
-  return ctx.active ? 'live' : 'rest';
+  return workStateOf(node, ctx.active);
 }
 
 const REST_TEXT = 'Markerad som pågående, men ingen agent arbetar just nu';
@@ -242,10 +212,6 @@ function indexSchema(tree: TodoTree): Map<string, Entry> {
     walk(track, []);
   }
   return index;
-}
-
-function leavesOf(node: TodoNode): TodoNode[] {
-  return node.children.length ? node.children.flatMap(leavesOf) : [node];
 }
 
 /** A clickable line for another item: status, id and title. */
@@ -411,12 +377,6 @@ function MapPanel({ session, onStarted }: { session: SessionSummary; onStarted: 
       </div>
     </div>
   );
-}
-
-/** The node without its finished parts; null when it is finished itself. */
-function withoutDone(node: TodoNode): TodoNode | null {
-  if (node.status === 'done') return null;
-  return { ...node, children: node.children.flatMap((c) => withoutDone(c) ?? []) };
 }
 
 const HIDE_DONE_KEY = 'ws-hide-done';

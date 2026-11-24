@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLocalPath, localImageUrl, wrapLocalImageLinks } from './localImage';
+import { imageSrc, isLocalPath, localImageUrl, wrapLocalImageLinks } from './localImage';
 
 describe('localImageUrl', () => {
   it('turns a Windows path or file URL to an image into an app address', () => {
@@ -27,5 +27,15 @@ describe('isLocalPath', () => {
   it('recognises local paths and file URLs, also percent-encoded, and not web links', () => {
     expect(['C:\\Kod\\a.txt', 'C:%5CKod%5Ca.txt', 'file:///C:/a.txt', 'D:/x'].every(isLocalPath)).toBe(true);
     expect(['https://example.com', 'mailto:a@b.c', 'docs/a.md'].some(isLocalPath)).toBe(false);
+  });
+});
+
+describe('imageSrc', () => {
+  it('keeps cm-img addresses in the app and sends them to the host route in a browser', () => {
+    const file = 'C:/Bilder/plot.png';
+    const url = localImageUrl(file) ?? '';
+    expect(imageSrc(url, false)).toBe(url);
+    expect(imageSrc(url, true)).toBe(`/img?path=${encodeURIComponent(file)}`);
+    expect(imageSrc('data:image/png;base64,AAAA', true)).toBe('data:image/png;base64,AAAA');
   });
 });
