@@ -29,7 +29,7 @@ function UpdatePill({ update }: { update: UpdateStatus }) {
       type="button"
       className="update-pill"
       disabled={update.state === 'downloading'}
-      title={update.state === 'ready' ? 'Installeras vid nästa omstart. Klicka för att installera nu (appen startar om).' : 'Klicka för att hämta och installera (appen startar om).'}
+      title={update.state === 'ready' && update.auto ? 'Installeras vid nästa omstart. Klicka för att installera nu (appen startar om).' : 'Klicka för att installera nu (appen startar om).'}
       onClick={() => send('update:install', undefined)}
     >
       {update.state === 'downloading' ? `Hämtar ${update.available} · ${update.progress} %` : `Version ${update.available} · Installera nu`}
@@ -80,7 +80,7 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
           />
           <Toggle
             label="Auto-uppdatera"
-            title="Nya versioner hämtas i bakgrunden. Appen frågar om du vill uppdatera nu eller vid nästa omstart; den startar aldrig om av sig själv."
+            title="Nya versioner hämtas i bakgrunden och installeras vid nästa omstart. Appen startar aldrig om av sig själv; Installera nu i toppraden installerar direkt."
             on={update.auto}
             onChange={(autoUpdate) => send('settings:update', { autoUpdate })}
           />
@@ -120,6 +120,8 @@ export function TopBar({ settings, update, view, onView, onDialog }: TopBarProps
         <span className="start-menu-sep" />
         <button type="button" title="Grundregler" onClick={() => onDialog('rules')}><RulesIcon /><span className="start-label">Grundregler</span></button>
       </nav>
+      <span className="topbar-sep" />
+      {/* Left, next to the start menu: the overlay sits in the middle of the screen and would cover them there. */}
       <div className="view-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={view === 'overview'} onClick={() => onView('overview')}>Översikt</button>
         <button type="button" role="tab" aria-selected={view === 'focus'} onClick={() => onView('focus')}>Fokus</button>

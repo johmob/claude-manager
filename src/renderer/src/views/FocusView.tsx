@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
-import { send } from '../lib/api';
 import { SessionTile } from '../components/SessionTile';
 
 /** Columns for 1..6 tiles: 1x1, 2x1, 3x1, 2x2, 3x2, 3x2. */
@@ -16,12 +15,6 @@ export function FocusView({ sessions }: { sessions: SessionSummary[] }) {
 
   return (
     <div className="focus">
-      <div className="focus-bar">
-        <span className="muted">Fönster:</span>
-        <button type="button" className="btn small" onClick={() => send('window:snap', { mode: 'left' })}>Vänster halva</button>
-        <button type="button" className="btn small" onClick={() => send('window:snap', { mode: 'right' })}>Höger halva</button>
-        <button type="button" className="btn small" onClick={() => send('window:snap', { mode: 'full' })}>Helskärm</button>
-      </div>
       {sessions.length === 0 ? (
         <div className="empty-state">
           <p>Inget i Fokus just nu. En session kommer hit av sig själv när du skriver till den (eller klickar på Öppna chatten på kortet), och lämnar efter några dagar utan arbete.</p>

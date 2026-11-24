@@ -46,4 +46,4 @@ const installed = join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Claude Manag
 const running = read('tasklist /FI "IMAGENAME eq Claude Manager.exe" /NH').includes('Claude Manager.exe');
 if (running && existsSync(installed)) spawn(installed, ['--check-update'], { detached: true, stdio: 'ignore' }).unref();
 console.log(`
-Releasen ${tag} är publicerad. Appen här ${running ? 'letar efter den nu, hämtar den och ' : 'hämtar den vid nästa kontroll och '}frågar om den ska installeras nu eller vid nästa omstart.`);
+Releasen ${tag} är publicerad. Appen här ${running ? 'letar efter den nu, hämtar den och ' : 'hämtar den vid nästa kontroll och '}installerar den vid nästa omstart (eller när du klickar Installera nu).`);

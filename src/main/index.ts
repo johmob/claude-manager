@@ -116,8 +116,6 @@ interface MappingJob {
  * A test instance (CLAUDE_MANAGER_TEST=1, with its own CLAUDE_MANAGER_DATA_DIR): windows render off screen
  * without focus or taskbar entries, no notifications, no tray icon. Driven over remote debugging.
  */
-/** The notification about a ready update uses this in place of a session id. */
-const UPDATE_NOTICE_ID = 'app-update';
 /** How often the projects are checked for work done outside the app. */
 const DRIFT_CHECK_MS = 10 * 60_000;
 /** What the agent is asked to do with the change list when the user chooses "Uppdatera schemat". */
@@ -201,9 +199,7 @@ function boot(): void {
     startHidden: process.argv.includes(AUTOSTART_ARG),
     offscreen: TEST_INSTANCE,
   });
-  /** The version the user was last told about, so each one is announced once. */
-  let announcedUpdate: string | null = null;
-  const notifier = createNotifier({ onClick: (id) => (id === UPDATE_NOTICE_ID ? windows.showMain() : showSession(id)), flash: (on) => windows.flash(on), muted: TEST_INSTANCE });
+  const notifier = createNotifier({ onClick: showSession, flash: (on) => windows.flash(on), muted: TEST_INSTANCE });
   // A test instance has no tray icon: it must not be mistaken for the user's app.
   const tray = TEST_INSTANCE ? { setWaiting: () => undefined, setLaunchAtLogin: () => undefined, destroy: () => undefined } : createTray({
     icon,
@@ -221,18 +217,11 @@ function boot(): void {
     ? createUpdater({
         version: app.getVersion(),
         auto: settings.autoUpdate,
-        onStatus: (status) => {
-          windows.send('state:update', status);
-          // A version is ready: ask once, with a notification that opens the app where the question is.
-          if (status.state === 'ready' && !status.deferred && status.available && status.available !== announcedUpdate) {
-            announcedUpdate = status.available;
-            notifier.alert({ sessionId: UPDATE_NOTICE_ID, title: `Version ${status.available} är klar att installera`, body: 'Välj Uppdatera nu eller Vid nästa omstart i appen.', urgent: false });
-          }
-        },
+        onStatus: (status) => windows.send('state:update', status),
       })
     : null;
   const updateStatus = (): UpdateStatus =>
-    updater?.current() ?? { state: 'off', version: app.getVersion(), available: null, progress: 0, auto: settings.autoUpdate, deferred: false, message: 'Uppdateringar finns bara i den installerade appen.' };
+    updater?.current() ?? { state: 'off', version: app.getVersion(), available: null, progress: 0, auto: settings.autoUpdate, message: 'Uppdateringar finns bara i den installerade appen.' };
 
   for (const record of activeRecords()) {
     model.upsertRecord(record);
@@ -854,7 +843,6 @@ function boot(): void {
 
   handle('app:get-state', () => ({ sessions: model.summaries(), usage: usage.current(), settings, account, update: updateStatus() }));
   handle('update:install', () => updater?.installNow());
-  handle('update:defer', () => updater?.defer());
   handle('update:check', () => updater?.checkNow());
 
   handle('quick:ask', (req) => {

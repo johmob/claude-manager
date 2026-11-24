@@ -5,7 +5,6 @@ import { AccountContext } from '../state/account';
 import { useAppState } from '../state/useAppState';
 import { useTheme } from '../lib/theme';
 import { ImageViewer } from '../components/ImageViewer';
-import { UpdatePrompt } from '../components/UpdatePrompt';
 import { useTextScale } from '../lib/textScale';
 import { TopBar, type ViewMode } from '../components/TopBar';
 import { StartDialog, type DialogKind } from '../components/StartDialogs';
@@ -71,7 +70,6 @@ export function MainWindow() {
       </main>
       {dialog && <StartDialog kind={dialog} settings={settings} onClose={() => setDialog(null)} />}
       <ImageViewer />
-      <UpdatePrompt update={update} sessions={sessions} />
       {!settings.projectsRoot && !welcomeLater && !dialog && <Welcome onLater={() => setWelcomeLater(true)} />}
       {asking && (
         <QuestionQueue

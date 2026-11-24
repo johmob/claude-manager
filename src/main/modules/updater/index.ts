@@ -1,14 +1,13 @@
-// updater: keeps the installed app current from the project's GitHub releases. It checks now and then and
-// downloads a new version in the background (when auto-update is on). It never restarts the app on its
-// own: once a version is ready the user is asked, and installs now or lets it install at the next restart
-// (also what happens if they never answer).
+// updater: keeps the installed app current from the project's GitHub releases. It checks now and then. With
+// auto-update on it downloads a new version in the background and installs it at the next restart; it never
+// restarts the app on its own. "Installera nu" in the top bar installs at once.
 import { autoUpdater } from 'electron-updater';
 import type { UpdateStatus } from '../../../shared/contracts';
 
 export interface UpdaterOptions {
   /** The running version. */
   version: string;
-  /** Fetch new versions on their own. */
+  /** Fetch new versions on their own and install them at the next restart. */
   auto: boolean;
   onStatus: (status: UpdateStatus) => void;
 }
@@ -17,8 +16,6 @@ export interface Updater {
   setAuto(on: boolean): void;
   /** Installs the new version now, fetching it first if needed. Restarts the app. */
   installNow(): void;
-  /** The user chose to install at the next restart: stop asking. */
-  defer(): void;
   /** Looks for a new version now instead of waiting for the next regular check. */
   checkNow(): void;
   current(): UpdateStatus;
@@ -30,7 +27,7 @@ const FIRST_CHECK_MS = 30 * 1000;
 const CHECK_EVERY_MS = 3 * 60 * 60 * 1000;
 
 export function createUpdater(opts: UpdaterOptions): Updater {
-  let status: UpdateStatus = { state: 'idle', version: opts.version, available: null, progress: 0, auto: opts.auto, deferred: false, message: '' };
+  let status: UpdateStatus = { state: 'idle', version: opts.version, available: null, progress: 0, auto: opts.auto, message: '' };
   /** The user asked to install: do it as soon as the download is done. */
   let installWhenReady = false;
 
@@ -38,9 +35,11 @@ export function createUpdater(opts: UpdaterOptions): Updater {
     status = { ...status, ...patch };
     opts.onStatus(status);
   };
-  // A downloaded version always installs when the app quits, so "next restart" needs nothing more.
-  autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.autoDownload = opts.auto;
+  const applyAuto = (on: boolean): void => {
+    autoUpdater.autoDownload = on;
+    autoUpdater.autoInstallOnAppQuit = on;
+  };
+  applyAuto(opts.auto);
   // Silent, and the app starts again afterwards.
   const install = (): void => autoUpdater.quitAndInstall(true, true);
   const check = (): void => void autoUpdater.checkForUpdates().catch(() => undefined); // errors arrive as 'error' events
@@ -49,8 +48,7 @@ export function createUpdater(opts: UpdaterOptions): Updater {
   autoUpdater.on('checking-for-update', () => set({ state: 'checking', message: '' }));
   autoUpdater.on('update-not-available', () => set({ state: 'idle', available: null }));
   autoUpdater.on('update-available', (info) => {
-    // A newer version than the one put off asks again.
-    set({ state: autoUpdater.autoDownload ? 'downloading' : 'available', available: info.version, progress: 0, deferred: status.deferred && status.available === info.version });
+    set({ state: autoUpdater.autoDownload ? 'downloading' : 'available', available: info.version, progress: 0 });
     if (!autoUpdater.autoDownload && installWhenReady) void autoUpdater.downloadUpdate();
   });
   autoUpdater.on('download-progress', (p) => set({ state: 'downloading', progress: Math.round(p.percent) }));
@@ -68,7 +66,7 @@ export function createUpdater(opts: UpdaterOptions): Updater {
 
   return {
     setAuto(on) {
-      autoUpdater.autoDownload = on;
+      applyAuto(on);
       set({ auto: on });
       if (on) check();
     },
@@ -77,9 +75,6 @@ export function createUpdater(opts: UpdaterOptions): Updater {
       installWhenReady = true;
       if (status.state === 'available') void autoUpdater.downloadUpdate();
       else if (status.state !== 'downloading') check();
-    },
-    defer() {
-      set({ deferred: true });
     },
     checkNow() {
       if (status.state !== 'downloading' && status.state !== 'ready') check();

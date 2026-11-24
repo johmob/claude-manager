@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T07:43:26Z",
+  "updated": "2026-11-24T07:58:27Z",
   "tracks": [
     {
       "id": "eng",
@@ -344,6 +344,12 @@
               "id": "ui.5.3",
               "title": "Håll vaken-knapp bredvid Stör ej",
               "notes": "Hindrar viloläge och skärmsläckning (powerSaveBlocker) och trycker Shift varannan minut så att låsning vid inaktivitet aldrig slår till. Användaren: Shift-loopen i PowerShell fungerar perfekt hos dem. Klart, inte släppt än."
+            },
+            {
+              "id": "ui.5.4",
+              "title": "Översikt/Fokus till vänster, fönsterknapparna borta",
+              "status": "done",
+              "notes": "Användaren: flikarna skymdes av den centrerade overlayen; flyttade efter Grundregler med avgränsare. Vänster/Höger halva/Helskärm borttagna (Windows snappar själv). Klart."
             }
           ]
         },
@@ -553,8 +559,8 @@
             {
               "status": "done",
               "id": "life.3.5",
-              "title": "Uppdateringar: fråga Uppdatera nu eller Vid nästa omstart",
-              "notes": "Användaren: appen ska säga att den hittat en uppdatering och fråga om man vill uppdatera nu eller vid nästa omstart. Appen startar aldrig om själv; utan svar installeras den vid nästa start. Klart."
+              "title": "Uppdateringar installeras vid omstart eller med Installera nu",
+              "notes": "Användaren: räcker med \"ny version · Installera nu\" i toppraden, och installation vid varje omstart om valt i inställningarna. Frågerutan och notisen borttagna. Appen startar aldrig om själv. Klart."
             }
           ]
         }
