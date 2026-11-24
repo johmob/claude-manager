@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-24T17:21:11.375Z",
+  "updated": "2026-11-24T18:50:54.387Z",
   "tracks": [
     {
       "id": "design",
@@ -116,7 +116,7 @@
               "id": "design.4.2",
               "title": "Avbryt bara för äkta frågor",
               "status": "done",
-              "notes": "Frågor öppnas i helskärm bara när de är äkta och fristående; upprepningar filtreras."
+              "notes": "Frågor ställs bara när de är äkta och fristående och upprepningar filtreras. Frågor besvaras i chatten, inte i helskärm (chat.2.16)."
             },
             {
               "id": "design.4.3",
@@ -424,6 +424,12 @@
               "title": "Agentens egna taggar",
               "status": "done",
               "notes": ""
+            },
+            {
+              "id": "chat.1.9",
+              "title": "Färdigformaterat innan det visas",
+              "status": "not_started",
+              "notes": "Användaren: text visas och ändras sedan (formatering, taggar, omflyttning) efter att den redan syns. Allt ska vara färdigformaterat när det visas: inget får byta utseende eller plats efteråt. Gäller både turens slut och det som visas under arbetet."
             }
           ]
         },
@@ -448,7 +454,7 @@
               "id": "chat.2.3",
               "title": "Helskärm, en fråga i taget",
               "status": "done",
-              "notes": ""
+              "notes": " Ska tas bort enligt chat.2.16."
             },
             {
               "id": "chat.2.4",
@@ -521,6 +527,12 @@
               "title": "Frågor överlever nytt meddelande",
               "status": "done",
               "notes": "Skrev användaren ett nytt meddelande medan turens svar fortfarande lästes igenom kastades turens frågor, och agentens egna frågor räknades som besvarade fast de aldrig visats. Nu står de kvar bredvid den nya turen."
+            },
+            {
+              "id": "chat.2.16",
+              "title": "Frågor besvaras i chatten, inte i helskärm",
+              "status": "not_started",
+              "notes": "Användaren: ta bort frågorna i helskärm, bara strul. Flera frågor ska fortfarande summeras, men frågas och besvaras enbart i chatten: en ruta sist i chatten med frågorna (rubrik, vad de gäller, underlag, svarsknappar och svarsfält per fråga) och ett Skicka för alla. Overlayn, korten och mobilen öppnar chatten vid frågan i stället för helskärmsflödet. Helskärmsflödet och popupen för frågor tas bort."
             }
           ]
         },
@@ -558,6 +570,12 @@
               "title": "Gamla bilder städas bort",
               "status": "done",
               "notes": "Inklistrade bilder i temp-mappen som är äldre än 30 dagar tas bort när appen startar."
+            },
+            {
+              "id": "chat.3.6",
+              "title": "Dra in och klistra in filer",
+              "status": "not_started",
+              "notes": "Användaren: det ska gå att dra och släppa (och klistra in) vilka filer som helst i chatten, inte bara bilder. Filer från disken skickas med sin sökväg så agenten läser dem där de ligger; inklistrat innehåll utan sökväg sparas i temp-mappen. Chippar med filnamn och × före sändning; i mobilen en knapp Fil som laddar upp till hemdatorn."
             }
           ]
         },
@@ -583,6 +601,55 @@
               "title": "Komprimering med laddikon",
               "status": "done",
               "notes": "Användaren: under /compact syntes ingen status, och ingen fejkad förloppsstapel (avskyr det). Nu visas en blå bricka med snurrande ikon: \"Komprimerar · cirka 1 minut · 0:04\" (tiden skattas från kontextens storlek och tidigare komprimeringar; \"tar längre än vanligt\" om den drar över). Efteråt står storlek före/efter och tid i chatten. Testat dolt. Rättat samtidigt: snedstreckskommandon fick appens dolda ändringsnotis före sig och gick fram som vanlig text."
+            },
+            {
+              "id": "chat.4.4",
+              "title": "Komprimera med förberedelse",
+              "status": "not_started",
+              "notes": "Användaren: knappen Komprimera ska först skicka \"Förbered för komprimering\" till agenten. När agenten svarar bedömer appen (Haiku) om svaret är jakande; i så fall skickar appen /compact. Är svaret tvetydigt visas det för användaren i stället, som får avgöra. Användaren: knappen får en trevlig liten ikon för något som komprimeras, t.ex. lucide fold-vertical eller shrink (pilar mot mitten)."
+            }
+          ]
+        },
+        {
+          "id": "chat.5",
+          "title": "Bilder och filer: spara och dela",
+          "notes": "Användaren: bilder i helskärm och filer som agenten länkar ska kunna sparas, laddas ned och delas, t.ex. till Teams eller Outlook. Ligger i kvällens kö (punkt 1).",
+          "items": [
+            {
+              "id": "chat.5.1",
+              "title": "Spara bild som",
+              "status": "not_started",
+              "notes": "Knapp i bildvisaren som öppnar Spara som-dialogen och kopierar bilden dit."
+            },
+            {
+              "id": "chat.5.2",
+              "title": "Kopiera bilden",
+              "status": "not_started",
+              "notes": "Lägger bilden på urklipp, så den kan klistras in direkt i Teams, Outlook eller annat."
+            },
+            {
+              "id": "chat.5.3",
+              "title": "Nytt mejl i Outlook med bilden",
+              "status": "not_started",
+              "notes": "Startar Outlook med ett nytt mejl där bilden är bifogad (outlook.exe /a <fil>); knappen visas bara om Outlook finns."
+            },
+            {
+              "id": "chat.5.4",
+              "title": "Dela i mobilen",
+              "status": "not_started",
+              "notes": "I mobilvyn öppnar Dela telefonens delningsmeny (Web Share med filen), så bilden kan skickas till valfri app."
+            },
+            {
+              "id": "chat.5.5",
+              "title": "Filer i chatten: spara, öppna, dela",
+              "status": "not_started",
+              "notes": "Länkar till lokala filer i chatten (PDF, STL, CSV …) får samma åtgärder som bilder: Spara som, Öppna, Visa i mappen, Kopiera filen (klistra in i Teams eller Outlook) och Nytt mejl i Outlook med filen bifogad."
+            },
+            {
+              "id": "chat.5.6",
+              "title": "Ladda ned och dela filer i mobilen",
+              "status": "not_started",
+              "notes": "I mobilvyn hämtas filen från hemdatorn via en skyddad väg i fjärrvärden (samma regler som bilder, men fler filtyper och en storleksgräns), och Dela öppnar telefonens delningsmeny med filen."
             }
           ]
         }
@@ -616,7 +683,7 @@
         {
           "id": "voice.2",
           "title": "Tal till text på datorn",
-          "notes": "Mikrofonknapp i chattrutan, lokal Whisper med svensk modell.",
+          "notes": "Mikrofonknapp i chattrutan, lokal Whisper med svensk modell. Byggs av det schemalagda jobbet kl. 20:47: Opus (hög effort) skriver arbetspaketet, Sonnet och Haiku kodar.",
           "items": [
             {
               "id": "voice.2.1",
@@ -820,6 +887,12 @@
               "title": "Bredd och läsbarhet",
               "status": "done",
               "notes": "Spåren är minst 320 px breda med horisontell rullning och raden \"Just nu\" är en rad med ellipsis och hela texten vid hovring."
+            },
+            {
+              "id": "tree.3.7",
+              "title": "Trädet ryms i fönstrets bredd",
+              "status": "not_started",
+              "notes": "Användaren: ingen kontroll över bredden, sidledsrullningen går inte att styra, och trädet ska helst inte bli för brett. Förslag: spåren radbryts till flera rader som fyller fönstrets bredd (ingen sidledsrullning), varje spår minst cirka 280 px; helt klara spår fälls ihop till ett smalt spårkort; spår i fokus och med pågående arbete först."
             }
           ]
         }
@@ -975,6 +1048,18 @@
               "title": "Overlayn flimrar inte när den dras",
               "status": "done",
               "notes": "När appen uppdaterade overlayn under en dragning placerades den en bildruta på den gamla platsen (mitt upptill), som en spökbild. Nu stannar den där den är så länge den dras."
+            },
+            {
+              "id": "ui.3.13",
+              "title": "Hovringsrutan visar arbete bara när någon arbetar",
+              "status": "not_started",
+              "notes": "Användaren: overlayns hovringsruta visade \"Tid sedan start 1:27:36\" och \"Just nu: bench Prov på hårdvara (+7 parallellt)\" fast inga agenter körde. Just nu kommer från punkter som står som pågår i schemat; det ska visas bara när sessionen arbetar (annars t.ex. Senast eller inget), och tiden ska gälla den pågående turen, inte sessionens start."
+            },
+            {
+              "id": "ui.3.14",
+              "title": "Appens förbrukning i procent av kvoten",
+              "status": "not_started",
+              "notes": "Användaren: räkna ut appens del från hur mycket kvoten faktiskt gått ned. Förslag: logga veckokvotens procent och appens och sessionernas räknade tokens över tid; kvotens ökning delad med alla räknade tokens ger tokens per procentenhet, och appens tokens delat med det ger appens förbrukning i procent av vecko- och 5-timmarskvoten. Skillnaden mot det räknade visar också hur mycket som inte räknas (t.ex. subagenter eller terminalen)."
             }
           ]
         },
