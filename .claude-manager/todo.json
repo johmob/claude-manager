@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T16:37:22.437Z",
+  "updated": "2026-11-24T16:44:15.514Z",
   "tracks": [
     {
       "id": "eng",
@@ -669,6 +669,12 @@
           "title": "Inklistrade bilder städas bort",
           "status": "done",
           "notes": "Inklistrade bilder i temp-mappen som är äldre än 30 dagar tas bort när appen startar."
+        },
+        {
+          "id": "ui.14",
+          "title": "Frågor försvinner inte när man skriver innan taggningen är klar",
+          "status": "done",
+          "notes": "Skrev användaren ett nytt meddelande medan turens svar fortfarande lästes igenom kastades turens frågor, och agentens egna frågor räknades som besvarade fast de aldrig visats. Nu står de kvar bredvid den nya turen."
         }
       ]
     },

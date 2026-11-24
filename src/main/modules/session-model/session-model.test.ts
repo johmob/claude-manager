@@ -307,6 +307,20 @@ describe('usage limit after a restart', () => {
 });
 
 describe('turn tags from a cheap model', () => {
+  it('keeps the questions of a turn when the user writes again before its tags come', () => {
+    const { model, apply } = setup();
+    const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'planera webben' });
+    apply({ type: 'text', text: 'Planen är klar.' });
+    apply({ type: 'callout', callout: { kind: 'question', title: 'web.an', text: 'Ska analysen eller grundpaketet göras först?' } });
+    apply(finish);
+    const asked = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
+    apply({ type: 'turn_started', prompt: 'lägg filerna i en mapp' });
+    model.applyTurnTags('s1', asked.id, [{ kind: 'question', text: 'Ska analysen eller grundpaketet göras först?', about: 'web.an', detail: '', brief: '', options: [] }], []);
+    expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Ska analysen eller grundpaketet göras först?']);
+  });
+
   it('add the questions the model found, keep the agent own tagged ones, and tag the blocks', () => {
     const { model, apply } = setup();
     const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;

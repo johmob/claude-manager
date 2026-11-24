@@ -264,7 +264,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       case 'turn_started': {
         const busy = s.turnActive;
         // Replying puts the open questions behind the user: an agent that lists them again is not asking anew.
-        s.answered = [...s.answered, ...s.questions.map((q) => normalizeQuestion(q.text))].slice(-MAX_ANSWERED);
+        // Questions still held back while the last turn is being read were never seen, so they are not answered.
+        if (!s.tagging) s.answered = [...s.answered, ...s.questions.map((q) => normalizeQuestion(q.text))].slice(-MAX_ANSWERED);
         s.limitResetsAt = null;
         s.turnAgents = new Set(s.subagents);
         s.turnActive = true;
@@ -584,9 +585,18 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     },
     applyTurnTags: (id, afterEntryId, questions, blocks) => {
       const s = states.get(id);
-      if (!s || s.turnActive) return [];
+      if (!s) return [];
       const lastUser = [...s.transcript].reverse().find((e) => e.kind === 'user');
-      if ((lastUser?.id ?? null) !== afterEntryId) return [];
+      if (s.turnActive || (lastUser?.id ?? null) !== afterEntryId) {
+        // The user wrote again before the tags came, without having seen the turn's questions: they still
+        // stand, next to whatever the new turn brings. Its text already shows; it only gets its tags.
+        const late = mergeQuestions(s.questions, questions, s.answered);
+        if (late.length !== s.questions.length) {
+          s.questions = late;
+          s.questionsId = `${now()}-${late.length}`;
+        }
+        return setBlocks(s, blocks);
+      }
       // The agent's own question callouts went to the tagger as well, which drops repeats; its list stands.
       const asked = mergeQuestions(s.earlierQuestions, questions, s.answered);
       if (JSON.stringify(asked.map((q) => q.text)) !== JSON.stringify(s.questions.map((q) => q.text))) s.questionsId = `${now()}-${asked.length}`;
