@@ -1,7 +1,164 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-24T17:15:36.252Z",
+  "updated": "2026-11-24T17:17:23.594Z",
   "tracks": [
+    {
+      "id": "design",
+      "title": "Utformning",
+      "owner": "main",
+      "notes": "Hur appen är byggd och hur den ser ut och känns: arkitektur, designspråk, ytor och principerna bakom. Det mesta finns; översynen (design.5) återstår.",
+      "items": [
+        {
+          "id": "design.1",
+          "title": "Arkitektur",
+          "notes": "Fristående moduler med tydliga in- och utdata, en kompositionsrot och typad IPC.",
+          "items": [
+            {
+              "id": "design.1.1",
+              "title": "Moduler som inte känner varandra",
+              "status": "done",
+              "notes": "Varje modul i src/main/modules har ett eget ansvar och importerar aldrig en annan; src/main/index.ts kopplar ihop dem."
+            },
+            {
+              "id": "design.1.2",
+              "title": "Typad IPC och delade kontrakt",
+              "status": "done",
+              "notes": "Renderaren pratar bara via window.cm; alla kanaler, händelser och typer finns i src/shared/contracts.ts."
+            },
+            {
+              "id": "design.1.3",
+              "title": "Billiga hjälpanrop via Haiku",
+              "status": "done",
+              "notes": "Taggning, ikoner, etiketter och sammanfattningar går via structured-query med Haiku; kostnaden räknas och visas i overlayn."
+            },
+            {
+              "id": "design.1.4",
+              "title": "Samma gränssnitt i fönster och webbläsare",
+              "status": "done",
+              "notes": "remoteBridge ger window.cm över websocket, så samma React-kod körs i Electron och i telefonens webbläsare."
+            }
+          ]
+        },
+        {
+          "id": "design.2",
+          "title": "Designspråk",
+          "notes": "Färger, typografi, ikoner och statusmärken som används överallt.",
+          "items": [
+            {
+              "id": "design.2.1",
+              "title": "Mörkt och ljust tema",
+              "status": "done",
+              "notes": "Färgvariabler i styles.css; temat väljs i inställningarna."
+            },
+            {
+              "id": "design.2.2",
+              "title": "Sessionsfärger och ikoner",
+              "status": "done",
+              "notes": "Varje chatt får en färg ur paletten och en ikon som Haiku väljer ur ett kurerat lucide-urval."
+            },
+            {
+              "id": "design.2.3",
+              "title": "Statusmärken och färgnivåer",
+              "status": "done",
+              "notes": "Arbetar, väntar, klar, vilande och användningens gröna, gula, orange och röda nivåer ser likadana ut överallt."
+            },
+            {
+              "id": "design.2.4",
+              "title": "Designmanual",
+              "status": "not_started",
+              "notes": "Förslag: samla färger, typografi, avstånd, knappar och märken på ett ställe (docs/DESIGN.md plus gemensamma CSS-variabler för avstånd och radier), så nya vyer blir konsekventa."
+            }
+          ]
+        },
+        {
+          "id": "design.3",
+          "title": "Ytor",
+          "notes": "Var användaren möter appen och vad varje yta är till för.",
+          "items": [
+            {
+              "id": "design.3.1",
+              "title": "Översikt och Fokus",
+              "status": "done",
+              "notes": "Översikten är ett kort per projekt; Fokus är chattrutor sida vid sida med panelen Schemalagt."
+            },
+            {
+              "id": "design.3.2",
+              "title": "Docka och overlay",
+              "status": "done",
+              "notes": "Alltid överst och klickgenomsläppliga utom där de behöver musen."
+            },
+            {
+              "id": "design.3.3",
+              "title": "Helskärmsflöden",
+              "status": "done",
+              "notes": "Frågeflödet och arbetsschemat öppnas stort, som popup när appen ligger i bakgrunden."
+            },
+            {
+              "id": "design.3.4",
+              "title": "Mobilen",
+              "status": "done",
+              "notes": "Egen layout med flikar för översikt, frågor och schema, och chatt i helskärm."
+            }
+          ]
+        },
+        {
+          "id": "design.4",
+          "title": "Principer",
+          "notes": "Det som styr besluten om vad som visas och hur.",
+          "items": [
+            {
+              "id": "design.4.1",
+              "title": "Skumma på sekunder",
+              "status": "done",
+              "notes": "Användaren styr många agenter: det viktiga syns direkt, resten fälls ihop. Minimal, Moderat och Detaljerat styr mängden."
+            },
+            {
+              "id": "design.4.2",
+              "title": "Avbryt bara för äkta frågor",
+              "status": "done",
+              "notes": "Frågor öppnas i helskärm bara när de är äkta och fristående; upprepningar filtreras."
+            },
+            {
+              "id": "design.4.3",
+              "title": "Inget fejkat",
+              "status": "done",
+              "notes": "Ingen påhittad förloppsstapel och ingen pågår-status utan att någon arbetar; uppskattningar visas som uppskattningar."
+            },
+            {
+              "id": "design.4.4",
+              "title": "Appens egna meddelanden syns inte",
+              "status": "done",
+              "notes": "Det appen skickar till agenten för agentens skull ligger i cm-context och visas aldrig i chatten."
+            }
+          ]
+        },
+        {
+          "id": "design.5",
+          "title": "Översyn",
+          "notes": "En genomgång av hela appen med nya ögon, nu när funktionerna finns.",
+          "items": [
+            {
+              "id": "design.5.1",
+              "title": "Genomgång av alla vyer",
+              "status": "not_started",
+              "notes": "Förslag: skärmbilder av varje vy i båda temana och i mobilen, sedan en lista med inkonsekvenser (avstånd, storlekar, knappar, tomma lägen) att rätta i en omgång."
+            },
+            {
+              "id": "design.5.2",
+              "title": "Tomma lägen och första start",
+              "status": "not_started",
+              "notes": "Vad en ny användare ser utan projekt, utan frågor och utan schema: korta, hjälpsamma texter i stället för tomma ytor."
+            },
+            {
+              "id": "design.5.3",
+              "title": "Tangentbordet genom hela appen",
+              "status": "not_started",
+              "notes": "Genvägar för att byta chatt, öppna frågor och schema och växla nivå, och en liten lista över dem i ⚙."
+            }
+          ]
+        }
+      ]
+    },
     {
       "id": "eng",
       "title": "Sessionsmotor",
@@ -401,12 +558,6 @@
               "title": "Gamla bilder städas bort",
               "status": "done",
               "notes": "Inklistrade bilder i temp-mappen som är äldre än 30 dagar tas bort när appen startar."
-            },
-            {
-              "id": "chat.3.6",
-              "title": "Röststyrning (utreda)",
-              "status": "not_started",
-              "notes": "Prata i stället för att skriva; appen visar fortfarande text. Förslag: (1) Nu, utan kod: Windows röstinmatning (Win+H) skriver i alla textrutor, gratis, svenska fungerar hyggligt. (2) Rekommenderat: mikrofonknapp (håll in för att prata) som spelar in och transkriberar lokalt med Whisper (whisper.cpp med KBLab:s svenska modell): gratis, offline, inget lämnar datorn, bra svenska; nackdel cirka 1–3 s fördröjning och en modellfil på några hundra MB. Haiku kan därefter städa talspråket till en tydlig instruktion. (3) Molntjänst för tal till text (Azure, OpenAI): snabbt och bra men kostar per minut och ljudet lämnar datorn; Claude API har ingen egen tal-till-text. Uppläsning av svar kan senare göras med Windows inbyggda röster, bara för korta sammanfattningar."
             }
           ]
         },
@@ -432,6 +583,112 @@
               "title": "Komprimering med laddikon",
               "status": "done",
               "notes": "Användaren: under /compact syntes ingen status, och ingen fejkad förloppsstapel (avskyr det). Nu visas en blå bricka med snurrande ikon: \"Komprimerar · cirka 1 minut · 0:04\" (tiden skattas från kontextens storlek och tidigare komprimeringar; \"tar längre än vanligt\" om den drar över). Efteråt står storlek före/efter och tid i chatten. Testat dolt. Rättat samtidigt: snedstreckskommandon fick appens dolda ändringsnotis före sig och gick fram som vanlig text."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "voice",
+      "title": "Röststyrning",
+      "owner": "main",
+      "notes": "Prata i stället för att skriva, på datorn och i mobilen; appen visar fortfarande text. Förslaget är lokal transkribering så att inget ljud lämnar datorn.",
+      "items": [
+        {
+          "id": "voice.1",
+          "title": "Utredning",
+          "notes": "Vägar, kostnad och rekommendation.",
+          "items": [
+            {
+              "id": "voice.1.1",
+              "title": "Förslag och rekommendation",
+              "status": "done",
+              "notes": "Prata i stället för att skriva; appen visar fortfarande text. Förslag: (1) Nu, utan kod: Windows röstinmatning (Win+H) skriver i alla textrutor, gratis, svenska fungerar hyggligt. (2) Rekommenderat: mikrofonknapp (håll in för att prata) som spelar in och transkriberar lokalt med Whisper (whisper.cpp med KBLab:s svenska modell): gratis, offline, inget lämnar datorn, bra svenska; nackdel cirka 1–3 s fördröjning och en modellfil på några hundra MB. Haiku kan därefter städa talspråket till en tydlig instruktion. (3) Molntjänst för tal till text (Azure, OpenAI): snabbt och bra men kostar per minut och ljudet lämnar datorn; Claude API har ingen egen tal-till-text. Uppläsning av svar kan senare göras med Windows inbyggda röster, bara för korta sammanfattningar."
+            },
+            {
+              "id": "voice.1.2",
+              "title": "Prova Windows röstinmatning",
+              "status": "not_started",
+              "notes": "Win+H i chattrutan, utan kod. Ger en referens för hur bra svensk diktering redan är innan något byggs."
+            }
+          ]
+        },
+        {
+          "id": "voice.2",
+          "title": "Tal till text på datorn",
+          "notes": "Mikrofonknapp i chattrutan, lokal Whisper med svensk modell.",
+          "items": [
+            {
+              "id": "voice.2.1",
+              "title": "Mikrofonknapp i chattrutan",
+              "status": "not_started",
+              "dependsOn": [
+                "voice.1.2"
+              ],
+              "notes": "Håll in knappen (eller ett kortkommando) för att prata; ljudet spelas in i renderaren och skickas till main."
+            },
+            {
+              "id": "voice.2.2",
+              "title": "Lokal transkribering",
+              "status": "not_started",
+              "dependsOn": [
+                "voice.2.1"
+              ],
+              "notes": "Egen modul med whisper.cpp och KBLab:s svenska modell; modellen hämtas första gången. Inget ljud lämnar datorn."
+            },
+            {
+              "id": "voice.2.3",
+              "title": "Städa talspråket",
+              "status": "not_started",
+              "dependsOn": [
+                "voice.2.2"
+              ],
+              "notes": "Valfritt: Haiku gör om det transkriberade till en tydlig instruktion; användaren ser texten och kan ändra innan den skickas."
+            }
+          ]
+        },
+        {
+          "id": "voice.3",
+          "title": "Röst i mobilen",
+          "notes": "Telefonens egen diktering fungerar redan; mikrofonknapp som skickar ljudet hem är ett alternativ.",
+          "items": [
+            {
+              "id": "voice.3.1",
+              "title": "Diktering via tangentbordet",
+              "status": "done",
+              "notes": "Mikrofonen i telefonens tangentbord skriver i mobilvyns chattruta utan något extra."
+            },
+            {
+              "id": "voice.3.2",
+              "title": "Mikrofonknapp som transkriberar hemma",
+              "status": "not_started",
+              "dependsOn": [
+                "voice.2.2",
+                "mob.1.4"
+              ],
+              "notes": "Samma lokala Whisper på hemdatorn, så telefonens tangentbord inte behöver skicka ljud till någon tjänst."
+            }
+          ]
+        },
+        {
+          "id": "voice.4",
+          "title": "Svara med rösten",
+          "notes": "Det vanligaste: svara på frågor utan att skriva.",
+          "items": [
+            {
+              "id": "voice.4.1",
+              "title": "Röstsvar i frågeflödet",
+              "status": "not_started",
+              "dependsOn": [
+                "voice.2.2"
+              ],
+              "notes": "Mikrofon i frågeflödet; säger man ett av alternativen väljs det."
+            },
+            {
+              "id": "voice.4.2",
+              "title": "Uppläsning av korta sammanfattningar",
+              "status": "not_started",
+              "notes": "Valfritt, med Windows inbyggda röster: läs upp frågor eller en tur som blivit klar, aldrig hela svar."
             }
           ]
         }
