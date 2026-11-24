@@ -966,3 +966,12 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .compact-spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(122,162,255,.22); border-top-color: #a9c1ff; border-right-color: #a9c1ff; animation: spin .8s linear infinite; }
 .compact-about { font-weight: 500; }
 .compact-time { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* A scheduled job's state: active (green, pulsing) runs on its own; paused does not */
+.sp-state { display: flex; align-items: center; gap: 7px; padding: 4px 8px; border-radius: 6px; background: rgba(125,138,166,.12); color: var(--muted); font-size: 0.76rem; }
+.sp-state b { font-weight: 750; }
+.sp-state-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #5b6372; }
+.sp-state[data-on] { background: rgba(62,207,142,.12); color: var(--green); }
+.sp-state[data-on] .sp-state-dot { background: var(--green); animation: sp-live 1.6s ease-out infinite; }
+@keyframes sp-live { 0% { box-shadow: 0 0 0 0 rgba(62,207,142,.6); } 100% { box-shadow: 0 0 0 7px rgba(62,207,142,0); } }
+.sp-count[data-active] { background: var(--green); animation: sp-live 1.6s ease-out infinite; }

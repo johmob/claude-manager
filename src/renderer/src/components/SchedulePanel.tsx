@@ -37,17 +37,24 @@ function Job({ session, job }: { session: SessionSummary; job: ScheduledJobView 
           {job.kind === 'agent' ? 'Agent' : 'Lokalt'}
         </span>
       </div>
+      <div className="sp-state" data-on={job.enabled && job.nextRun ? 'true' : undefined}>
+        <span className="sp-state-dot" aria-hidden />
+        {job.enabled
+          ? job.nextRun
+            ? <span><b>Aktiv</b> · körs av sig själv {whenNext(job.nextRun)}</span>
+            : <span><b>Aktiv</b> · ingen kommande körning</span>
+          : <span><b>Pausad</b> · körs inte förrän du startar den</span>}
+      </div>
       <div className="sp-job-meta">
-        <span>{job.rhythm}</span>
-        <span className="muted">Nästa: {whenNext(job.nextRun)}</span>
+        <span className="muted">{job.rhythm}</span>
       </div>
       <div className="sp-job-meta">
         <span className="muted" data-failed={job.lastRun && !job.lastRun.ok ? 'true' : undefined} title={job.lastRun?.output || undefined}>Senast: {lastRunText(job)}</span>
       </div>
       <div className="sp-job-meta">
         <span className="sp-actions">
-          <button type="button" className="link-btn" onClick={() => act('run')}>Kör nu</button>
-          <button type="button" className="link-btn" onClick={() => act(job.enabled ? 'pause' : 'resume')}>{job.enabled ? 'Pausa' : 'Starta'}</button>
+          <button type="button" className="link-btn" title="Kör en gång direkt, utöver schemat" onClick={() => act('run')}>Kör nu</button>
+          <button type="button" className="link-btn" onClick={() => act(job.enabled ? 'pause' : 'resume')}>{job.enabled ? 'Pausa' : 'Aktivera'}</button>
           <button type="button" className="link-btn danger-text" onClick={() => act('delete')}>Ta bort</button>
         </span>
       </div>
@@ -68,11 +75,12 @@ export function SchedulePanel({ sessions }: { sessions: SessionSummary[] }) {
   };
   const projects = sessions.filter((s) => s.schedule.length || s.scheduleProblem);
   const count = projects.reduce((n, s) => n + s.schedule.length, 0);
+  const active = projects.some((s) => s.schedule.some((j) => j.enabled && j.nextRun));
   if (!open) {
     return (
       <button type="button" className="sp-strip" title="Schemalagda jobb" onClick={toggle}>
         <span className="sp-strip-label">Schemalagt</span>
-        {count > 0 && <span className="sp-count">{count}</span>}
+        {count > 0 && <span className="sp-count" data-active={active ? 'true' : undefined} title={active ? 'Minst ett jobb är aktivt och körs av sig själv' : 'Alla jobb är pausade'}>{count}</span>}
       </button>
     );
   }
