@@ -1,7 +1,7 @@
 // Composition root: the only place that knows every module. It wires modules together with
 // callbacks and data, owns persistence of records/settings, and serves the renderer's IPC.
 import { app, dialog, ipcMain, nativeImage, shell } from 'electron';
-import { existsSync, mkdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
@@ -116,6 +116,11 @@ interface MappingJob {
  * A test instance (CLAUDE_MANAGER_TEST=1, with its own CLAUDE_MANAGER_DATA_DIR): windows render off screen
  * without focus or taskbar entries, no notifications, no tray icon. Driven over remote debugging.
  */
+/** Tells every session where the plan's current usage is, for ground rule 8. */
+function usageNote(file: string): string {
+  return `# Plan usage\nThe plan's current usage is in ${file.replace(/\\/g, '/')}: percent used of the 5-hour and the weekly limit, and when each resets (updated every few minutes). Read it before you send out subagents or start a large piece of work.`;
+}
+
 /** How often the projects are checked for work done outside the app. */
 const DRIFT_CHECK_MS = 10 * 60_000;
 /** What the agent is asked to do with the change list when the user chooses "Uppdatera schemat". */
@@ -151,6 +156,8 @@ function boot(): void {
 
   // ---------- Persistence ----------
   const tagMemory = createTagMemory(join(userData, 'tags'));
+  /** The plan's current usage, written for the agents to read before they send out subagents. */
+  const usageFile = join(userData, 'usage.json');
   const settingsStore = createJsonStore(join(userData, 'settings.json'), DEFAULT_SETTINGS, validSettings);
   const recordStore = createJsonStore<SessionRecord[]>(join(userData, 'sessions.json'), [], validRecords);
   let settings = settingsStore.read();
@@ -188,6 +195,7 @@ function boot(): void {
     onSnapshot: (snapshot) => {
       windows.send('state:usage', snapshot);
       markLimitedFromUsage(snapshot);
+      saveUsageForAgents(snapshot);
     },
   });
   const windows = createWindowManager({
@@ -601,7 +609,18 @@ function boot(): void {
   }
 
   function composeAppend(): string {
-    return [groundRules.read().trim(), TODO_PROTOCOL, CALLOUT_PROTOCOL].join('\n\n');
+    return [groundRules.read().trim(), TODO_PROTOCOL, CALLOUT_PROTOCOL, usageNote(usageFile)].join('\n\n');
+  }
+
+  /** The plan's usage as agents read it: percent used of each limit and when it resets. */
+  function saveUsageForAgents(snapshot: UsageSnapshot): void {
+    if (!snapshot.updatedAt) return;
+    const window = (w: UsageWindow | null): { percentUsed: number; resetsAt: string | null } | null => (w ? { percentUsed: Math.round(w.utilization), resetsAt: w.resetsAt } : null);
+    try {
+      writeFileSync(usageFile, JSON.stringify({ updatedAt: new Date(snapshot.updatedAt).toISOString(), fiveHour: window(snapshot.fiveHour), week: window(snapshot.sevenDay) }, null, 2));
+    } catch {
+      // Agents read the last saved figures.
+    }
   }
 
   /** The tags saved for the card's messages, for those whose text still splits into as many blocks. */

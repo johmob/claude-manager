@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T08:27:59Z",
+  "updated": "2026-11-24T08:30:25Z",
   "tracks": [
     {
       "id": "eng",
@@ -133,7 +133,7 @@
               "status": "done"
             }
           ],
-          "notes": "Användaren: grundregel 7, lokala filer delas som klickbara länkar till hela sökvägen. Tillagd i standardreglerna och i användarens installerade grundregelfil."
+          "notes": "Användaren: grundregel 7, lokala filer delas som klickbara länkar till hela sökvägen. Tillagd i standardreglerna och i användarens installerade grundregelfil. Användaren: grundregel 8, huvudagenten ska ha koll på usage när den skickar ut agenter och väljer nivåer, och fråga och dela upp i steg om den är osäker. Appen skriver usage.json som agenterna läser. Tillagd i standardreglerna och i den installerade grundregelfilen."
         },
         {
           "id": "plan.3",

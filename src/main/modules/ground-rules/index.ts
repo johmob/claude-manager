@@ -10,6 +10,7 @@ export const DEFAULT_GROUND_RULES = `# Base ground rules
 5. Plan the work schema like an org chart: parallel tracks for areas that can progress independently (for example CAD, firmware for each device, result pages), each with its items and sub-items, an owner (the subagent working on it) and dependencies between items. Refer to its items by id. When the work reaches a new area or phase that no track covers, ask the user whether to open a new track before starting on it.
 6. Build everything as self-contained modules with clearly defined inputs and outputs. No duplicated functions across modules, and no module may depend on another. No quick fixes; clean, minimal functions.
 7. When you share a local file, write it as a markdown link to its full path with forward slashes, in angle brackets, so the user can click it to open the file: [rapport.pdf](<C:/path/to/rapport.pdf>). Never only the bare path, and never a path relative to the project.
+8. Be aware of the plan's usage limits whenever you send out subagents. Before you start, read the current usage (the app's note below says where) and weigh what the work will cost: how many agents, which models and effort levels, how long they run. Choose the cheapest model and effort that does each job well; the top model and high effort only where they are needed. If you are not sure the remaining usage covers all of it, ask the user first and propose doing the work in steps.
 `;
 
 export interface GroundRules {
