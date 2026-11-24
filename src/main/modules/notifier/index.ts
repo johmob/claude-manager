@@ -13,7 +13,8 @@ export interface Notifier {
   setDoNotDisturb(on: boolean): void;
 }
 
-export function createNotifier(opts: { onClick: (sessionId: string) => void; flash: (on: boolean) => void }): Notifier {
+/** `muted`: never shows Windows notifications (a test instance). */
+export function createNotifier(opts: { onClick: (sessionId: string) => void; flash: (on: boolean) => void; muted?: boolean }): Notifier {
   const toasts = new Map<string, Notification>();
   const urgent = new Set<string>();
   let doNotDisturb = false;
@@ -26,7 +27,7 @@ export function createNotifier(opts: { onClick: (sessionId: string) => void; fla
   };
 
   const showToast = (req: AlertRequest): void => {
-    if (!Notification.isSupported()) return;
+    if (opts.muted || !Notification.isSupported()) return;
     const toast = new Notification({ title: req.title, body: req.body, silent: !req.urgent });
     toast.on('click', () => opts.onClick(req.sessionId));
     closeToast(req.sessionId);

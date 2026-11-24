@@ -17,6 +17,11 @@ export interface WindowManagerOptions {
   onMainClose: (event: Electron.Event) => void;
   /** Keep the main window hidden at start (e.g. started with Windows); the tray opens it. */
   startHidden?: boolean;
+  /**
+   * A test instance: every window renders off screen (so it can still be driven and captured), never takes
+   * focus and stays out of the taskbar, so it never gets in the user's way.
+   */
+  offscreen?: boolean;
 }
 
 export interface WindowManager {
@@ -67,11 +72,23 @@ const TITLE_BAR: Record<ThemeChoice, { color: string; symbolColor: string }> = {
 
 type Route = 'main' | 'dock' | 'overlay' | 'popup';
 
+/** How far a test instance's windows sit to the left of every screen. */
+const OFFSCREEN_X = -40000;
+
 export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   // No application menu: its default zoom shortcuts would zoom every window of the app at once (Chromium
   // zooms per origin), overlay and dock included. Text size is the app's own setting instead.
   Menu.setApplicationMenu(null);
   let closeAllowed = false;
+  const hidden = opts.offscreen === true;
+  /** Where a window goes: where asked, or off screen in a test instance. */
+  const at = (b: Rectangle): Rectangle => (hidden ? { ...b, x: b.x + OFFSCREEN_X } : b);
+  /** Shows a window, focused if asked; a test instance's windows show without focus. */
+  const reveal = (win: BrowserWindow, focus: boolean): void => {
+    if (hidden) return void win.showInactive();
+    win.show();
+    if (focus) win.focus();
+  };
   const main = createWindow('main', {
     width: 1320,
     height: 840,
@@ -79,6 +96,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     minHeight: 520,
     show: false,
     title: 'Claude Manager',
+    skipTaskbar: hidden,
     backgroundColor: '#05060b',
     autoHideMenuBar: true,
     icon: opts.icon,
@@ -87,7 +105,8 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     titleBarOverlay: { ...TITLE_BAR.night, height: TITLE_BAR_HEIGHT },
   });
   main.once('ready-to-show', () => {
-    if (!opts.startHidden) main.show();
+    if (hidden) main.setBounds(at(main.getBounds()));
+    if (!opts.startHidden) reveal(main, false);
   });
   main.on('close', (event) => {
     if (!closeAllowed) opts.onMainClose(event);
@@ -136,7 +155,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   }
 
   function place(win: BrowserWindow, bounds: Rectangle): void {
-    win.setBounds(bounds);
+    win.setBounds(at(bounds));
     if (!win.isVisible()) win.showInactive();
   }
 
@@ -190,7 +209,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     if (focus) {
       overlayInteractive = true;
       overlay.setIgnoreMouseEvents(false);
-      overlay.focus();
+      if (!hidden) overlay.focus();
     } else {
       overlayInteractive = false;
       overlay.setIgnoreMouseEvents(true, { forward: true });
@@ -207,14 +226,13 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   function openPopup(view: PopupView): void {
     popupShows = view;
     const area = screen.getPrimaryDisplay().workArea;
-    const reveal = (win: BrowserWindow): void => {
-      win.setBounds(area);
+    const present = (win: BrowserWindow): void => {
+      win.setBounds(at(area));
       win.webContents.send('popup:show', view);
-      win.show();
-      win.focus();
+      reveal(win, true);
     };
     if (popup && !popup.isDestroyed()) {
-      reveal(popup);
+      present(popup);
       return;
     }
     const win = createWindow('popup', {
@@ -233,7 +251,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
       title: 'Claude Manager',
     });
     win.setAlwaysOnTop(true, 'floating');
-    win.once('ready-to-show', () => reveal(win));
+    win.once('ready-to-show', () => present(win));
     popup = win;
   }
 
@@ -243,6 +261,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   }
 
   function snap(mode: SnapMode): void {
+    if (hidden) return;
     if (mode === 'full') {
       main.maximize();
       return;
@@ -255,15 +274,14 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   }
 
   function ensureWidth(width: number): boolean {
-    if (main.isMaximized() || main.getContentSize()[0]! >= width) return false;
+    if (hidden || main.isMaximized() || main.getContentSize()[0]! >= width) return false;
     main.maximize();
     return true;
   }
 
   function showMain(): void {
     if (main.isMinimized()) main.restore();
-    main.show();
-    main.focus();
+    reveal(main, true);
   }
 
   return {
@@ -281,7 +299,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     popupView: () => popupShows,
     snap,
     ensureWidth,
-    flash: (on) => main.flashFrame(on && !main.isFocused()),
+    flash: (on) => main.flashFrame(on && !hidden && !main.isFocused()),
     send: (channel, payload) => {
       for (const win of [main, dock, overlay, popup]) {
         if (win && !win.isDestroyed()) win.webContents.send(channel, payload);

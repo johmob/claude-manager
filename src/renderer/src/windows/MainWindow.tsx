@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
-import { AskQuestionsContext, QuestionFlow, questionsKey } from '../components/QuestionFlow';
+import { AskQuestionsContext, QuestionQueue, questionsKey } from '../components/QuestionFlow';
 import { AccountContext } from '../state/account';
 import { useAppState } from '../state/useAppState';
 import { useTheme } from '../lib/theme';
@@ -52,12 +52,6 @@ export function MainWindow() {
     [],
   );
 
-  const askingSession = state?.sessions.find((s) => s.id === asking && s.questions.length > 0);
-  // Answered (or a new message sent) while open: close.
-  useEffect(() => {
-    if (asking && loaded && !askingSession) setAsking(null);
-  }, [asking, loaded, askingSession]);
-
   if (!state) return <div className="loading">Laddar…</div>;
   const { sessions, usage, settings, account, update } = state;
   const focused = sessions.filter((s) => s.focused);
@@ -77,15 +71,15 @@ export function MainWindow() {
       {dialog && <StartDialog kind={dialog} settings={settings} onClose={() => setDialog(null)} />}
       <ImageViewer />
       {!settings.projectsRoot && !welcomeLater && !dialog && <Welcome onLater={() => setWelcomeLater(true)} />}
-      {askingSession && (
-        <QuestionFlow
-          key={questionsKey(askingSession)}
-          session={askingSession}
+      {asking && (
+        <QuestionQueue
+          sessions={sessions}
+          firstId={asking}
           onClose={() => {
-            putOff.current.add(questionsKey(askingSession));
+            // Whatever is still waiting was put off; it is not offered again on its own.
+            for (const s of latest.current) if (s.questions.length) putOff.current.add(questionsKey(s));
             setAsking(null);
           }}
-          onSent={() => setAsking(null)}
         />
       )}
     </div>

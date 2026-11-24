@@ -9,42 +9,47 @@ import { Modal } from './Modal';
 /** Opens the question flow for a session; provided by the window that shows it. */
 export const AskQuestionsContext = createContext<(sessionId: string) => void>(() => undefined);
 
-/** Identifies one set of questions: a new turn that leaves questions gives a new key. */
+/** Identifies one set of questions: a turn that leaves new questions gives a new key. */
 export function questionsKey(session: SessionSummary): string {
   return `${session.id}:${session.questionsId}`;
 }
 
 /**
- * Answers typed so far, per set of questions, kept while the flow is closed. They live in browser
- * storage, which the app's windows share, so answers begun in the app continue from the overlay. Without
- * storage they last only while the flow is open.
+ * Answers typed so far, per session and question, kept while the flow is closed and while more questions
+ * queue up. They live in browser storage, which the app's windows share, so answers begun in the app
+ * continue from the overlay. Without storage they last only while the flow is open.
  */
 const DRAFT_PREFIX = 'qf-draft:';
+type Drafts = Record<string, string>;
 const drafts = {
-  get(key: string): string[] | null {
+  get(sessionId: string): Drafts {
     try {
-      const raw = localStorage.getItem(DRAFT_PREFIX + key);
-      const parsed: unknown = raw ? JSON.parse(raw) : null;
-      return Array.isArray(parsed) ? parsed.map(String) : null;
+      const parsed: unknown = JSON.parse(localStorage.getItem(DRAFT_PREFIX + sessionId) ?? '{}');
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Drafts) : {};
     } catch {
-      return null;
+      return {};
     }
   },
-  set(key: string, answers: string[]): void {
+  set(sessionId: string, answers: Drafts): void {
     try {
-      localStorage.setItem(DRAFT_PREFIX + key, JSON.stringify(answers));
+      localStorage.setItem(DRAFT_PREFIX + sessionId, JSON.stringify(answers));
     } catch {
       // Not kept; the answers still go out when sent now.
     }
   },
-  delete(key: string): void {
+  delete(sessionId: string): void {
     try {
-      localStorage.removeItem(DRAFT_PREFIX + key);
+      localStorage.removeItem(DRAFT_PREFIX + sessionId);
     } catch {
       // Nothing kept to remove.
     }
   },
 };
+
+/** A question's place in the drafts: its words, so answers stay put when more questions queue up. */
+function draftKey(q: OpenQuestion): string {
+  return q.text.trim().toLowerCase();
+}
 
 const KIND_LABEL: Record<OpenQuestion['kind'], string> = { question: 'Fråga', assumption: 'Antagande – stämmer det?' };
 
@@ -60,45 +65,96 @@ function composeAnswers(questions: OpenQuestion[], answers: string[]): string {
 }
 
 /**
- * The questions and assumptions a turn ended with, one at a time in large text, each with its own
- * answer box. After the last one everything goes back to the agent as one message, without a review step.
+ * Every chat's questions in one sitting: all of one chat's questions in a row (new ones from it join the
+ * end while you answer), then the next chat's, shown in that chat's colour and icon. Closes when none are
+ * left, or when the user closes it.
  */
-export function QuestionFlow({ session, onClose, onSent }: { session: SessionSummary; onClose: () => void; onSent: () => void }) {
+export function QuestionQueue({ sessions, firstId, onClose }: { sessions: SessionSummary[]; firstId: string; onClose: () => void }) {
+  const [currentId, setCurrentId] = useState(firstId);
+  // Asked to show a particular chat (its card or icon was clicked): that one comes next.
+  useEffect(() => setCurrentId(firstId), [firstId]);
+  // Sets already sent: their questions linger until main reports the new message, and must not show again.
+  const [sent, setSent] = useState<Set<string>>(() => new Set());
+  const waiting = sessions.filter((s) => s.questions.length > 0 && !sent.has(questionsKey(s)));
+  const current = waiting.find((s) => s.id === currentId) ?? waiting[0];
+  useEffect(() => {
+    if (!current) onClose();
+    else if (current.id !== currentId) setCurrentId(current.id);
+  }, [current?.id]);
+  if (!current) return null;
+  return (
+    <QuestionFlow
+      key={current.id}
+      session={current}
+      queue={waiting.filter((s) => s.id !== current.id)}
+      onClose={onClose}
+      onSent={() => setSent((prev) => new Set(prev).add(questionsKey(current)))}
+    />
+  );
+}
+
+/** The chats waiting after this one, with how many questions each has. */
+function QueueStrip({ queue }: { queue: SessionSummary[] }) {
+  if (!queue.length) return null;
+  return (
+    <div className="qf-queue">
+      <span className="muted">Sedan:</span>
+      {queue.map((s) => (
+        <span key={s.id} className="qf-queue-item">
+          <SessionMark name={s.name} icon={s.icon} color={s.color} size={14} />
+          {s.name}
+          <span className="qf-queue-count">{s.questions.length}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * One chat's questions and assumptions, one at a time in large text, each with its own answer box. More
+ * from the same chat join the end while it is open. After the last one everything goes back to the agent
+ * as one message, without a review step.
+ */
+function QuestionFlow({ session, queue, onClose, onSent }: { session: SessionSummary; queue: SessionSummary[]; onClose: () => void; onSent: () => void }) {
   const { questions } = session;
-  const key = questionsKey(session);
-  const [saved] = useState(() => drafts.get(key));
-  const [answers, setAnswers] = useState<string[]>(() => questions.map((_, i) => saved?.[i] ?? ''));
-  const firstOpen = answers.findIndex((a) => !a.trim());
-  const [index, setIndex] = useState(firstOpen === -1 ? 0 : firstOpen);
-  useEffect(() => void drafts.set(key, answers), [key, answers]);
+  const [byQuestion, setByQuestion] = useState<Drafts>(() => drafts.get(session.id));
+  const answers = questions.map((q) => byQuestion[draftKey(q)] ?? '');
+  const [index, setIndex] = useState(() => Math.max(0, answers.findIndex((a) => !a.trim())));
+  useEffect(() => void drafts.set(session.id, byQuestion), [session.id, byQuestion]);
 
   const last = questions.length - 1;
-  const q = questions[index];
-  const setAnswer = (text: string): void => setAnswers((prev) => prev.map((a, i) => (i === index ? text : a)));
-  const go = (i: number): void => setIndex(i);
+  const at = Math.min(index, last);
+  const q = questions[at];
+  /** Sets the answer to question i; returns all answers with it. */
+  const answerAt = (i: number, text: string): string[] => {
+    const question = questions[i];
+    if (question) setByQuestion((prev) => ({ ...prev, [draftKey(question)]: text }));
+    return answers.map((a, k) => (k === i ? text : a));
+  };
   const single = questions.length === 1;
   const submit = (current: string[] = answers): void => {
     send('session:send', { id: session.id, text: composeAnswers(questions, current) });
-    drafts.delete(key);
+    drafts.delete(session.id);
     onSent();
   };
   /** On to the next question; after the last one, everything is sent. */
   const next = (current: string[] = answers): void => {
-    if (index < last) go(index + 1);
+    if (at < last) setIndex(at + 1);
     else submit(current);
   };
-  /** A one-click answer: set it and move on (or send, when it was the only question). */
-  const answerWith = (text: string): void => {
-    const updated = answers.map((a, i) => (i === index ? text : a));
-    setAnswers(updated);
-    next(updated);
-  };
-  const confirm = (): void => answerWith('Stämmer.');
+  /** A one-click answer: set it and move on (or send, when it was the last question). */
+  const answerWith = (text: string): void => next(answerAt(at, text));
   const quick = q && q.kind === 'question' ? (q.options.length ? q.options : quickAnswers(q.text)) : [];
+  const queued = queue.reduce((n, s) => n + s.questions.length, 0);
 
   return (
-    <Modal title={`${session.name} – ${questions.length} ${questions.length === 1 ? 'fråga' : 'frågor'} till dig`} onClose={onClose} size="full">
+    <Modal title={`${questions.length} ${questions.length === 1 ? 'fråga' : 'frågor'} till dig${queued ? ` · ${queued} till i kön` : ''}`} onClose={onClose} size="full">
       <div className="qf" style={{ '--accent': session.color } as CSSProperties}>
+        <div className="qf-from" key={session.id} style={{ '--c': session.color } as CSSProperties}>
+          <SessionMark name={session.name} icon={session.icon} color={session.color} size={26} />
+          <span>{session.name}</span>
+        </div>
+        <QueueStrip queue={queue} />
         <div className="qf-steps" hidden={single}>
           {questions.map((item, i) => (
             <button
@@ -106,10 +162,10 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
               type="button"
               className="qf-step-dot"
               data-kind={item.kind}
-              data-current={i === index ? 'true' : undefined}
+              data-current={i === at ? 'true' : undefined}
               data-answered={answers[i]?.trim() ? 'true' : undefined}
               title={item.text}
-              onClick={() => go(i)}
+              onClick={() => setIndex(i)}
             >
               {i + 1}
             </button>
@@ -119,73 +175,65 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
           </button>
         </div>
 
-        {(
-          q && (
-            <div className="qf-card" data-kind={q.kind}>
-              <div className="qf-kind">
-                {KIND_LABEL[q.kind]}
-                <span className="qf-count">{index + 1} av {questions.length}</span>
-              </div>
-              <QuestionSource session={session} about={q.about} />
-              {q.brief && <div className="qf-brief">{q.brief}</div>}
-              <div className="qf-question">{q.text}</div>
-              {q.detail && (
-                <div className="qf-detail">
-                  <MarkdownText text={q.detail} />
-                </div>
-              )}
-              {session.questionsAnswer.trim().length > q.detail.length + 40 && (
-                <details className="qf-full">
-                  <summary>Visa hela svaret från agenten</summary>
-                  <div className="qf-detail">
-                    <MarkdownText text={session.questionsAnswer} />
-                  </div>
-                </details>
-              )}
-              {quick.length > 0 && (
-                <div className="qf-quick">
-                  {quick.map((option) => (
-                    <button key={option} type="button" className="btn qf-quick-btn" data-picked={answers[index] === option ? 'true' : undefined} onClick={() => answerWith(option)}>
-                      {option}
-                    </button>
-                  ))}
-                  <span className="muted">eller skriv ett eget svar nedan</span>
-                </div>
-              )}
-              <textarea
-                key={index}
-                className="input qf-answer"
-                rows={4}
-                autoFocus
-                value={answers[index] ?? ''}
-                placeholder={q.kind === 'assumption' ? 'Rätta här om det är fel… (Enter: nästa, Skift+Enter: ny rad)' : 'Ditt svar… (Enter: nästa, Skift+Enter: ny rad)'}
-                onChange={(e) => setAnswer(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    next();
-                  }
-                }}
-              />
-              <div className="qf-actions">
-                <button type="button" className="btn" disabled={index === 0} onClick={() => go(index - 1)}>‹ Föregående</button>
-                <span className="qf-spacer" />
-                {q.kind === 'assumption' && (
-                  <button
-                    type="button"
-                    className="btn qf-ok"
-                    onClick={() => {
-                      confirm();
-                    }}
-                  >
-                    Stämmer
-                  </button>
-                )}
-                <button type="button" className="btn" onClick={() => next()}>Hoppa över</button>
-                <button type="button" className="btn primary" onClick={() => next()}>{index < last ? 'Nästa ›' : 'Skicka'}</button>
-              </div>
+        {q && (
+          <div className="qf-card" data-kind={q.kind}>
+            <div className="qf-kind">
+              {KIND_LABEL[q.kind]}
+              <span className="qf-count">{at + 1} av {questions.length}</span>
             </div>
-          )
+            <QuestionSource session={session} about={q.about} />
+            {q.brief && <div className="qf-brief">{q.brief}</div>}
+            <div className="qf-question">{q.text}</div>
+            {q.detail && (
+              <div className="qf-detail">
+                <MarkdownText text={q.detail} />
+              </div>
+            )}
+            {session.questionsAnswer.trim().length > q.detail.length + 40 && (
+              <details className="qf-full">
+                <summary>Visa hela svaret från agenten</summary>
+                <div className="qf-detail">
+                  <MarkdownText text={session.questionsAnswer} />
+                </div>
+              </details>
+            )}
+            {quick.length > 0 && (
+              <div className="qf-quick">
+                {quick.map((option) => (
+                  <button key={option} type="button" className="btn qf-quick-btn" data-picked={answers[at] === option ? 'true' : undefined} onClick={() => answerWith(option)}>
+                    {option}
+                  </button>
+                ))}
+                <span className="muted">eller skriv ett eget svar nedan</span>
+              </div>
+            )}
+            <textarea
+              key={`${session.id}:${at}`}
+              className="input qf-answer"
+              rows={4}
+              autoFocus
+              value={answers[at] ?? ''}
+              placeholder={q.kind === 'assumption' ? 'Rätta här om det är fel… (Enter: nästa, Skift+Enter: ny rad)' : 'Ditt svar… (Enter: nästa, Skift+Enter: ny rad)'}
+              onChange={(e) => void answerAt(at, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  next();
+                }
+              }}
+            />
+            <div className="qf-actions">
+              <button type="button" className="btn" disabled={at === 0} onClick={() => setIndex(at - 1)}>‹ Föregående</button>
+              <span className="qf-spacer" />
+              {q.kind === 'assumption' && (
+                <button type="button" className="btn qf-ok" onClick={() => answerWith('Stämmer.')}>
+                  Stämmer
+                </button>
+              )}
+              <button type="button" className="btn" onClick={() => next()}>Hoppa över</button>
+              <button type="button" className="btn primary" onClick={() => next()}>{at < last ? 'Nästa ›' : queue.length ? 'Skicka · nästa chatt ›' : 'Skicka'}</button>
+            </div>
+          </div>
         )}
       </div>
     </Modal>
@@ -239,8 +287,10 @@ export function QuestionsButton({ session }: { session: SessionSummary }) {
  */
 export function QuickQuestion({ session, onOpen }: { session: SessionSummary; onOpen: () => void }) {
   const { questions } = session;
-  const key = questionsKey(session);
-  const [answers, setAnswers] = useState<string[]>(() => questions.map((_, i) => drafts.get(key)?.[i] ?? ''));
+  const [answers, setAnswers] = useState<string[]>(() => {
+    const saved = drafts.get(session.id);
+    return questions.map((q) => saved[draftKey(q)] ?? '');
+  });
   const index = answers.findIndex((a) => !a.trim());
   const q = index === -1 ? undefined : questions[index];
   if (!q) return null;
@@ -249,9 +299,9 @@ export function QuickQuestion({ session, onOpen }: { session: SessionSummary; on
     const updated = answers.map((a, i) => (i === index ? text : a));
     if (updated.every((a) => a.trim())) {
       send('session:send', { id: session.id, text: composeAnswers(questions, updated) });
-      drafts.delete(key);
+      drafts.delete(session.id);
     } else {
-      drafts.set(key, updated);
+      drafts.set(session.id, { ...drafts.get(session.id), [draftKey(q)]: text });
     }
     setAnswers(updated);
   };

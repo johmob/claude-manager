@@ -110,6 +110,11 @@ interface MappingJob {
 
 // Same data folder in development and in the installed app (whose name would otherwise differ).
 // CLAUDE_MANAGER_DATA_DIR gives a test run its own folder, so it never touches (or locks out) the real app.
+/**
+ * A test instance (CLAUDE_MANAGER_TEST=1, with its own CLAUDE_MANAGER_DATA_DIR): windows render off screen
+ * without focus or taskbar entries, no notifications, no tray icon. Driven over remote debugging.
+ */
+const TEST_INSTANCE = process.env['CLAUDE_MANAGER_TEST'] === '1';
 app.setPath('userData', process.env['CLAUDE_MANAGER_DATA_DIR'] || join(app.getPath('appData'), 'claude-manager'));
 
 // Local images agents refer to are shown through an app-only scheme, registered before the app is ready.
@@ -176,9 +181,11 @@ function boot(): void {
     icon,
     onMainClose: confirmClose,
     startHidden: process.argv.includes(AUTOSTART_ARG),
+    offscreen: TEST_INSTANCE,
   });
-  const notifier = createNotifier({ onClick: showSession, flash: (on) => windows.flash(on) });
-  const tray = createTray({
+  const notifier = createNotifier({ onClick: showSession, flash: (on) => windows.flash(on), muted: TEST_INSTANCE });
+  // A test instance has no tray icon: it must not be mistaken for the user's app.
+  const tray = TEST_INSTANCE ? { setWaiting: () => undefined, setLaunchAtLogin: () => undefined, destroy: () => undefined } : createTray({
     icon,
     onOpen: () => windows.showMain(),
     onQuit: quit,

@@ -847,3 +847,11 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .q-source-mark.session-mark-letters { background: color-mix(in srgb, var(--c) 45%, transparent); }
 .ov-letters.session-mark { color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
 .ov-letters.session-mark-letters { background: none; font-size: 0.8125rem; min-width: 0; height: auto; padding: 0; }
+
+/* Question queue: which chat asks, and who is next */
+.qf-from { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 750; color: var(--text); padding: 6px 16px 6px 12px; border-radius: 999px; background: color-mix(in srgb, var(--c) 16%, transparent); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); animation: qf-from-in .35s ease-out; }
+.qf-from .session-mark-letters { font-size: 0.75rem; }
+@keyframes qf-from-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+.qf-queue { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; font-size: 0.8rem; margin-top: -10px; }
+.qf-queue-item { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
+.qf-queue-count { min-width: 1.4em; padding: 0 5px; border-radius: 999px; background: rgba(255,255,255,.08); color: var(--text); font-size: 0.7rem; font-weight: 700; text-align: center; }

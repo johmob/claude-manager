@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T06:15:41Z",
+  "updated": "2026-11-24T06:26:30Z",
   "tracks": [
     {
       "id": "eng",
@@ -132,7 +132,8 @@
               "title": "Schemat som agentens minne för anmärkningar i chatten",
               "status": "done"
             }
-          ]
+          ],
+          "notes": "Användaren: grundregel 7, lokala filer delas som klickbara länkar till hela sökvägen. Tillagd i standardreglerna och i användarens installerade grundregelfil."
         },
         {
           "id": "plan.3",
@@ -388,6 +389,12 @@
               "title": "Obesvarade frågor sparas över omstart",
               "status": "done",
               "notes": "Användaren: ja. Sparas i kortets post när de ändras och läggs tillbaka vid start. Provat: kortet väntar och visar \"Svara på 1 fråga\" efter omstart. Klart, inte släppt än."
+            },
+            {
+              "id": "ui.6.9",
+              "title": "Frågekö inom och mellan chattar",
+              "status": "done",
+              "notes": "Användaren: nya frågor från samma chatt ska läggas i kön, frågor från andra chattar klumpas per projekt och visas med rätt färg och ikon. Provat i testinstans. Klart, inte släppt än."
             }
           ]
         },
@@ -518,7 +525,8 @@
         {
           "id": "ship.2",
           "title": "Testinstans med egen datamapp",
-          "status": "done"
+          "status": "done",
+          "notes": "Användaren: testinstanser ska vara dolda. CLAUDE_MANAGER_TEST=1 ritar fönstren utanför skärmen utan fokus, notiser eller ikon i systemfältet; går ändå att styra och fotografera."
         },
         {
           "id": "ship.3",

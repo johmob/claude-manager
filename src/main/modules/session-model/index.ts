@@ -78,6 +78,8 @@ interface SessionState {
   calloutsBefore: number;
   /** Questions the agent itself tagged ([!QUESTION], [!NOTE]) in the latest turn; they stay when a cheap model re-tags the turn. */
   taggedQuestions: OpenQuestion[];
+  /** Questions still open from earlier turns the user has not replied to; new ones queue up after them. */
+  earlierQuestions: OpenQuestion[];
   /** Questions the user has already replied to in this session (normalised), so a repeat is not asked again. */
   answered: string[];
   mapping: boolean;
@@ -120,6 +122,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       questionsAnswer: '',
       calloutsBefore: 0,
       taggedQuestions: [],
+      earlierQuestions: [],
       answered: [],
       mapping: false,
       context: null,
@@ -177,12 +180,13 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), about: '', detail: '', brief: '', options: [] }] : [],
       );
       s.taggedQuestions = tagged;
-      const asked = tagged.filter((q) => !alreadyAnswered(s.answered, q.text)).slice(0, MAX_QUESTIONS);
-      // A turn the user did not start (e.g. after a subagent finished) without questions leaves the open
-      // ones as they are: they are still unanswered. Only new questions replace them.
-      if (!asked.length) return [];
+      // A turn the user did not start (e.g. after a subagent finished) keeps the open questions: they are
+      // still unanswered, and its own questions queue up after them.
+      s.earlierQuestions = s.questions;
+      const asked = mergeQuestions(s.earlierQuestions, tagged, s.answered);
+      if (asked.length === s.questions.length) return [];
       s.questions = asked;
-      s.questionsId = String(at);
+      s.questionsId = `${at}-${asked.length}`;
       s.questionsAnswer = s.turnText;
       return [];
     };
@@ -211,6 +215,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.questions = [];
         s.questionsId = '';
         s.questionsAnswer = '';
+        s.earlierQuestions = [];
         s.calloutsBefore = 0;
         return add({ kind: 'user', text: event.prompt });
       case 'thinking':
@@ -408,12 +413,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       if (!s || s.turnActive) return [];
       const lastUser = [...s.transcript].reverse().find((e) => e.kind === 'user');
       if ((lastUser?.id ?? null) !== afterEntryId) return [];
-      const seen = new Set<string>();
-      const asked = [...s.taggedQuestions, ...questions]
-        .filter((q) => !seen.has(normalizeQuestion(q.text)) && seen.add(normalizeQuestion(q.text)))
-        .filter((q) => !alreadyAnswered(s.answered, q.text))
-        .slice(0, MAX_QUESTIONS);
-      if (JSON.stringify(asked.map((q) => q.text)) !== JSON.stringify(s.questions.map((q) => q.text))) s.questionsId = String(now());
+      const asked = mergeQuestions(s.earlierQuestions, [...s.taggedQuestions, ...questions], s.answered);
+      if (JSON.stringify(asked.map((q) => q.text)) !== JSON.stringify(s.questions.map((q) => q.text))) s.questionsId = `${now()}-${asked.length}`;
       s.questions = asked;
       return setBlocks(s, blocks);
     },
@@ -424,6 +425,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.questions = [];
         s.questionsId = '';
         s.questionsAnswer = '';
+        s.earlierQuestions = [];
         s.calloutsBefore = 0;
       }
     },
@@ -460,6 +462,18 @@ export function normalizeQuestion(text: string): string {
     .replace(/\s*[([][^)\]]*[)\]]\s*$/, '')
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
+}
+
+/** Open questions first, then new ones not already among them or answered before. */
+function mergeQuestions(open: OpenQuestion[], fresh: OpenQuestion[], answered: string[]): OpenQuestion[] {
+  const seen = new Set(open.map((q) => normalizeQuestion(q.text)));
+  const added = fresh.filter((q) => {
+    const key = normalizeQuestion(q.text);
+    if (seen.has(key) || alreadyAnswered(answered, q.text)) return false;
+    seen.add(key);
+    return true;
+  });
+  return [...open, ...added].slice(0, MAX_QUESTIONS);
 }
 
 /** Whether a question was answered already: the same words, or one containing the other when long enough. */

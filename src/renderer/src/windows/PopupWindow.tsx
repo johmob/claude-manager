@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { PopupView } from '../../../shared/contracts';
-import { AskQuestionsContext, QuestionFlow, questionsKey } from '../components/QuestionFlow';
+import { AskQuestionsContext, QuestionQueue } from '../components/QuestionFlow';
 import { QuickChat } from '../components/QuickChat';
 import { WorkSchema } from '../components/WorkSchema';
 import { send } from '../lib/api';
@@ -32,11 +32,6 @@ export function PopupWindow() {
     send('popup:close', undefined);
   };
   const session = state?.sessions.find((s) => s.id === view?.id);
-  const answered = view?.kind === 'questions' && session !== undefined && !session.questions.length;
-  // Questions answered elsewhere (or a new message sent): nothing left to show.
-  useEffect(() => {
-    if (answered) close();
-  }, [answered]);
 
   if (state && view?.kind === 'quick') return (
     <>
@@ -44,14 +39,15 @@ export function PopupWindow() {
       <ImageViewer />
     </>
   );
-  if (!state || !session || !view || answered) return null;
+  if (!state || !view) return null;
+  if (view.kind === 'schema' && !session) return null;
   return (
     <AccountContext.Provider value={state.account}>
       <AskQuestionsContext.Provider value={(id) => setView({ kind: 'questions', id })}>
         {view.kind === 'schema' ? (
-          <WorkSchema session={session} onClose={close} standalone />
+          session && <WorkSchema session={session} onClose={close} standalone />
         ) : (
-          <QuestionFlow key={questionsKey(session)} session={session} onClose={close} onSent={close} />
+          <QuestionQueue key={view.id} sessions={state.sessions} firstId={view.id} onClose={close} />
         )}
       </AskQuestionsContext.Provider>
       <ImageViewer />

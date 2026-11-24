@@ -298,3 +298,24 @@ describe('questions after a restart', () => {
     expect(model.summary('s1')).toMatchObject({ status: 'waiting', questionsId: '42', questionsAnswer: 'Svaret.', questions: [q] });
   });
 });
+
+describe('question queue within a chat', () => {
+  it('new questions from a turn the user did not start queue up after the open ones', () => {
+    const { model, apply } = setup();
+    const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'M3 eller M4?' } });
+    apply(finish);
+    const first = model.summary('s1')!.questionsId;
+    // A subagent finishes and the agent asks again, before the user has replied.
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'Fyra eller sex skruvar?' } });
+    apply(finish);
+    expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['M3 eller M4?', 'Fyra eller sex skruvar?']);
+    expect(model.summary('s1')?.questionsId).not.toBe(first);
+    // The cheap model's tags for that turn keep the earlier question first.
+    const lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
+    model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Ska kåpan vara svart?', about: '', detail: '', brief: '', options: [] }], []);
+    expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['M3 eller M4?', 'Fyra eller sex skruvar?', 'Ska kåpan vara svart?']);
+  });
+});

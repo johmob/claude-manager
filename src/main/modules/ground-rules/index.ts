@@ -9,6 +9,7 @@ export const DEFAULT_GROUND_RULES = `# Base ground rules
 4. Use Fable (the top model) only for large planning jobs. Hand execution to cheaper, lighter models.
 5. Plan the work schema like an org chart: parallel tracks for areas that can progress independently (for example CAD, firmware for each device, result pages), each with its items and sub-items, an owner (the subagent working on it) and dependencies between items. Refer to its items by id. When the work reaches a new area or phase that no track covers, ask the user whether to open a new track before starting on it.
 6. Build everything as self-contained modules with clearly defined inputs and outputs. No duplicated functions across modules, and no module may depend on another. No quick fixes; clean, minimal functions.
+7. When you share a local file, write it as a markdown link to its full path with forward slashes, in angle brackets, so the user can click it to open the file: [rapport.pdf](<C:/path/to/rapport.pdf>). Never only the bare path, and never a path relative to the project.
 `;
 
 export interface GroundRules {
