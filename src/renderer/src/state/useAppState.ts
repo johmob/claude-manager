@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { RECONNECTED_EVENT } from '../lib/platform';
 import type { AccountSnapshot, AppSettings, SessionSummary, UpdateStatus, UsageSnapshot } from '../../../shared/contracts';
 
 export interface AppState {
@@ -49,15 +48,6 @@ export function useAppState(): AppState | null {
       }),
     ];
 
-    // After the phone lost its connection pushes were missed: take the whole state anew.
-    const refetch = (): void => {
-      window.cm
-        .invoke('app:get-state', undefined)
-        .then((fresh) => alive && setState(fresh))
-        .catch((e: unknown) => console.error('app:get-state', e));
-    };
-    window.addEventListener(RECONNECTED_EVENT, refetch);
-
     window.cm
       .invoke('app:get-state', undefined)
       .then((initial) => {
@@ -74,7 +64,6 @@ export function useAppState(): AppState | null {
 
     return () => {
       alive = false;
-      window.removeEventListener(RECONNECTED_EVENT, refetch);
       offs.forEach((off) => off());
     };
   }, []);

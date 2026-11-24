@@ -26,7 +26,6 @@ import type {
   ModelChoice,
   IpcEventChannel,
   IpcEventMap,
-  RemoteStatus,
   IpcInvokeChannel,
   IpcInvokeMap,
   NewSessionOptions,
@@ -71,9 +70,8 @@ import { describeDrift, driftSince, markAt, markOf } from './modules/project-dri
 import { SCHEDULE_PROTOCOL, createScheduler, describeCron, nextRunOf, readJobs, runCommand, writeJobs } from './modules/scheduler';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 import { compactCheckRequest, readCompactCheck } from './modules/compact-check';
-import { readLocalImage, registerLocalImageScheme, serveLocalImages } from './modules/local-images';
-import { createRemoteHost } from './modules/remote-host';
-import { copyToClipboard, mailWithAttachment, outlookPath, readSharedFile, saveCopyAs } from './modules/file-actions';
+import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
+import { copyToClipboard, mailWithAttachment, outlookPath, saveCopyAs } from './modules/file-actions';
 
 const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: '',
@@ -90,7 +88,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   logging: true,
   keepAwake: false,
   theme: 'night',
-  remoteAccess: { enabled: false, port: ***REMOVED*** },
   defaultModel: 'opus',
   defaultEffort: 'medium',
   defaultPermissionMode: 'auto',
@@ -178,9 +175,6 @@ function boot(): void {
   /** Sessions whose new context window applies once the current turn is done. */
   const awaitingRestart = new Set<string>();
   let quitting = false;
-  /** The remote host (phone access); made the first time it is switched on. */
-  let remote: ReturnType<typeof createRemoteHost> | null = null;
-  let remoteQueue: Promise<void> = Promise.resolve();
 
   // ---------- Persistence ----------
   const tagMemory = createTagMemory(join(userData, 'tags'));
@@ -1014,46 +1008,15 @@ function boot(): void {
     windows.setTheme(settings.theme);
     keepAwake.set(settings.keepAwake);
     appLog.setEnabled(settings.logging);
-    if (changes.remoteAccess !== undefined) applyRemote();
     if (changes.autoUpdate !== undefined) updater?.setAuto(settings.autoUpdate);
     pushEvent('state:settings', settings);
     scheduleSync();
     return settings;
   }
 
-  // ---------- Remote access (the phone) ----------
-  /** Everything the app tells its windows also goes to connected phones. */
+  /** What the app tells its windows. */
   function pushEvent<K extends IpcEventChannel>(channel: K, payload: IpcEventMap[K]): void {
     windows.send(channel, payload);
-    remote?.broadcast(channel, payload);
-  }
-
-  /** Starts or stops the remote host to match the setting. One change at a time. */
-  function applyRemote(): void {
-    const { enabled, port } = settings.remoteAccess;
-    remoteQueue = remoteQueue.then(async () => {
-      if (enabled) {
-        remote ??= createRemoteHost({
-          dir: join(userData, 'remote'),
-          rendererRoot: join(__dirname, '../renderer'),
-          invoke: (channel, req) => callRemote(channel, req),
-          readImage: readLocalImage,
-          readFile: (path) => readSharedFile(path, [...activeRecords().map((r) => r.cwd), join(tmpdir(), 'claude-manager-paste')]),
-          log: (what, data) => appLog.write(what, data),
-        });
-        await remote.start(port);
-      } else await remote?.stop();
-    });
-  }
-
-  async function remoteStatus(): Promise<RemoteStatus> {
-    const { enabled, port } = settings.remoteAccess;
-    if (!remote || !enabled) {
-      const firewallCommand = `netsh advfirewall firewall add rule name="Claude Manager fjärråtkomst" dir=in action=allow protocol=TCP localport=${port} remoteip=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,100.64.0.0/10`;
-      return { running: false, error: null, port, urls: [], pairingUrl: null, qr: null, clients: 0, firewallCommand };
-    }
-    await remoteQueue;
-    return remote.status(port);
   }
 
   /** Registers (or removes) the app as a Windows login item. Only the installed app: a dev run would register electron.exe. */
@@ -1091,7 +1054,6 @@ function boot(): void {
     clearInterval(focusTimer);
     clearInterval(resumeTimer);
     updater?.stop();
-    void remote?.stop();
     engine.stopAll();
     usage.stop();
     todo.close();
@@ -1102,34 +1064,18 @@ function boot(): void {
   }
 
   // ---------- IPC ----------
-  /** Every handler by channel: ipcMain serves the windows, and the remote host calls the same functions for the phone. */
-  const handlers = new Map<string, (req: unknown, remoteCall: boolean) => unknown>();
-
-  function callRemote(channel: string, req: unknown): Promise<unknown> {
-    const run = handlers.get(channel);
-    if (!run) return Promise.reject(new Error(`Okänd kanal ${channel}`));
-    return Promise.resolve(run(req, true));
-  }
-
   function handle<K extends IpcInvokeChannel>(
     channel: K,
     fn: (req: IpcInvokeMap[K]['req']) => IpcInvokeMap[K]['res'] | Promise<IpcInvokeMap[K]['res']>,
   ): void {
-    const run = (req: unknown, remoteCall: boolean): unknown => {
+    ipcMain.handle(channel, (_event, req: IpcInvokeMap[K]['req']) => {
       // What the user does in the app (the constant hover and state reads are left out).
-      if (!QUIET_CHANNELS.has(channel)) appLog.write('ui', remoteCall ? { channel, req, remote: true } : { channel, req });
-      return fn(req as IpcInvokeMap[K]['req']);
-    };
-    handlers.set(channel, run);
-    ipcMain.handle(channel, (_event, req: IpcInvokeMap[K]['req']) => run(req, false));
+      if (!QUIET_CHANNELS.has(channel)) appLog.write('ui', { channel, req });
+      return fn(req);
+    });
   }
 
   handle('app:get-state', () => ({ sessions: model.summaries(), usage: usage.current(), settings, account, update: updateStatus() }));
-  handle('remote:status', () => remoteStatus());
-  handle('remote:new-key', async () => {
-    remote?.newKey();
-    return remoteStatus();
-  });
   handle('update:install', () => updater?.installNow());
   handle('log:open-folder', async () => {
     await shell.openPath(appLog.dir);
@@ -1420,7 +1366,6 @@ ${appContext('Appen komprimerar samtalet när du är redo', 'Spara det som måst
   handle('popup:close', () => windows.closePopup());
   handle('popup:current', () => windows.popupView());
 
-  applyRemote();
 }
 
 // ---------- Pure helpers ----------
@@ -1461,14 +1406,6 @@ function gitSetupPrompt(name: string): string {
   ].join(' ');
 }
 
-/** Remote access: off unless the saved value says on; a port outside 1024-65535 falls back to the default. */
-function validRemoteAccess(raw: unknown): AppSettings['remoteAccess'] {
-  const d = DEFAULT_SETTINGS.remoteAccess;
-  if (!isRecord(raw)) return { ...d };
-  const port = raw['port'];
-  return { enabled: raw['enabled'] === true, port: typeof port === 'number' && Number.isInteger(port) && port >= 1024 && port <= 65535 ? port : d.port };
-}
-
 function validSettings(r: unknown): AppSettings | null {
   if (!isRecord(r)) return null;
   const pick = <T>(value: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(value as T) ? (value as T) : fallback);
@@ -1488,7 +1425,6 @@ function validSettings(r: unknown): AppSettings | null {
     logging: bool(r['logging'], d.logging),
     keepAwake: bool(r['keepAwake'], d.keepAwake),
     theme: pick(r['theme'], THEME_CHOICES, d.theme),
-    remoteAccess: validRemoteAccess(r['remoteAccess']),
     textScale: typeof r['textScale'] === 'number' && Number.isFinite(r['textScale']) ? clampScale(r['textScale']) : d.textScale,
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),
     defaultEffort: pick(r['defaultEffort'], EFFORT_CHOICES, d.defaultEffort),

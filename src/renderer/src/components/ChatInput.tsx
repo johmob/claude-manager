@@ -1,11 +1,9 @@
-import { useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
+import { useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
 import { PASTE_FILE_MAX_BYTES, PASTE_MAX_BYTES, PASTE_TYPES, withAttachments } from '../../../shared/pastedImages';
 import { errorMessage, send } from '../lib/api';
 import { baseName } from '../lib/fileShare';
-import { imageSrc, localImageUrl } from '../lib/localImage';
-import { isRemote } from '../lib/platform';
-import { shrinkImage } from '../lib/shrinkImage';
+import { localImageUrl } from '../lib/localImage';
 import '../styles/attach.css';
 
 interface Attached {
@@ -61,17 +59,12 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
   const [files, setFiles] = useState<AttachedFile[]>([]);
   const [dragging, setDragging] = useState(false);
   const [problem, setProblem] = useState('');
-  /** On the phone: Enter is a new line (the soft keyboard has no Ctrl), buttons send, and photos come from the camera or gallery. */
-  const touch = isRemote && !compact;
-  const camera = useRef<HTMLInputElement>(null);
-  const gallery = useRef<HTMLInputElement>(null);
-  const anyFile = useRef<HTMLInputElement>(null);
 
   /** Adds a file that already lies on disk (dragged from Explorer): images get a thumbnail, anything else a chip. */
   const attachPath = (path: string): void => {
     const norm = path.split('\\').join('/');
     const url = localImageUrl(norm);
-    if (url) setImages((prev) => (prev.some((i) => i.path === norm) ? prev : [...prev, { path: norm, preview: imageSrc(url) }]));
+    if (url) setImages((prev) => (prev.some((i) => i.path === norm) ? prev : [...prev, { path: norm, preview: url }]));
     else setFiles((prev) => (prev.some((f) => f.path === norm) ? prev : [...prev, { path: norm, name: baseName(norm) }]));
   };
 
@@ -79,13 +72,13 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
   const attach = async (list: File[]): Promise<void> => {
     setProblem('');
     for (const original of list) {
-      const path = isRemote ? '' : window.cm.pathForFile?.(original) ?? '';
+      const path = window.cm.pathForFile?.(original) ?? '';
       if (path) {
         attachPath(path);
         continue;
       }
       try {
-        const file = isRemote && original.type.startsWith('image/') ? await shrinkImage(original) : original;
+        const file = original;
         if (PASTE_TYPES[file.type]) {
           if (file.size > PASTE_MAX_BYTES) {
             setProblem('Bilden är större än 5 MB.');
@@ -141,14 +134,14 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
     setProblem('');
   };
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (!touch && e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       submit(e.ctrlKey);
     }
   };
 
   return (
-    <div className={compact ? 'chat-input compact' : touch ? 'chat-input touch' : 'chat-input'} data-drag={dragging || undefined}
+    <div className={compact ? 'chat-input compact' : 'chat-input'} data-drag={dragging || undefined}
       onDragOver={(e) => {
         if (!e.dataTransfer.types.includes('Files')) return;
         e.preventDefault();
@@ -185,9 +178,7 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
         rows={compact ? 1 : 2}
         value={text}
         placeholder={
-          touch
-            ? 'Skriv till agenten…'
-            : busy
+          busy
             ? compact
               ? 'Skriv… (Enter: köa, Ctrl+Enter: avbryt och gör detta)'
               : 'Skriv till agenten… (Enter: läses när den är klar, Ctrl+Enter: avbryt och gör detta i stället)'
@@ -198,23 +189,9 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKey}
         onPaste={onPaste}
-        enterKeyHint={touch ? 'enter' : 'send'}
+        enterKeyHint="send"
       />
-      {touch && (
-        <div className="chat-touch-bar">
-          <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { void attach([...(e.target.files ?? [])]); e.target.value = ''; }} />
-          <input ref={gallery} type="file" accept="image/*" multiple hidden onChange={(e) => { void attach([...(e.target.files ?? [])]); e.target.value = ''; }} />
-          <button type="button" className="touch-btn" aria-label="Ta ett foto" onClick={() => camera.current?.click()}>Foto</button>
-          <button type="button" className="touch-btn" aria-label="Välj bild från galleriet" onClick={() => gallery.current?.click()}>Bild</button>
-          <input ref={anyFile} type="file" multiple hidden onChange={(e) => { void attach([...(e.target.files ?? [])]); e.target.value = ''; }} />
-          <button type="button" className="touch-btn" aria-label="Bifoga en fil" onClick={() => anyFile.current?.click()}>Fil</button>
-          <span className="spacer" />
-          {busy && <button type="button" className="touch-btn" disabled={!text.trim() && images.length === 0 && files.length === 0} onClick={() => submit(true)}>Avbryt och gör detta i stället</button>}
-          {busy && <button type="button" className="touch-btn danger" onClick={() => send('session:interrupt', { id: session.id })}>Avbryt</button>}
-          <button type="button" className="touch-btn primary" disabled={!text.trim() && images.length === 0 && files.length === 0} onClick={() => submit()}>{busy ? 'Köa' : 'Skicka'}</button>
-        </div>
-      )}
-      {!compact && !touch && (
+      {!compact && (
         <div className="chat-input-side">
           <button type="button" className="icon-btn" title="Kommandon" aria-label="Kommandon" onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
           {menuOpen && <ActionsMenu session={session} onClose={() => setMenuOpen(false)} />}

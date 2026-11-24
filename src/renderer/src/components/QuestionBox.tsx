@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { OpenQuestion, SessionSummary } from '../../../shared/contracts';
 import { send } from '../lib/api';
-import { isRemote } from '../lib/platform';
 import { composeAnswers, draftKey, drafts, onDraftsChanged } from '../lib/questionAnswers';
 import { quickAnswers } from '../lib/quickAnswers';
 import { useReveal } from '../lib/revealQuestions';
@@ -58,7 +57,7 @@ export function QuestionBox({ session }: { session: SessionSummary }) {
   useEffect(() => onDraftsChanged(session.id, () => setByQuestion(drafts.get(session.id))), [session.id]);
   useReveal(session.id, boxRef, () => {
     boxRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-    if (!isRemote) (fields.current.find((f, i) => f && !answers[i]?.trim()) ?? fields.current[0])?.focus({ preventScroll: true });
+    (fields.current.find((f, i) => f && !answers[i]?.trim()) ?? fields.current[0])?.focus({ preventScroll: true });
   });
 
   if (!questions.length || sentKey === key) return null;
@@ -126,7 +125,7 @@ export function QuestionBox({ session }: { session: SessionSummary }) {
               placeholder={q.kind === 'assumption' ? 'Rätta här om det är fel…' : 'Ditt svar…'}
               onChange={(e) => setAnswer(i, e.target.value)}
               onKeyDown={(e) => {
-                if (isRemote || e.key !== 'Enter') return;
+                if (e.key !== 'Enter') return;
                 if (e.ctrlKey) {
                   e.preventDefault();
                   submit();
@@ -143,7 +142,7 @@ export function QuestionBox({ session }: { session: SessionSummary }) {
       })}
       <div className="qbox-foot">
         <button type="button" className="btn" onClick={skipAll}>Hoppa över alla</button>
-        <span className="qbox-hint muted">{isRemote ? '' : 'Enter: nästa fält · Ctrl+Enter: skicka'}</span>
+        <span className="qbox-hint muted">Enter: nästa fält · Ctrl+Enter: skicka</span>
         <button type="button" className="btn primary" onClick={submit}>Skicka svaren</button>
       </div>
     </section>

@@ -30,12 +30,6 @@
               "title": "Billiga hjälpanrop via Haiku",
               "status": "done",
               "notes": "Taggning, ikoner, etiketter och sammanfattningar går via structured-query med Haiku; kostnaden räknas och visas i overlayn."
-            },
-            {
-              "id": "design.1.4",
-              "title": "Samma gränssnitt överallt",
-              "status": "done",
-              "notes": "remoteBridge ger window.cm över websocket, så samma React-kod körs i Electron och i telefonens webbläsare."
             }
           ]
         },
@@ -92,12 +86,6 @@
               "title": "Helskärmsflöden",
               "status": "done",
               "notes": "Frågeflödet och arbetsschemat öppnas stort, som popup när appen ligger i bakgrunden."
-            },
-            {
-              "id": "design.3.4",
-              "title": "Mobilen",
-              "status": "done",
-              "notes": "Egen layout med flikar för översikt, frågor och schema, och chatt i helskärm."
             }
           ]
         },
@@ -141,7 +129,7 @@
               "id": "design.5.1",
               "title": "Genomgång av alla vyer",
               "status": "not_started",
-              "notes": "Förslag: skärmbilder av varje vy i båda temana och i mobilen, sedan en lista med inkonsekvenser (avstånd, storlekar, knappar, tomma lägen) att rätta i en omgång."
+              "notes": "Förslag: skärmbilder av varje vy i båda temana, sedan en lista med inkonsekvenser (avstånd, storlekar, knappar, tomma lägen) att rätta i en omgång."
             },
             {
               "id": "design.5.2",
@@ -466,7 +454,7 @@
               "id": "chat.2.4",
               "title": "Öppnas från overlay och kort",
               "status": "done",
-              "notes": "Overlay, kort, notiser och mobil öppnar chatten vid frågerutan (sedan 0.1.36, tidigare helskärm)."
+              "notes": "Overlay, kort och notiser öppnar chatten vid frågerutan (sedan 0.1.36, tidigare helskärm)."
             },
             {
               "id": "chat.2.5",
@@ -538,13 +526,13 @@
               "id": "chat.2.16",
               "title": "Frågor i chatten",
               "status": "done",
-              "notes": "Användaren: ta bort frågorna i helskärm, bara strul. Flera frågor ska fortfarande summeras, men frågas och besvaras enbart i chatten: en ruta sist i chatten med frågorna (rubrik, vad de gäller, underlag, svarsknappar och svarsfält per fråga) och ett Skicka för alla. Overlayn, korten och mobilen öppnar chatten vid frågan i stället för helskärmsflödet. Helskärmsflödet och popupen för frågor tas bort. Användaren igen: en fråga i helskärm försvann medan hen svarade och kom sedan tillbaka; bort med helskärmsfrågor. Högst prioritet i kvällens kö. Provat dolt."
+              "notes": "Användaren: ta bort frågorna i helskärm, bara strul. Flera frågor ska fortfarande summeras, men frågas och besvaras enbart i chatten: en ruta sist i chatten med frågorna (rubrik, vad de gäller, underlag, svarsknappar och svarsfält per fråga) och ett Skicka för alla. Overlayn och korten öppnar chatten vid frågan i stället för helskärmsflödet. Helskärmsflödet och popupen för frågor tas bort. Användaren igen: en fråga i helskärm försvann medan hen svarade och kom sedan tillbaka; bort med helskärmsfrågor. Högst prioritet i kvällens kö. Provat dolt."
             },
             {
               "id": "chat.2.17",
               "title": "Städa gammal frågestil",
               "status": "not_started",
-              "notes": "Det döda blocket \"Question flow, full screen\" i mobile.css och de .qf-regler i styles.css som bara det använder."
+              "notes": "De .qf-regler i styles.css som bara det borttagna helskärmsflödet för frågor använde."
             }
           ]
         },
@@ -587,7 +575,7 @@
               "id": "chat.3.6",
               "title": "Dra in filer",
               "status": "done",
-              "notes": "Klart i kod: alla filer kan dras in eller klistras in (via sökväg från Explorer, annars kopia i temp, max 10 MB) och visas som chips; på mobilen finns en Fil-knapp. Provat dolt."
+              "notes": "Klart i kod: alla filer kan dras in eller klistras in (via sökväg från Explorer, annars kopia i temp, max 10 MB) och visas som chips. Provat dolt."
             }
           ]
         },
@@ -664,22 +652,10 @@
               "notes": "Startar Outlook med ett nytt mejl där bilden är bifogad (outlook.exe /a <fil>); knappen visas bara om Outlook finns. Klart: Nytt mejl i Outlook via outlook.exe /a, knappen bara om klassiska Outlook finns. Ej provat i en dold instans ännu. Provat dolt."
             },
             {
-              "id": "chat.5.4",
-              "title": "Dela i mobilen",
-              "status": "done",
-              "notes": "I mobilvyn öppnar Dela telefonens delningsmeny (Web Share med filen), så bilden kan skickas till valfri app. Klart: Dela via Web Share i bildvisaren och fillistan i mobilen. Ej provat i en dold instans ännu. Provat dolt."
-            },
-            {
               "id": "chat.5.5",
               "title": "Fillänkar: åtgärder",
               "status": "done",
               "notes": "Länkar till lokala filer i chatten (PDF, STL, CSV …) får samma åtgärder som bilder: Spara som, Öppna, Visa i mappen, Kopiera filen (klistra in i Teams eller Outlook) och Nytt mejl i Outlook med filen bifogad. Användaren: högerklick på en fillänk i chatten ger en meny med Visa i mapp (Utforskaren öppnas med filen markerad), så filen kan hämtas utan att öppnas eller letas upp. Klart: Högerklicksmeny på fillänkar: Öppna, Visa i mapp, Spara som, Kopiera filen, Nytt mejl. Ej provat i en dold instans ännu. Provat dolt."
-            },
-            {
-              "id": "chat.5.6",
-              "title": "Filer i mobilen",
-              "status": "done",
-              "notes": "I mobilvyn hämtas filen från hemdatorn via en skyddad väg i fjärrvärden (samma regler som bilder, men fler filtyper och en storleksgräns), och Dela öppnar telefonens delningsmeny med filen. Klart: Skyddad /file-väg (mappar i projekten, vitlistade typer, 50 MB) plus Ladda ned/Dela-ark. Ej provat i en dold instans ännu. Provat dolt."
             }
           ]
         }
@@ -689,7 +665,7 @@
       "id": "voice",
       "title": "Röststyrning",
       "owner": "main",
-      "notes": "Prata i stället för att skriva, på datorn och i mobilen; appen visar fortfarande text. Förslaget är lokal transkribering så att inget ljud lämnar datorn.",
+      "notes": "Prata i stället för att skriva på datorn; appen visar fortfarande text. Förslaget är lokal transkribering så att inget ljud lämnar datorn.",
       "items": [
         {
           "id": "voice.1",
@@ -741,29 +717,6 @@
                 "voice.2.2"
               ],
               "notes": "Valfritt: Haiku gör om det transkriberade till en tydlig instruktion; användaren ser texten och kan ändra innan den skickas."
-            }
-          ]
-        },
-        {
-          "id": "voice.3",
-          "title": "Röst i mobilen",
-          "notes": "Telefonens egen diktering fungerar redan; mikrofonknapp som skickar ljudet hem är ett alternativ.",
-          "items": [
-            {
-              "id": "voice.3.1",
-              "title": "Diktering via tangentbordet",
-              "status": "done",
-              "notes": "Mikrofonen i telefonens tangentbord skriver i mobilvyns chattruta utan något extra."
-            },
-            {
-              "id": "voice.3.2",
-              "title": "Mikrofonknapp som transkriberar hemma",
-              "status": "not_started",
-              "dependsOn": [
-                "voice.2.2",
-                "mob.1.4"
-              ],
-              "notes": "Samma lokala Whisper på hemdatorn, så telefonens tangentbord inte behöver skicka ljud till någon tjänst."
             }
           ]
         },
@@ -1322,79 +1275,6 @@
               "title": "Visa agenternas CronCreate-jobb",
               "status": "done",
               "notes": "Jobb som agenten lägger med Claude Codes CronCreate visas i Schemalagt, märkta Sessionen eller Claude Code (beständiga), med schema, nästa körning och meddelandet; borttagna med CronDelete försvinner, och sessionsjobb försvinner när sessionen avslutas. Inte provat med en riktig agent."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "mob",
-      "title": "Mobil",
-      "owner": "main",
-      "notes": "Styra de privata projekten på hemdatorn från telefonen över VPN. Jobbet ingår inte.",
-      "items": [
-        {
-          "id": "mob.1",
-          "title": "Värd och mobilvy",
-          "notes": "Appen serverar en mobilvy på hemnätet med parnyckel.",
-          "items": [
-            {
-              "id": "mob.1.1",
-              "title": "Koncept och beslut",
-              "status": "done",
-              "notes": "Bara hemdatorn och det privata kontot; inga jobbprojekt i mobilen och ingen koppling mellan datorerna. Koncept: appen på hemdatorn får ett litet API (websocket med parnyckel) som bara lyssnar på VPN-gränssnittet, och mobilen är en webbapp som telefonen öppnar över VPN. Den visar översikt, frågor och chatt och kan skicka meddelanden; allt körs på hemdatorn. Användaren: mobilen kör redan VPN och når hemnätverket, så ingen relätjänst eller tunnel behöver byggas; appen behöver bara lyssna på hemnätverket (med parnyckel) och servera webbappen. VPN slutar i hemmaroutern, så mobilen kommer in som en klient på hemnätverket: appen lyssnar på hemdatorns LAN-adress, släpper bara in hemnätets och VPN-nätets adresser, och kräver parnyckeln. Ingenting öppnas mot internet. Brandväggsregel i Windows för porten behövs. Beslut: installerbar webbapp (PWA) som hemdatorn serverar, inget app-skal till att börja med. Telefonen kör GrapheneOS (Android utan Google-tjänster): eget certifikat installeras som användar-CA; notiser via ntfy (fungerar utan Googles push), inte Web Push."
-            },
-            {
-              "id": "mob.1.2",
-              "title": "Värd-API och parning",
-              "status": "done",
-              "notes": "Modulen remote-host serverar appens eget fönster över HTTPS med eget CA-certifikat, en websocket med tillåtelselista för kanaler och parning med nyckel i cookie (QR i ⚙-menyn, Ny nyckel); bara privata adresser släpps in, avstängt som standard. Verifierat i en dold testinstans (curl, ws-klient, skärmbild). Kvar till mob.3: mobil layout (gränssnittet är än så länge skrivbordsvyn), lokala bilder via cm-img visas inte på distans, och brandväggsregeln läggs in av användaren."
-            },
-            {
-              "id": "mob.1.3",
-              "title": "Mobilvyer",
-              "status": "done",
-              "notes": "Mobil layout (MobileWindow) när gränssnittet körs via fjärrskalet: översikt med användning och nedräkning, \"Svara på N frågor\" med det vanliga frågeflödet i helskärm, chatt i Minimal med kamera/galleri, avbryt-och-gör-detta och Under arbetet, samt schemat som hopfällbar lista per spår (delad logik i lib/todoTree). Bilder visas via /img på värden, texten överlever återanslutning och manifest/ikoner finns för hemskärmen. Verifierat i en dold testinstans med skärmbilder."
-            },
-            {
-              "id": "mob.1.4",
-              "title": "Prova på riktig telefon",
-              "status": "not_started",
-              "dependsOn": [
-                "mob.1.3"
-              ],
-              "notes": "Användaren: provas hemma med zip-filen på minneskortet (claude-manager-hemma.zip: LÄS-MIG.md, starta.ps1, pushtestet; kör med den installerade appen som Node). Kräver 0.1.35 eller senare hemma."
-            }
-          ]
-        },
-        {
-          "id": "mob.2",
-          "title": "Notiser",
-          "notes": "Push är ett måste; ingen Chrome och ingen ntfy.",
-          "items": [
-            {
-              "id": "mob.2.1",
-              "title": "Bygg pushtestet",
-              "status": "done",
-              "notes": "Mikroapp i tools/push-test (port ***REMOVED***): HTTPS med eget CA-certifikat, installerbar sida, service worker och testnotiser nu, om 30 s och om 5 min. Startas med tools/home-setup.ps1."
-            },
-            {
-              "id": "mob.2.2",
-              "title": "Kör pushtestet hemma",
-              "status": "not_started",
-              "dependsOn": [
-                "mob.2.1"
-              ],
-              "notes": "Användaren kör pushtestet hemma med starta.ps1 ur zip-filen på minneskortet: notis direkt, med släckt skärm och med stängd Brave. Resultatet avgör webbpush eller egen Android-app."
-            },
-            {
-              "id": "mob.2.3",
-              "title": "Push i mobilappen",
-              "status": "not_started",
-              "dependsOn": [
-                "mob.2.2"
-              ],
-              "notes": "Bygg in push när pushtestet visat vägen: Web Push i Brave om det fungerar, annars en egen Android-app med egen anslutning över VPN."
             }
           ]
         }

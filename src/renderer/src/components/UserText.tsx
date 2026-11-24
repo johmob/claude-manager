@@ -1,6 +1,6 @@
 import { splitAttachments } from '../../../shared/pastedImages';
 import { baseName } from '../lib/fileShare';
-import { imageSrc, localImageUrl } from '../lib/localImage';
+import { localImageUrl } from '../lib/localImage';
 import { FileLink } from './FileLink';
 import '../styles/attach.css';
 
@@ -13,7 +13,7 @@ export function UserText({ text }: { text: string }) {
       {images.length > 0 && (
         <div className="user-images">
           {images.map((path) => (
-            <img key={path} src={imageSrc(localImageUrl(path) ?? '')} alt="Inklistrad bild" title={path} />
+            <img key={path} src={localImageUrl(path) ?? ''} alt="Inklistrad bild" title={path} />
           ))}
         </div>
       )}

@@ -540,7 +540,7 @@ textarea.input { resize: vertical; }
 .btn.small.focus { border-color: rgba(251,191,36,.6); color: #fbbf24; }
 .btn.small.focus:hover { background: rgba(251,191,36,.12); }
 
-/* ---------- Questions: the button on cards, tiles and the phone chat ---------- */
+/* ---------- Questions: the button on cards and tiles ---------- */
 .questions-btn { display: flex; align-items: center; gap: 10px; width: calc(100% - 24px); margin: 0 12px 8px; padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(250,204,21,.6); background: rgba(250,204,21,.1); color: #fde68a; font: inherit; text-align: left; cursor: pointer; animation: q-pulse 1.6s ease-in-out infinite; }
 .questions-btn:hover { background: rgba(250,204,21,.18); }
 .questions-btn-icon { width: 24px; height: 24px; flex: none; border-radius: 50%; display: grid; place-items: center; background: #facc15; color: #1a1405; font-weight: 900; }
@@ -677,13 +677,6 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .settings-btn { padding: 4px 10px; font-size: 0.9rem; line-height: 1; }
 .settings-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 230px; display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.55); }
 .settings-pop .toggle { justify-content: flex-start; }
-.remote-box { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--border); max-width: 300px; }
-.remote-port { width: 5.5em; }
-.remote-urls { font-size: 0.7188rem; color: var(--muted); word-break: break-all; user-select: text; }
-.remote-qr { width: 160px; height: 160px; align-self: center; border-radius: 6px; background: #fff; }
-.remote-note { font-size: 0.6875rem; color: var(--muted); }
-.remote-error { font-size: 0.75rem; color: #f0a0a0; }
-.remote-cmd { display: block; margin-top: 4px; padding: 4px 6px; font-size: 0.625rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: copy; word-break: break-all; user-select: all; }
 .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.8125rem; }
 .settings-version { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding-top: 6px; border-top: 1px solid var(--border); font-size: 0.7188rem; color: var(--muted); }
 .settings-version .link-btn { padding: 0; font-size: 0.75rem; }

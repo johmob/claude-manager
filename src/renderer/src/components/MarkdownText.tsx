@@ -16,7 +16,7 @@ const components = {
   // also get a preview and open in the app's image viewer.
   a: ({ children, href }: { children?: ReactNode; href?: string }) => {
     const image = href?.startsWith('cm-img:') ? href : null;
-    // Local files (and images) get the file actions: right-click on the computer, a download sheet on the phone.
+    // Local files (and images) get the file actions: right-click.
     if (image)
       return (
         <>

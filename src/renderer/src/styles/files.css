@@ -1,4 +1,4 @@
-/* Actions on files and images from agent text: the viewer's action row and the phone's download sheet. */
+/* Actions on files and images from agent text: the viewer's action row. */
 .file-actions { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 .file-actions-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .file-actions-row .btn { min-height: 36px; }

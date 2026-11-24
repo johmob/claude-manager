@@ -18,7 +18,7 @@ function read(sessionId: string, fallback: ChatDetail): ChatDetail {
 
 /**
  * Each chat's own detail level, remembered in browser storage (shared by the app's windows), so the chat
- * window and its card follow the same choice. Moderat until chosen (the phone starts at Minimal).
+ * window and its card follow the same choice. Moderat until chosen.
  */
 export function useChatDetail(sessionId: string, fallback: ChatDetail = 'moderate'): [ChatDetail, (detail: ChatDetail) => void] {
   const [detail, setDetail] = useState<ChatDetail>(() => read(sessionId, fallback));

@@ -1,5 +1,4 @@
 import { useEffect, useSyncExternalStore } from 'react';
-import { RECONNECTED_EVENT } from '../lib/platform';
 import type { TranscriptEntry } from '../../../shared/contracts';
 
 // Module-level store: transcripts are shared by every tile and survive tile remounts.
@@ -31,18 +30,6 @@ function ensureSubscribed(): void {
   window.cm.on('session:transcript-reset', ({ id, entries }) => {
     transcripts.set(id, entries);
     emit();
-  });
-  // The phone lost its connection and got it back: what was pushed meanwhile is fetched again.
-  window.addEventListener(RECONNECTED_EVENT, () => {
-    for (const id of requested) {
-      window.cm
-        .invoke('session:transcript', { id })
-        .then((fresh) => {
-          transcripts.set(id, fresh);
-          emit();
-        })
-        .catch((e: unknown) => console.error('session:transcript', e));
-    }
   });
 }
 

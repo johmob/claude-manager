@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { errorMessage } from '../lib/api';
-import { baseName, fileAct, openFile, useOutlook, type FileAction } from '../lib/fileShare';
-import { imagePathOf, imageSrc } from '../lib/localImage';
-import { isRemote } from '../lib/platform';
-import { RemoteFileActions } from './FileLink';
+import { fileAct, openFile, useOutlook, type FileAction } from '../lib/fileShare';
+import { imagePathOf } from '../lib/localImage';
 import { Modal } from './Modal';
 import '../styles/files.css';
 
@@ -27,7 +25,7 @@ export function LocalImage({ src, alt }: Shown) {
     <span className="md-img-frame">
       <img
         className="md-img"
-        src={imageSrc(src)}
+        src={src}
         alt={alt}
         title="Klicka för att visa stort"
         loading="lazy"
@@ -38,13 +36,12 @@ export function LocalImage({ src, alt }: Shown) {
   );
 }
 
-/** What can be done with the open image: on the computer save, copy, mail, show in folder, open; on the phone download and share. */
+/** What can be done with the open image: save, copy, mail, show in folder, open. */
 function ImageActions({ src }: { src: string }) {
   const path = imagePathOf(src);
   const outlook = useOutlook();
   const [note, setNote] = useState<string | null>(null);
   if (!path) return null;
-  if (isRemote) return <RemoteFileActions url={imageSrc(src)} name={baseName(path)} />;
   const run = (action: FileAction, done?: string) => (): void => {
     setNote(null);
     fileAct(path, action).then(
@@ -78,7 +75,7 @@ export function ImageViewer() {
   return (
     <Modal title={shown.alt || 'Bild'} onClose={() => setShown(null)} size="full">
       <ImageActions src={shown.src} />
-      <img className="image-view" src={imageSrc(shown.src)} alt={shown.alt} />
+      <img className="image-view" src={shown.src} alt={shown.alt} />
     </Modal>
   );
 }

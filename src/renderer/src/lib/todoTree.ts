@@ -1,4 +1,4 @@
-// Helpers for reading a work schema (TodoTree), shared by the desktop org chart and the phone's list.
+// Helpers for reading a work schema (TodoTree), used by the org chart.
 import type { TodoNode } from '../../../shared/contracts';
 
 export const OTHER_TITLE = 'Övrigt';
