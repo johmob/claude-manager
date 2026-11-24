@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-24T20:24:32.220Z",
+  "updated": "2026-11-24T20:57:05.284Z",
   "tracks": [
     {
       "id": "design",
@@ -423,7 +423,7 @@
               "id": "chat.1.9",
               "title": "Färdigformaterat innan det visas",
               "status": "done",
-              "notes": "Användaren: text visas och ändras sedan (formatering, taggar, omflyttning) efter att den redan syns. Allt ska vara färdigformaterat när det visas: inget får byta utseende eller plats efteråt. Gäller både turens slut och det som visas under arbetet. || Sena taggar ändrar inte längre text som redan visas, callouts efter hållen text väntar i loggen, bilder har fast ram. Ej provat i dold testinstans. Provat dolt."
+              "notes": "Användaren: text visas och ändras sedan (formatering, taggar, omflyttning) efter att den redan syns. Allt ska vara färdigformaterat när det visas: inget får byta utseende eller plats efteråt. Gäller både turens slut och det som visas under arbetet. || Sena taggar ändrar inte längre text som redan visas, callouts efter hållen text väntar i loggen, bilder har fast ram. Ej provat i dold testinstans. Provat dolt. Användaren: svaret syntes först oformaterat (i rutan Under arbetet medan det väntade på taggarna). Rättat i 0.1.38: väntande svarstext visas inte i rutan; svaret visas först färdigformaterat. Provat dolt."
             }
           ]
         },

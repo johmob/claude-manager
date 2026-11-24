@@ -177,7 +177,12 @@ const STATUS_DWELL_MS = 30_000;
  */
 function LatestAction({ entries, running, answer, onOpen }: { entries: TranscriptEntry[]; running: boolean; answer?: string; onOpen: () => void }) {
   // The turn's answer shows below the log; a message that says the same is not repeated in the box.
-  const candidates = entries.filter((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim() && !(answer && nearlySame(e.text, answer)));
+  // Held text with nothing after it is the answer waiting for its tags: it shows only once formatted, below.
+  const last = entries[entries.length - 1];
+  const candidates = entries.filter(
+    (e): e is Extract<TranscriptEntry, { kind: 'assistant' }> =>
+      e.kind === 'assistant' && !e.agentId && !!e.text.trim() && !(e.held && e === last) && !(answer && nearlySame(e.text, answer)),
+  );
   const latest = candidates[candidates.length - 1];
   const [shown, setShown] = useState<{ id: string; text: string; since: number } | null>(null);
   const present = !!shown && candidates.some((e) => e.id === shown.id);
