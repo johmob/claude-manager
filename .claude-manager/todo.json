@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-24T18:50:54.387Z",
+  "updated": "2026-11-24T18:52:22.595Z",
   "tracks": [
     {
       "id": "design",
@@ -532,7 +532,7 @@
               "id": "chat.2.16",
               "title": "Frågor besvaras i chatten, inte i helskärm",
               "status": "not_started",
-              "notes": "Användaren: ta bort frågorna i helskärm, bara strul. Flera frågor ska fortfarande summeras, men frågas och besvaras enbart i chatten: en ruta sist i chatten med frågorna (rubrik, vad de gäller, underlag, svarsknappar och svarsfält per fråga) och ett Skicka för alla. Overlayn, korten och mobilen öppnar chatten vid frågan i stället för helskärmsflödet. Helskärmsflödet och popupen för frågor tas bort."
+              "notes": "Användaren: ta bort frågorna i helskärm, bara strul. Flera frågor ska fortfarande summeras, men frågas och besvaras enbart i chatten: en ruta sist i chatten med frågorna (rubrik, vad de gäller, underlag, svarsknappar och svarsfält per fråga) och ett Skicka för alla. Overlayn, korten och mobilen öppnar chatten vid frågan i stället för helskärmsflödet. Helskärmsflödet och popupen för frågor tas bort. Användaren igen: en fråga i helskärm försvann medan hen svarade och kom sedan tillbaka; bort med helskärmsfrågor. Högst prioritet i kvällens kö."
             }
           ]
         },
@@ -606,7 +606,7 @@
               "id": "chat.4.4",
               "title": "Komprimera med förberedelse",
               "status": "not_started",
-              "notes": "Användaren: knappen Komprimera ska först skicka \"Förbered för komprimering\" till agenten. När agenten svarar bedömer appen (Haiku) om svaret är jakande; i så fall skickar appen /compact. Är svaret tvetydigt visas det för användaren i stället, som får avgöra. Användaren: knappen får en trevlig liten ikon för något som komprimeras, t.ex. lucide fold-vertical eller shrink (pilar mot mitten)."
+              "notes": "Användaren: knappen Komprimera ska först skicka \"Förbered för komprimering\" till agenten. När agenten svarar bedömer appen (Haiku) om svaret är jakande; i så fall skickar appen /compact. Är svaret tvetydigt visas det för användaren i stället, som får avgöra. Användaren: knappen får en trevlig liten ikon för något som komprimeras, t.ex. lucide fold-vertical eller shrink (pilar mot mitten). Beslut: ikonen fold-vertical (pilar mot mitten)."
             }
           ]
         },
