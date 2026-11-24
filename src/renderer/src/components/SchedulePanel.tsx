@@ -53,7 +53,7 @@ function Job({ session, job }: { session: SessionSummary; job: ScheduledJobView 
       </div>
       <div className="sp-job-meta">
         <span className="sp-actions">
-          <button type="button" className="link-btn" title="Kör en gång direkt, utöver schemat" onClick={() => act('run')}>Kör nu</button>
+          {!(job.enabled && job.nextRun) && <button type="button" className="link-btn" title="Kör en gång direkt" onClick={() => act('run')}>Kör nu</button>}
           <button type="button" className="link-btn" onClick={() => act(job.enabled ? 'pause' : 'resume')}>{job.enabled ? 'Pausa' : 'Aktivera'}</button>
           <button type="button" className="link-btn danger-text" onClick={() => act('delete')}>Ta bort</button>
         </span>
