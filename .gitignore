@@ -4,3 +4,6 @@ dist/
 *.log
 *.tsbuildinfo
 CLAUDE.local.md
+
+# Private instructions for when work resumes (the scheduled job reads it)
+.claude-manager/resume.md

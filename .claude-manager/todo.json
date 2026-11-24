@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T12:35:58.479Z",
+  "updated": "2026-11-24T12:39:15.221Z",
   "tracks": [
     {
       "id": "eng",
@@ -545,13 +545,19 @@
               "id": "ui.6.23",
               "title": "Det användaren ska göra eller veta om nästa steg döljs inte",
               "status": "not_started",
-              "notes": "Användaren: i svaret syntes allt utom sista stycket (\"Inget är committat. Kör komprimeringen. Efteråt gör jag provet och frågar sedan om commit och release.\"), som var det relevanta. Troligen taggat plan/progress och dolt i Moderat. Åtgärd: i Haikus taggning ska uppmaningar till användaren och läget för commit/release taggas som next/answer (syns), och/eller turens sista block i slutsvaret visas alltid i Moderat. Agera på detta efter komprimeringen. Användaren: speca mindre exakt hur Haiku ska göra och beskriv i stället syftet, så tar den kanske bättre beslut. Plan: skriv om tagRequest-prompten (src/main/modules/turn-tags/index.ts) till att förklara sammanhanget: användaren styr många agenter och skummar; vad varje nivå visar och döljer; att det kostar mycket att dölja något användaren måste göra, svara på eller känna till, medan det kostar lite att visa en rad för mycket; frågor dyker upp i ett helskärmsflöde och ska vara äkta och fristående. Behåll schemat och taggnamnen, korta ned regellistan. Prova sedan på riktiga turer (dolt) innan commit. Sett i test: Haikus bakgrund i frågerutan läckte interna block-id (\"bilden finns i block 1.1\"); prompten ska förbjuda det."
+              "notes": "Användaren: i svaret syntes allt utom sista stycket (\"Inget är committat. Kör komprimeringen. Efteråt gör jag provet och frågar sedan om commit och release.\"), som var det relevanta. Troligen taggat plan/progress och dolt i Moderat. Åtgärd: i Haikus taggning ska uppmaningar till användaren och läget för commit/release taggas som next/answer (syns), och/eller turens sista block i slutsvaret visas alltid i Moderat. Agera på detta efter komprimeringen. Användaren: speca mindre exakt hur Haiku ska göra och beskriv i stället syftet, så tar den kanske bättre beslut. Plan: skriv om tagRequest-prompten (src/main/modules/turn-tags/index.ts) till att förklara sammanhanget: användaren styr många agenter och skummar; vad varje nivå visar och döljer; att det kostar mycket att dölja något användaren måste göra, svara på eller känna till, medan det kostar lite att visa en rad för mycket; frågor dyker upp i ett helskärmsflöde och ska vara äkta och fristående. Behåll schemat och taggnamnen, korta ned regellistan. Prova sedan på riktiga turer (dolt) innan commit. Sett i test: Haikus bakgrund i frågerutan läckte interna block-id (\"bilden finns i block 1.1\"); prompten ska förbjuda det. Användaren (skärmdump claude.png på skrivbordet): det står fortfarande \"question\" i en ruta, och en jättelång och stor rubrik visas. Haiku behöver veta hur rubriker (#, **fet**) presenteras i UI för att välja rätt; kolla om ui.6.19/21 redan löser det."
             },
             {
               "id": "ui.6.24",
               "title": "Komprimering visas med laddikon och förlopp",
               "status": "done",
               "notes": "Användaren: under /compact syntes ingen status, och ingen fejkad förloppsstapel (avskyr det). Nu visas en blå bricka med snurrande ikon: \"Komprimerar · cirka 1 minut · 0:04\" (tiden skattas från kontextens storlek och tidigare komprimeringar; \"tar längre än vanligt\" om den drar över). Efteråt står storlek före/efter och tid i chatten. Testat dolt. Rättat samtidigt: snedstreckskommandon fick appens dolda ändringsnotis före sig och gick fram som vanlig text."
+            },
+            {
+              "id": "ui.6.25",
+              "title": "Klistra in bilder i chatten",
+              "status": "not_started",
+              "notes": "Användaren: kunna klistra in bilder (Ctrl+V) i chattrutan så agenten kan granska dem. Räcker att appen sparar bilden i en temp-mapp och skickar sökvägen (eller skickar den som bildblock via SDK:n)."
             }
           ]
         },

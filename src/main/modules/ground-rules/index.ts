@@ -11,6 +11,7 @@ export const DEFAULT_GROUND_RULES = `# Base ground rules
 6. Build everything as self-contained modules with clearly defined inputs and outputs. No duplicated functions across modules, and no module may depend on another. No quick fixes; clean, minimal functions.
 7. When you share a local file, write it as a markdown link to its full path with forward slashes, in angle brackets, so the user can click it to open the file: [rapport.pdf](<C:/path/to/rapport.pdf>). Never only the bare path, and never a path relative to the project.
 8. Be aware of the plan's usage limits whenever you send out subagents. Before you start, read the current usage (the app's note below says where) and weigh what the work will cost: how many agents, which models and effort levels, how long they run. Choose the cheapest model and effort that does each job well; the top model and high effort only where they are needed. If you are not sure the remaining usage covers all of it, ask the user first and propose doing the work in steps.
+9. Keep private instructions out of the repository. Notes meant only for the user and you (for example a queue of what to do when work resumes, or anything with names, paths or customer details) go in a file listed in \`.gitignore\`, such as \`.claude-manager/resume.md\`. Add it to \`.gitignore\` before you write to it, and check with \`git check-ignore\`. When a scheduled job needs such instructions, its prompt points to the file instead of carrying them.
 `;
 
 export interface GroundRules {

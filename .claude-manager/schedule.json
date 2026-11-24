@@ -2,11 +2,11 @@
   "jobs": [
     {
       "id": "resume-after-limit-2026-11-24",
-      "name": "Fortsätt efter gränsen (ui.6.23, ui.6.22)",
-      "description": "Engångsjobb: när användningsgränsen återställts fortsätter agenten med den nya Haiku-prompten (ui.6.23) och det dolda testet av frågeunderlag (ui.6.22).",
+      "name": "Fortsätt arbetet när gränsen återställts",
+      "description": "Engångsjobb: när användningen har återställts fortsätter agenten med kön i .claude-manager/resume.md. Fyll på kön där så följer det med.",
       "cron": "47 15 24 11 *",
       "kind": "agent",
-      "prompt": "Gränsen har återställts. Läs usage.json först. Fortsätt med ui.6.23 (skriv om Haiku-prompten i turn-tags till att beskriva syftet, se punktens anteckningar) och därefter det dolda testet i ui.6.22. Fråga innan commit och release. Stäng av det här schemalagda jobbet (enabled: false) när du har läst det.",
+      "prompt": "Användningsgränsen har återställts. Läs .claude-manager/resume.md och arbeta igenom kön där, uppifrån, enligt reglerna i filen. Stäng sedan av det här jobbet (enabled: false i .claude-manager/schedule.json).",
       "enabled": true
     }
   ]
