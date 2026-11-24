@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T10:40:04Z",
+  "updated": "2026-11-24T11:14:35Z",
   "tracks": [
     {
       "id": "eng",
@@ -236,9 +236,9 @@
             },
             {
               "id": "ui.2.3",
-              "title": "Statusruta i chattfönstret",
+              "title": "Status under Under arbetet",
               "status": "done",
-              "notes": "Användaren: en del i chattfönstret som löpande visar vad agenten håller på med, från meddelanden som är relevanta men inte nödvändiga (i dag dolda), utan att fylla chatten med egna meddelanden. Klart: statusrad överst i chattfönstret med senaste dolda meddelandet i rundan, två rader, klick visar allt. Provat dolt."
+              "notes": "Användaren: statusen ska ligga där Under arbetet står, som en indragen ruta med senaste händelsen, utan kommandon, och ett meddelande ska stå kvar ca 30 s. Gjort (ej committat): huvudagentens senaste meddelande, minst 30 s per meddelande. Viktighet går inte att bedöma live utan extra Haiku-anrop per meddelande."
             },
             {
               "id": "ui.2.4",
@@ -485,6 +485,12 @@
               "title": "Skydd mot upprepade frågor",
               "status": "done",
               "notes": "Användaren: många frågor kom in som var samma. Haiku ser öppna och nyss besvarade frågor och markerar upprepningar; frågerutor går också via Haiku. Provat: omformulerad besvarad fråga föll bort, ny kom fram. Användaren: \"ska bekräftas på hårdvaran\" är inget antagande för användaren. Klart."
+            },
+            {
+              "id": "ui.6.19",
+              "title": "Rubrik och text i rutor klipps rätt",
+              "status": "done",
+              "notes": "Användaren: rubriken klipptes mitt i meningen (brödtexten började med \", och\"). Fetstil som löper in i meningen blir inte rubrik, och protokollet kräver kort rubrik med kolon och hel mening. Gjort (ej committat)."
             }
           ]
         },
@@ -577,6 +583,12 @@
               "title": "Gränsmeddelandet säger när gränsen återställs",
               "status": "done",
               "notes": "Användaren: när gränsen nås ska det stå att det fortsätter kl xx, eller vilken dag om det inte är i dag. Klart i chattens notis och på kortet."
+            },
+            {
+              "id": "life.2.6",
+              "title": "Code Mode: bevaka stöd i Agent SDK",
+              "status": "not_started",
+              "notes": "Användaren: hade experimentläget i Claude Codes json-fil, drog betydligt mindre tokens. Det är Code Mode: env CLAUDE_CODE_EXPERIMENTAL_CODE_MODE=1 i ~/.claude/settings.json. Enligt dokumentationen bara i interaktiv terminal, inte Desktop/bakgrund. Provat med Agent SDK (Haiku, env satt): inget REPL-verktyg, alltså inte aktivt i appens sessioner. Påslaget globalt gör att terminalsessioner bara kan återupptas med Code Mode på, vilket kan krocka med Befintligt projekt i appen. Användaren valde: stanna på SDK:n och kontrollera stödet för Code Mode vid varje ny Agent SDK-version (prova med env CLAUDE_CODE_EXPERIMENTAL_CODE_MODE=1 och se om verktyget REPL dyker upp i init). Slå på det i appen när det fungerar."
             }
           ]
         },
@@ -656,6 +668,12 @@
           "id": "ship.4",
           "title": "Dokumentation (README, DECISIONS)",
           "status": "done"
+        },
+        {
+          "id": "ship.5",
+          "title": "Loggning (kan stängas av under ⚙)",
+          "status": "done",
+          "notes": "Användaren: loggning i nästa version, både text och vad och hur det visas. Gjort (ej committat): logs/app-DATUM.jsonl i datamappen, 14 dagar, händelser, chattrader med taggar, kortens läge, Haikus taggning, gränssnittsanrop. Provat dolt."
         }
       ]
     },

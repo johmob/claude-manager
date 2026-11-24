@@ -125,3 +125,12 @@ describe('callout text under a title', () => {
     expect(splitCallouts('> [!NOTE]\n> **Ligger kvar:** det skickades innan.').callouts).toEqual([{ kind: 'note', title: 'Ligger kvar', text: 'Det skickades innan.' }]);
   });
 });
+
+describe('a bold start that runs on into the sentence', () => {
+  it('is not split into a title and a text', () => {
+    const body = '> [!IMPORTANT]\n> **Koppla in avtryckaren med 24 V avslaget**, och isolera ledarna 6–8 var för sig.';
+    expect(splitCallouts(body).callouts).toEqual([{ kind: 'important', title: '', text: '**Koppla in avtryckaren med 24 V avslaget**, och isolera ledarna 6–8 var för sig.' }]);
+    expect(splitCallouts('> [!NOTE]\n> **Titel.** Text här.').callouts).toEqual([{ kind: 'note', title: 'Titel', text: 'Text här.' }]);
+    expect(splitCallouts('> [!NOTE]\n> **Titel** – text här.').callouts).toEqual([{ kind: 'note', title: 'Titel', text: 'Text här.' }]);
+  });
+});

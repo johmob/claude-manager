@@ -85,6 +85,13 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
             onChange={(autoUpdate) => send('settings:update', { autoUpdate })}
           />
           <Toggle
+            label="Loggning"
+            title="Appen sparar en logg över vad agenterna skickar och hur det visas, så att fel går att följa upp. Den stannar på datorn."
+            on={settings.logging}
+            onChange={(logging) => send('settings:update', { logging })}
+          />
+          <button type="button" className="link-btn settings-link" onClick={() => send('log:open-folder', undefined)}>Öppna loggmappen</button>
+          <Toggle
             label="Fortsätt efter gränsen"
             title="Sessioner som stoppats av användningsgränsen fortsätter av sig själva när den har återställts."
             on={settings.autoResume}

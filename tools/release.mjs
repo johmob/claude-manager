@@ -8,7 +8,10 @@ import { execSync, spawn } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
-const level = process.argv[2] ?? 'patch';
+// npm run release [-- minor|major] [-- --no-nudge]: --no-nudge leaves the running app to find the release on its own.
+const args = process.argv.slice(2);
+const level = args.find((a) => !a.startsWith('--')) ?? 'patch';
+const nudge = !args.includes('--no-nudge');
 if (!['patch', 'minor', 'major'].includes(level)) throw new Error(`Okänd nivå: ${level} (patch, minor eller major).`);
 
 // Behind TLS inspection (e.g. a company proxy) Node must trust the Windows certificate store, where its root is.
@@ -44,6 +47,6 @@ if (missing.length) throw new Error(`Releasen ${tag} saknar: ${missing.join(', '
 // Nudge the app on this computer, if it runs, to look for the new version now instead of within 3 hours.
 const installed = join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Claude Manager', 'Claude Manager.exe');
 const running = read('tasklist /FI "IMAGENAME eq Claude Manager.exe" /NH').includes('Claude Manager.exe');
-if (running && existsSync(installed)) spawn(installed, ['--check-update'], { detached: true, stdio: 'ignore' }).unref();
+if (nudge && running && existsSync(installed)) spawn(installed, ['--check-update'], { detached: true, stdio: 'ignore' }).unref();
 console.log(`
-Releasen ${tag} är publicerad. Appen här ${running ? 'letar efter den nu, hämtar den och ' : 'hämtar den vid nästa kontroll och '}installerar den vid nästa omstart (eller när du klickar Installera nu).`);
+Releasen ${tag} är publicerad. Appen här ${nudge && running ? 'letar efter den nu, hämtar den och ' : 'hämtar den vid nästa kontroll och '}installerar den vid nästa omstart (eller när du klickar Installera nu).`);

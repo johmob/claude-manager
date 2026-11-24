@@ -728,6 +728,8 @@ export interface AppSettings {
   launchAtLogin: boolean;
   /** Sessions stopped by the usage limit continue on their own once it resets. */
   autoResume: boolean;
+  /** Keep a local log of what the app receives and shows (logs folder in the app's data folder). */
+  logging: boolean;
   /** Keep Windows from sleeping or turning the display off (agents working overnight). */
   keepAwake: boolean;
   /** Text size in the main window and popups, 1 = 16 px root (Ctrl + plus/minus/0). */
@@ -781,6 +783,8 @@ export interface IpcInvokeMap {
   'settings:choose-projects-root': { req: void; res: AppSettings | null };
   /** Installs the newer version now (fetching it first if needed); the app restarts. */
   'update:install': { req: void; res: void };
+  /** Opens the folder with the app's logs. */
+  'log:open-folder': { req: void; res: void };
   /** Looks for a new version now. */
   'update:check': { req: void; res: void };
   /** Asks the quick chat ("Ny chatt"); starts it on the first question. */

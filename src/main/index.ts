@@ -55,6 +55,7 @@ import { createKeepAwake } from './modules/keep-awake';
 import { messagesForTagging, readTags, splitBlocks, tagRequest, taggedBlocks } from './modules/turn-tags';
 import { createTagMemory } from './modules/tag-memory';
 import { iconRequest, readIcon } from './modules/icon-picker';
+import { createAppLog } from './modules/app-log';
 import { addTokens, localDate, todayOf } from './modules/day-tokens';
 import { describeDrift, driftSince, markAt, markOf } from './modules/project-drift';
 import { SCHEDULE_PROTOCOL, createScheduler, describeCron, nextRunOf, readJobs, runCommand, writeJobs } from './modules/scheduler';
@@ -73,6 +74,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   textScale: 1.1,
   autoUpdate: true,
   autoResume: true,
+  logging: true,
   keepAwake: false,
   theme: 'night',
   defaultModel: 'opus',
@@ -125,6 +127,9 @@ function usageNote(file: string): string {
   return `# Plan usage\nThe plan's current usage is in ${file.replace(/\\/g, '/')}: percent used of the 5-hour and the weekly limit, and when each resets (updated every few minutes). Read it before you send out subagents or start a large piece of work.`;
 }
 
+/** Renderer requests that come with every mouse move or state read; not worth a log line. */
+const QUIET_CHANNELS = new Set<string>(['overlay:set-interactive', 'overlay:set-detail', 'overlay:set-focus', 'app:get-state', 'session:transcript', 'usage:day', 'quick:current', 'quick:summaries', 'popup:current', 'session:folder-sessions', 'window:ensure-width']);
+
 /** How often the side panel's schedule (next runs, file changes) is refreshed. */
 const SCHEDULE_REFRESH_MS = 30_000;
 /** How often the projects are checked for work done outside the app. */
@@ -175,6 +180,9 @@ function boot(): void {
 
   // ---------- Modules ----------
   const model = createSessionModel();
+  /** What the app receives and how it shows it, for analysing problems afterwards (switchable in ⚙). */
+  const appLog = createAppLog(join(userData, 'logs'), settings.logging);
+  appLog.write('start', { version: app.getVersion() });
   // Cards whose icon is being chosen; declared before the schema watcher, which picks icons from its first read.
   const pickingIcon = new Set<string>();
   // Every Claude process the app starts (sessions and one-shot calls) must use the same executable.
@@ -236,7 +244,10 @@ function boot(): void {
     ? createUpdater({
         version: app.getVersion(),
         auto: settings.autoUpdate,
-        onStatus: (status) => windows.send('state:update', status),
+        onStatus: (status) => {
+          appLog.write('update', { ...status });
+          windows.send('state:update', status);
+        },
       })
     : null;
   const updateStatus = (): UpdateStatus =>
@@ -284,8 +295,37 @@ function boot(): void {
   app.on('before-quit', quit);
 
   // ---------- Event flow ----------
+  /** Sends a changed transcript entry to the windows, and logs how it shows. */
+  function showEntry(id: string, entry: TranscriptEntry): void {
+    appLog.write('entry', {
+      sessionId: id,
+      id: entry.id,
+      entryKind: entry.kind,
+      ...(entry.kind === 'assistant' ? { text: entry.text, agentId: entry.agentId, held: entry.held === true, tags: entry.blocks?.map((b) => b.tag) ?? null } : {}),
+      ...(entry.kind === 'user' ? { text: entry.text, queued: entry.queued === true } : {}),
+      ...(entry.kind === 'system' ? { text: entry.text, level: entry.level } : {}),
+      ...(entry.kind === 'callout' ? { callout: entry.callout } : {}),
+      ...(entry.kind === 'tool' ? { name: entry.name, summary: entry.summary, status: entry.status } : {}),
+    });
+    windows.send('session:transcript-upsert', { id, entry });
+  }
+
+  const cardLog = new Map<string, string>();
+  /** Logs a card when what it shows changes: status, what it is doing, its questions. */
+  function logCards(summaries: SessionSummary[]): void {
+    for (const s of summaries) {
+      const shown = { status: s.status, currentTask: s.currentTask, activeAgents: s.activeAgents, questions: s.questions.map((q) => `${q.kind}: ${q.text}`), lastError: s.lastError, drift: s.drift ? { commits: s.drift.commits, files: s.drift.fileCount, uncommitted: s.drift.uncommitted } : null };
+      const key = JSON.stringify(shown);
+      if (cardLog.get(s.id) === key) continue;
+      cardLog.set(s.id, key);
+      appLog.write('card', { sessionId: s.id, name: s.name, ...shown });
+    }
+  }
+
   function onSessionEvent(event: SessionEvent): void {
-    for (const entry of model.apply(event)) windows.send('session:transcript-upsert', { id: event.sessionId, entry });
+    // Everything an agent sends (context readings are frequent and left out).
+    if (event.type !== 'context_usage') appLog.write('event', { ...event });
+    for (const entry of model.apply(event)) showEntry(event.sessionId, entry);
     rememberLimit(event.sessionId);
     const record = findRecord(event.sessionId);
     switch (event.type) {
@@ -353,6 +393,7 @@ function boot(): void {
       tray.setWaiting(summaries.filter((s) => s.status === 'waiting').length);
       windows.send('state:quick', model.summary(QUICK_ID) ?? null);
       rememberQuestions(summaries);
+      logCards(summaries);
     }, SYNC_DELAY_MS);
   }
 
@@ -548,7 +589,7 @@ function boot(): void {
     const notes = transcript.slice(from).flatMap((e) => (e.kind === 'callout' && (e.callout.kind === 'note' || e.callout.kind === 'question') ? [`> [!${e.callout.kind.toUpperCase()}] ${e.callout.title ? `**${e.callout.title}:** ` : ''}${e.callout.text}`] : []));
     const toTag = notes.length ? [...messages, splitBlocks(notes.join('\n\n'))] : messages;
     const show = (changed: TranscriptEntry[]): void => {
-      for (const entry of changed) windows.send('session:transcript-upsert', { id, entry });
+      for (const entry of changed) showEntry(id, entry);
     };
     try {
       if (!entries.length && !notes.length) return;
@@ -556,6 +597,7 @@ function boot(): void {
         structuredQuery(tagRequest(toTag, userData, workInProgress(model.summary(id)?.todo ?? null), model.askedQuestions(id))),
         new Promise<null>((resolve) => setTimeout(() => resolve(null), TAG_TIMEOUT_MS)),
       ]);
+      appLog.write('tags', { sessionId: id, messages: toTag, asked: model.askedQuestions(id), reply });
       const tags = readTags(reply, toTag.map((m) => m.length));
       if (!tags) return;
       tagMemory.remember(id, entries.map((e, i) => ({ text: e.text, tags: tags.tags[i]! })));
@@ -868,6 +910,7 @@ function boot(): void {
     tray.setLaunchAtLogin(settings.launchAtLogin);
     windows.setTheme(settings.theme);
     keepAwake.set(settings.keepAwake);
+    appLog.setEnabled(settings.logging);
     if (changes.autoUpdate !== undefined) updater?.setAuto(settings.autoUpdate);
     windows.send('state:settings', settings);
     scheduleSync();
@@ -923,11 +966,18 @@ function boot(): void {
     channel: K,
     fn: (req: IpcInvokeMap[K]['req']) => IpcInvokeMap[K]['res'] | Promise<IpcInvokeMap[K]['res']>,
   ): void {
-    ipcMain.handle(channel, (_event, req: IpcInvokeMap[K]['req']) => fn(req));
+    ipcMain.handle(channel, (_event, req: IpcInvokeMap[K]['req']) => {
+      // What the user does in the app (the constant hover and state reads are left out).
+      if (!QUIET_CHANNELS.has(channel)) appLog.write('ui', { channel, req });
+      return fn(req);
+    });
   }
 
   handle('app:get-state', () => ({ sessions: model.summaries(), usage: usage.current(), settings, account, update: updateStatus() }));
   handle('update:install', () => updater?.installNow());
+  handle('log:open-folder', async () => {
+    await shell.openPath(appLog.dir);
+  });
   handle('update:check', () => updater?.checkNow());
 
   handle('quick:ask', (req) => {
@@ -1211,6 +1261,7 @@ function validSettings(r: unknown): AppSettings | null {
     launchAtLogin: bool(r['launchAtLogin'], d.launchAtLogin),
     autoUpdate: bool(r['autoUpdate'], d.autoUpdate),
     autoResume: bool(r['autoResume'], d.autoResume),
+    logging: bool(r['logging'], d.logging),
     keepAwake: bool(r['keepAwake'], d.keepAwake),
     theme: pick(r['theme'], THEME_CHOICES, d.theme),
     textScale: typeof r['textScale'] === 'number' && Number.isFinite(r['textScale']) ? clampScale(r['textScale']) : d.textScale,

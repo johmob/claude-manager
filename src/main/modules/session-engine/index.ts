@@ -289,14 +289,16 @@ When something in this turn deserves attention, put it in its own alert block at
 > [!IMPORTANT] something the user should know but could easily miss
 > [!NOTE]      an assumption the user should confirm or correct
 > [!TIP]       a suggested next step
-Format: the marker line, then one line starting with "> " holding a short bold title and one sentence. Write the text in Swedish.
+Format: the marker line, then one line starting with "> ": a short bold title of a few words that names the matter and ends with a colon, then one complete sentence starting with a capital letter, e.g. "> **Avtryckaren kopplas strömlös:** Koppla in den med 24 V avslaget och isolera ledarna 6–8 var för sig." The title is never the first half of the sentence. Write the text in Swedish.
 Use at most three blocks per message, only when they add something; never tag routine success.
 Questions are the exception: never bury a question to the user in running text. Ask it with the AskUserQuestion tool when you need the answer before you continue; otherwise give each question its own [!QUESTION] block. When you end a turn with several questions, ask them with AskUserQuestion (up to four at a time) rather than as a list in your answer. Assumptions the user should confirm or correct count as questions too: give each its own [!NOTE] block instead of a list under a heading. The app collects the questions and assumptions a turn ends with, asks the user one at a time and sends all the answers back to you in one message.
 The user runs many agents and reads each question on its own, away from your text: make every question and assumption self-contained, naming the model, part, version or work step it concerns (with the work-schema item id when there is one), e.g. "cad.2 Handtag v4: är skruvarna i kåpan M3?" rather than "Är skruvarna M3?".`;
 
 const ALERT_LINE = /^\s*>\s*\[!(CAUTION|WARNING|QUESTION|IMPORTANT|NOTE|TIP)\]\s*(.*)$/i;
 const FENCE_LINE = /^\s*(```|~~~)/;
-const BOLD_TITLE = /^\*\*(.+?)\*\*[\s:.–—-]*([\s\S]*)$/;
+/** A bold start that stands apart as a title: "**Titel:** text", "**Titel.** Text", "**Titel** – text" or a bold line. */
+const BOLD_TITLE = /^\*\*(.+?)\*\*(?:\s*[:.–—-]+\s*|\s*\n\s*|\s*$)([\s\S]*)$/;
+const BOLD_TITLE_PUNCTUATED = /^\*\*(.+?[:.])\*\*\s+([\s\S]*)$/;
 
 /** Splits agent text into plain text and the GitHub alert blocks it tagged (ignoring code fences). */
 export function splitCallouts(text: string): { text: string; callouts: Callout[] } {
@@ -327,7 +329,8 @@ export function splitCallouts(text: string): { text: string; callouts: Callout[]
 
 function toCallout(kind: CalloutKind, lines: string[]): Callout {
   const body = lines.join('\n').trim();
-  const titled = BOLD_TITLE.exec(body);
+  // A bold start running on into the sentence ("**…**, och …") is no title; the box shows it whole.
+  const titled = BOLD_TITLE.exec(body) ?? BOLD_TITLE_PUNCTUATED.exec(body);
   return titled
     ? { kind, title: titled[1]!.replace(/[:.]$/, '').trim(), text: sentenceCase(titled[2]!.trim()) }
     : { kind, title: '', text: body };

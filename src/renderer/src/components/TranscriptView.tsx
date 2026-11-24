@@ -1,4 +1,4 @@
-import { useContext, useLayoutEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ChatDetail } from '../../../shared/contracts';
 import { ChatDetailContext } from '../state/chatDetail';
 import type { TranscriptEntry } from '../../../shared/contracts';
@@ -152,6 +152,31 @@ function rounds(shown: Shown[]): Shown[][] {
   return result;
 }
 
+/** How long a message stays in the status box before a newer one takes its place. */
+const STATUS_DWELL_MS = 30_000;
+
+/**
+ * What the main agent is doing, indented under a folded work log: its latest message (two lines; the log
+ * opens for more), never commands. A message stays at least half a minute, so the box does not flicker
+ * when the agent writes in quick succession; then the newest one takes over.
+ */
+function LatestAction({ entries }: { entries: TranscriptEntry[] }) {
+  const latest = [...entries].reverse().find((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim());
+  const [shown, setShown] = useState<{ id: string; text: string; since: number } | null>(null);
+  useEffect(() => {
+    if (!latest || latest.id === shown?.id) return;
+    const wait = shown ? Math.max(0, shown.since + STATUS_DWELL_MS - Date.now()) : 0;
+    const timer = window.setTimeout(() => setShown({ id: latest.id, text: latest.text, since: Date.now() }), wait);
+    return () => window.clearTimeout(timer);
+  }, [latest?.id, shown?.id]);
+  if (!shown) return null;
+  return (
+    <div className="t-latest">
+      <MarkdownText text={shown.text} />
+    </div>
+  );
+}
+
 /**
  * The agent's narration and commands along the way, folded to one quiet line
  * ("Under arbetet · 3 meddelanden · 5 kommandon"); a click shows them.
@@ -175,6 +200,7 @@ function WorkLog({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId
         Under arbetet · {parts.join(' · ')}
         {running && <Spinner small />}
       </button>
+      {!open && <LatestAction entries={entries} />}
       {open && (
         <div className="t-log-body">
           {groupTools(entries).map((item) =>
@@ -234,36 +260,6 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
  * with only the runs of commands folded).
  * Sticks to the bottom unless the user scrolled up.
  */
-/**
- * The status line above a chat: the main agent's latest message in the current round that the chat does
- * not show at its detail (narration folded into "Under arbetet", or text waiting for its tags), so what it
- * is doing can be followed without filling the chat. Detaljerat shows everything, so it has none.
- */
-export function StatusLine({ entries }: { entries: TranscriptEntry[] }) {
-  const detail = useContext(ChatDetailContext);
-  const [open, setOpen] = useState(false);
-  if (detail === 'detailed') return null;
-  const finals = finalAnswers(entries);
-  const lastUser = entries.map((e) => e.kind).lastIndexOf('user');
-  const latest = entries
-    .slice(lastUser + 1)
-    .reverse()
-    .find((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim() && !standsOut(e, finals, detail));
-  if (!latest) return null;
-  const time = timeOf(latest);
-  return (
-    <div className="status-line" data-open={open ? 'true' : undefined}>
-      <button type="button" className="status-line-head" aria-expanded={open} onClick={() => setOpen(!open)} title={open ? 'Fäll ihop' : 'Visa hela'}>
-        <span className="status-line-label">Status{time && ` · ${time}`}</span>
-        <span className="t-tools-caret">{open ? '▾' : '▸'}</span>
-      </button>
-      <div className="status-line-text">
-        <MarkdownText text={latest.text} />
-      </div>
-    </div>
-  );
-}
-
 export function TranscriptView({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
