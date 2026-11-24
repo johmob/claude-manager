@@ -856,12 +856,17 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .qf-queue-item { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
 .qf-queue-count { min-width: 1.4em; padding: 0 5px; border-radius: 999px; background: rgba(255,255,255,.08); color: var(--text); font-size: 0.7rem; font-weight: 700; text-align: center; }
 
-/* Chat detail: Minimal / Moderat / Detaljerat */
-.detail-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid var(--border); }
-.detail-switch button { border: 0; background: none; color: var(--muted); font: inherit; font-size: 0.74rem; font-weight: 600; padding: 4px 9px; border-radius: 999px; cursor: pointer; }
+/* Chat detail: each chat's Minimal / Moderat / Detaljerat switch, and the level dots on every block */
+.detail-switch { display: inline-flex; gap: 1px; padding: 2px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid var(--border); }
+.detail-switch button { display: inline-flex; align-items: center; border: 0; background: none; padding: 4px 6px; border-radius: 999px; cursor: pointer; color: var(--muted); }
 .detail-switch button:hover { color: var(--text); }
-.detail-switch button[aria-checked="true"] { background: var(--accent-ui); color: #05060b; }
-.topbar-sep { width: 1px; align-self: stretch; margin: 6px 4px; background: var(--border); }
+.detail-switch button[aria-checked="true"] { background: color-mix(in srgb, var(--accent-ui) 22%, transparent); color: var(--accent-ui); }
+.level-dots { display: inline-flex; gap: 2px; }
+.level-dots > span { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .22; }
+.level-dots > span.on { opacity: 1; }
+.tb-level { position: absolute; top: 3px; right: 0; display: inline-flex; color: var(--muted); opacity: .55; cursor: default; }
+.tb:hover .tb-level { opacity: 1; }
+.tb { padding-right: 22px; }
 .tb-more { align-self: flex-start; font-size: 0.78rem; }
 /* The settings side takes the room it needs; the start menu gives way (its labels wrap). */
 .topbar { grid-template-columns: minmax(0, 1fr) auto auto; }
@@ -869,3 +874,7 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 @media (max-width: 1180px) { .topbar { grid-template-columns: 1fr; } }
 /* A narrow window: the start menu shows its icons only (names as tooltips), so the bar keeps one row. */
 @media (max-width: 1500px) { .start-label { display: none; } .start-menu button { padding: 6px 9px; } }
+
+/* A message sent while the agent was busy, not read yet */
+.t-user[data-queued] .bubble { opacity: .6; font-style: italic; filter: saturate(.4); }
+.bubble-queued { font-weight: 500; }

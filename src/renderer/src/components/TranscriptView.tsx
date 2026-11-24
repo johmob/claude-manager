@@ -179,9 +179,9 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
   switch (entry.kind) {
     case 'user':
       return (
-        <div className="t-user">
+        <div className="t-user" data-queued={entry.queued ? 'true' : undefined}>
           <div className="bubble">
-            <div className="bubble-head">Du{time && ` · ${time}`}</div>
+            <div className="bubble-head">Du{time && ` · ${time}`}{entry.queued && <span className="bubble-queued"> · väntar på att läsas</span>}</div>
             {entry.text}
           </div>
         </div>

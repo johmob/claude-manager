@@ -7,7 +7,7 @@ import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import iconPath from '../../resources/icon.png?asset';
-import { usageWeight, CHAT_DETAILS, CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
+import { usageWeight, CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
@@ -70,7 +70,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoResume: true,
   keepAwake: false,
   theme: 'night',
-  chatDetail: 'moderate',
   defaultModel: 'opus',
   defaultEffort: 'medium',
   defaultPermissionMode: 'auto',
@@ -1058,7 +1057,6 @@ function validSettings(r: unknown): AppSettings | null {
     autoResume: bool(r['autoResume'], d.autoResume),
     keepAwake: bool(r['keepAwake'], d.keepAwake),
     theme: pick(r['theme'], THEME_CHOICES, d.theme),
-    chatDetail: pick(r['chatDetail'], CHAT_DETAILS, d.chatDetail),
     textScale: typeof r['textScale'] === 'number' && Number.isFinite(r['textScale']) ? clampScale(r['textScale']) : d.textScale,
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),
     defaultEffort: pick(r['defaultEffort'], EFFORT_CHOICES, d.defaultEffort),

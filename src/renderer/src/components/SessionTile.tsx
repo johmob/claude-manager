@@ -10,11 +10,14 @@ import { SchemaButton } from './SchemaButton';
 import { TranscriptView } from './TranscriptView';
 import { WorkSchema } from './WorkSchema';
 import { SessionMark } from './SessionMark';
+import { DetailSwitch } from './DetailLevel';
+import { ChatDetailContext, useChatDetail } from '../state/chatDetail';
 
 /** One focus-mode tile: header (name on its own row, controls below), live transcript, pending input, message box. */
 export function SessionTile({ session }: { session: SessionSummary }) {
   const entries = useTranscript(session.id);
   const [schemaOpen, setSchemaOpen] = useState(false);
+  const [detail, setDetail] = useChatDetail(session.id);
   return (
     <section className="tile" style={{ '--accent': session.color } as CSSProperties}>
       <header className="tile-head">
@@ -27,12 +30,15 @@ export function SessionTile({ session }: { session: SessionSummary }) {
           <ModelEffortPicker session={session} />
           <AgentDots count={session.activeAgents} color={session.color} />
           <SchemaButton session={session} onOpen={() => setSchemaOpen(true)} compact />
+          <DetailSwitch value={detail} onChange={setDetail} />
         </div>
       </header>
       <div className="tile-context">
         <ContextMeter session={session} />
       </div>
-      <TranscriptView entries={entries} sessionId={session.id} />
+      <ChatDetailContext.Provider value={detail}>
+        <TranscriptView entries={entries} sessionId={session.id} />
+      </ChatDetailContext.Provider>
       <QuestionsButton session={session} />
       <PendingPanel session={session} />
       <ChatInput session={session} />

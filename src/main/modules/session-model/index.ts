@@ -211,7 +211,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       case 'init':
         s.slashCommands = event.slashCommands;
         return [];
-      case 'turn_started':
+      case 'turn_started': {
+        const busy = s.turnActive;
         // Replying puts the open questions behind the user: an agent that lists them again is not asking anew.
         s.answered = [...s.answered, ...s.questions.map((q) => normalizeQuestion(q.text))].slice(-MAX_ANSWERED);
         s.limitResetsAt = null;
@@ -229,7 +230,9 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.earlierQuestions = [];
         s.calloutsBefore = 0;
         // A new message before the last turn's tags arrived: that turn's text shows as it is.
-        return [...release(s), ...add({ kind: 'user', text: event.prompt })];
+        // Written while the agent was still busy: it reads it once its current turn is over.
+        return [...release(s), ...add({ kind: 'user', text: event.prompt, ...(busy ? { queued: true } : {}) })];
+      }
       case 'thinking':
         markActive('Tänker…');
         s.pendingThinking = s.pendingThinking ? `${s.pendingThinking}\n\n${event.text}` : event.text;
@@ -286,6 +289,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       case 'effort_changed':
         return system(`Effort bytt till ${event.effort}.`, 'info');
       case 'turn_finished': {
+        const read = markRead(s);
         s.turnAgents = new Set(s.subagents);
         s.turnActive = false;
         s.turnStartedAt = null;
@@ -297,12 +301,12 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.lastError = s.limitResetsAt !== null ? LIMIT_MESSAGE : event.isError ? event.result : null;
         const thinking = takeThinking();
         const leftover = thinking ? add({ kind: 'assistant', text: '', thinking }) : [];
-        if (event.interrupted) return [...leftover, ...release(s), ...system('Avbruten.', 'info')];
-        if (event.isError) return [...leftover, ...release(s), ...system(event.result, 'error')];
+        if (event.interrupted) return [...read, ...leftover, ...release(s), ...system('Avbruten.', 'info')];
+        if (event.isError) return [...read, ...leftover, ...release(s), ...system(event.result, 'error')];
         // A turn with text of its own waits for its tags before its end shows; one without has nothing to tag.
         s.tagging = s.record.kind !== 'quick' && s.transcript.some((e) => e.kind === 'assistant' && e.held);
         if (s.tagging) s.lastActivity = 'Läser igenom svaret…';
-        return [...leftover, ...collectQuestions(), ...(s.tagging ? [] : release(s))];
+        return [...read, ...leftover, ...collectQuestions(), ...(s.tagging ? [] : release(s))];
       }
       case 'callout':
         s.callouts.push(event.callout);
@@ -327,6 +331,18 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         // The card's status already says it stopped; a restart (e.g. a new context window) should not look like a halt.
         return [];
     }
+  }
+
+  /** Messages queued while the agent was busy are read once its turn ends. Returns the entries that changed. */
+  function markRead(s: SessionState): TranscriptEntry[] {
+    const changed: TranscriptEntry[] = [];
+    s.transcript = s.transcript.map((e) => {
+      if (e.kind !== 'user' || !e.queued) return e;
+      const { queued: _queued, ...read } = e;
+      changed.push(read);
+      return read;
+    });
+    return changed;
   }
 
   /** Shows the text a turn held back while it waited for its tags. Returns the entries that changed. */
@@ -400,7 +416,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     replay.upsertRecord(s.record);
     for (const event of events) replay.apply(event);
     // Saved history is never waiting for tags.
-    const saved = replay.transcript(id).map(({ held: _held, ...entry }: TranscriptEntry & { held?: boolean }) => ({ ...entry, id: `history:${entry.id}` }) as TranscriptEntry);
+    const saved = replay.transcript(id).map(({ held: _held, queued: _queued, ...entry }: TranscriptEntry & { held?: boolean; queued?: boolean }) => ({ ...entry, id: `history:${entry.id}` }) as TranscriptEntry);
     s.transcript = [...saved, ...s.transcript].slice(-MAX_TRANSCRIPT);
     return [...s.transcript];
   }

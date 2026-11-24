@@ -360,3 +360,18 @@ describe('a turn\'s end waits for its tags', () => {
     expect(model.transcript('s1').find((e) => e.kind === 'assistant')).not.toHaveProperty('held');
   });
 });
+
+describe('a message sent while the agent is busy', () => {
+  it('is marked as not read until the running turn ends', () => {
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'bygg' });
+    apply({ type: 'text', text: 'Bygger…' });
+    apply({ type: 'turn_started', prompt: 'glöm inte testerna' });
+    const queued = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
+    expect(queued).toMatchObject({ queued: true });
+    const changed = model.apply({ type: 'turn_finished', sessionId: 's1', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 });
+    expect(changed.find((e) => e.id === queued.id)).not.toHaveProperty('queued');
+    expect(model.transcript('s1').filter((e) => e.kind === 'user')[0]).not.toHaveProperty('queued');
+  });
+});

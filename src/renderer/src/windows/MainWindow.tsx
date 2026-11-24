@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
 import { AskQuestionsContext, QuestionQueue, questionsKey } from '../components/QuestionFlow';
 import { AccountContext } from '../state/account';
-import { ChatDetailContext } from '../state/chatDetail';
 import { useAppState } from '../state/useAppState';
 import { useTheme } from '../lib/theme';
 import { ImageViewer } from '../components/ImageViewer';
@@ -60,7 +59,6 @@ export function MainWindow() {
   return (
     <AccountContext.Provider value={account}>
     <AskQuestionsContext.Provider value={setAsking}>
-    <ChatDetailContext.Provider value={settings.chatDetail}>
     <div className="main-window">
       <TopBar settings={settings} update={update} view={view} onView={setView} onDialog={setDialog} />
       <main className="main-content">
@@ -85,7 +83,6 @@ export function MainWindow() {
         />
       )}
     </div>
-    </ChatDetailContext.Provider>
     </AskQuestionsContext.Provider>
     </AccountContext.Provider>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { AppSettings, ChatDetail, DockEdge, UpdateStatus } from '../../../shared/contracts';
+import type { AppSettings, DockEdge, UpdateStatus } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { ChatIcon, ExistingProjectIcon, NewProjectIcon, NoSleepIcon, RulesIcon } from './Icons';
 import type { DialogKind } from './StartDialogs';
@@ -110,25 +110,6 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
   );
 }
 
-const DETAILS: { value: ChatDetail; label: string; title: string }[] = [
-  { value: 'minimal', label: 'Minimal', title: 'Bara svar, frågor, antaganden, fel, risker och varningar' },
-  { value: 'moderate', label: 'Moderat', title: 'Även resultat, godkända kontroller, beslut och förslag' },
-  { value: 'detailed', label: 'Detaljerat', title: 'Allt agenterna skriver, även planer, lägesrapporter och bakgrund' },
-];
-
-/** How much of the agents' text the chats show; filters by the turn tags. */
-function DetailSwitch({ value }: { value: ChatDetail }) {
-  return (
-    <div className="detail-switch" role="radiogroup" aria-label="Detaljnivå i chatten">
-      {DETAILS.map((d) => (
-        <button key={d.value} type="button" role="radio" aria-checked={value === d.value} title={d.title} onClick={() => send('settings:update', { chatDetail: d.value })}>
-          {d.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function TopBar({ settings, update, view, onView, onDialog }: TopBarProps) {
   return (
     <header className="topbar">
@@ -145,8 +126,6 @@ export function TopBar({ settings, update, view, onView, onDialog }: TopBarProps
       </div>
       <div className="topbar-group topbar-settings">
         <UpdatePill update={update} />
-        <DetailSwitch value={settings.chatDetail} />
-        <span className="topbar-sep" />
         <button
           type="button"
           className={settings.keepAwake ? 'toggle on icon-toggle' : 'toggle icon-toggle'}

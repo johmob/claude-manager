@@ -596,7 +596,8 @@ export interface TaggedBlock {
 }
 
 export type TranscriptEntry =
-  | { id: string; kind: 'user'; text: string; at: number }
+  /** `queued`: sent while the agent was busy; it has not read it yet. */
+  | { id: string; kind: 'user'; text: string; queued?: boolean; at: number }
   /**
    * `blocks`: the text split into blocks with their tags, once the turn has been tagged. `held`: written in
    * a turn whose tags have not arrived yet; it stays folded with the work until the turn's end shows at once.
@@ -638,8 +639,6 @@ export interface AppSettings {
   /** Install new versions from GitHub on their own once no session is busy. */
   autoUpdate: boolean;
   theme: ThemeChoice;
-  /** How much of the agents' text the chat shows, by block tag (see TAG_LEVEL). */
-  chatDetail: ChatDetail;
   defaultModel: ModelChoice;
   defaultEffort: EffortChoice;
   defaultPermissionMode: PermissionChoice;

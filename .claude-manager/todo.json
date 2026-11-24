@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T07:01:03Z",
+  "updated": "2026-11-24T07:03:35Z",
   "tracks": [
     {
       "id": "eng",
@@ -417,9 +417,14 @@
             {
               "id": "ui.6.12",
               "title": "Nivåmarkering per stycke och lägesväljare i varje chatt",
-              "status": "in_progress",
-              "progress": 0,
-              "notes": "Användaren: varje meddelande ska visa vilken nivå det hör till, så man ser vad som försvinner i Minimal; kanske flytta Minimal/Moderat/Detaljerat till varje chattfönster."
+              "status": "done",
+              "notes": "Användaren: varje meddelande ska visa sin nivå; lägesväljaren i varje chatt. En till tre prickar per stycke (en: syns även i Minimal), samma prickar i väljaren i varje chattfönster, valet sparas per chatt. Provat dolt. Klart, inte släppt."
+            },
+            {
+              "id": "ui.6.13",
+              "title": "Oläst meddelande nedtonat tills agenten läst det",
+              "status": "done",
+              "notes": "Användaren: meddelanden skrivna medan agenten arbetar ska synas gråare/kursiva tills de lästs. Klart, inte släppt."
             }
           ]
         },

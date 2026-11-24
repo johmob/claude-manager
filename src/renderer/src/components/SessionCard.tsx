@@ -10,6 +10,7 @@ import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
 import { TaggedText } from './TaggedText';
 import { SessionMark } from './SessionMark';
+import { ChatDetailContext, useChatDetail } from '../state/chatDetail';
 import { useTranscript } from '../state/useTranscript';
 import { QuestionsButton } from './QuestionFlow';
 import { SchemaButton } from './SchemaButton';
@@ -24,11 +25,14 @@ interface SessionCardProps {
 /** The main agent's latest answer, for a card with room to show it. */
 function LatestAnswer({ sessionId }: { sessionId: string }) {
   const entries = useTranscript(sessionId);
+  const [detail] = useChatDetail(sessionId);
   const latest = [...entries].reverse().find((e) => e.kind === 'assistant' && !e.agentId && !e.held && e.text.trim());
   if (!latest || latest.kind !== 'assistant') return <div className="card-latest card-latest-empty">Inget svar ännu.</div>;
   return (
     <div className="card-latest">
-      <TaggedText text={latest.text} blocks={latest.blocks} />
+      <ChatDetailContext.Provider value={detail}>
+        <TaggedText text={latest.text} blocks={latest.blocks} />
+      </ChatDetailContext.Provider>
     </div>
   );
 }

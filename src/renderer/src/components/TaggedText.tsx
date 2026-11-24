@@ -1,5 +1,6 @@
 import { useContext, useState } from 'react';
-import { QUIET_BLOCK_TAGS, tagShows, type BlockTag, type ChatDetail, type TaggedBlock } from '../../../shared/contracts';
+import { QUIET_BLOCK_TAGS, TAG_LEVEL, tagShows, type BlockTag, type ChatDetail, type TaggedBlock } from '../../../shared/contracts';
+import { LevelDots, levelTitle } from './DetailLevel';
 import { ChatDetailContext } from '../state/chatDetail';
 import { MarkdownText } from './MarkdownText';
 
@@ -29,6 +30,7 @@ export function hasWeight(blocks: TaggedBlock[] | undefined, detail: ChatDetail)
 /**
  * The agent's text, block by block as the turn's tags read it: each block marked by what it is (result,
  * passed check, failure, question …), with the label once per run of the same tag; narration is dimmed.
+ * Each block carries one to three dots for the lowest detail it shows at (one: even in Minimal).
  * Blocks below the chat's detail are hidden behind "Visa N stycken till". Untagged text (before the tags
  * arrive) shows as plain markdown.
  */
@@ -46,6 +48,11 @@ export function TaggedText({ text, blocks }: { text: string; blocks?: TaggedBloc
         const repeat = i > 0 && shown[i - 1]!.tag === b.tag;
         return (
           <div key={i} className="tb" data-tag={b.tag ?? undefined} data-quiet={b.tag && QUIET_BLOCK_TAGS.includes(b.tag) ? 'true' : undefined}>
+            {b.tag && (
+              <span className="tb-level" title={levelTitle(TAG_LEVEL[b.tag])}>
+                <LevelDots level={TAG_LEVEL[b.tag]} />
+              </span>
+            )}
             {label && !repeat && <div className="tb-label">{label}</div>}
             <MarkdownText text={b.text} />
           </div>
