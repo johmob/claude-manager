@@ -17,7 +17,7 @@ import type {
   UsageWindows,
 } from '../../../shared/contracts';
 import { asRecord } from '../../../shared/guards';
-import { usageTokens } from '../../../shared/contracts';
+import { tokenUsageOf, usageTokens } from '../../../shared/contracts';
 
 export interface SessionEngine {
   start(spec: SessionStartSpec): void;
@@ -134,7 +134,7 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
       for await (const message of live.q) {
         if (message.type === 'result' && live.interrupting) {
           live.interrupting = false;
-          onEvent({ type: 'turn_finished', sessionId: id, result: '', isError: false, interrupted: true, tokens: turnTokens(message), durationMs: message.duration_ms });
+          onEvent({ type: 'turn_finished', sessionId: id, result: '', isError: false, interrupted: true, tokens: turnTokens(message), durationMs: message.duration_ms, usage: tokenUsageOf(message.usage) });
           void reportContext(id, live);
           continue;
         }
@@ -453,6 +453,7 @@ export function translate(sessionId: string, m: SDKMessage): SessionEvent[] {
           interrupted: false,
           tokens: turnTokens(m),
           durationMs: m.duration_ms,
+          usage: tokenUsageOf(m.usage),
         },
       ];
     case 'conversation_reset':
@@ -516,7 +517,7 @@ function toWindow(fraction: number, resetsAtSeconds: unknown): UsageWindow {
 
 /** All tokens a turn processed: input, output, and cache reads and writes. */
 function turnTokens(m: Extract<SDKMessage, { type: 'result' }>): number {
-  return usageTokens(m.usage);
+  return usageTokens(tokenUsageOf(m.usage));
 }
 
 /** Readable error text for a failed turn; Claude Code's internal "[ede_diagnostic] …" lines are left out. */

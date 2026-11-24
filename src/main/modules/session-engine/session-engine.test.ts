@@ -33,7 +33,7 @@ describe('translate', () => {
     ]);
     expect(
       translate('s', sdk({ type: 'result', subtype: 'success', result: 'klart', is_error: false, duration_ms: 9, usage: { input_tokens: 10, output_tokens: 5, cache_read_input_tokens: 100, cache_creation_input_tokens: 20 } })),
-    ).toEqual([{ type: 'turn_finished', sessionId: 's', result: 'klart', isError: false, interrupted: false, tokens: 135, durationMs: 9 }]);
+    ).toEqual([{ type: 'turn_finished', sessionId: 's', result: 'klart', isError: false, interrupted: false, tokens: 135, durationMs: 9, usage: { input: 10, output: 5, cacheRead: 100, cacheWrite: 20 } }]);
     expect(translate('s', sdk({ type: 'conversation_reset' }))).toEqual([{ type: 'cleared', sessionId: 's' }]);
   });
 

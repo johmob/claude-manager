@@ -305,16 +305,41 @@ export interface UsageSnapshot extends UsageWindows {
   error?: string;
 }
 
-/** Tokens processed today (local date): by the user's sessions, and by the app's own helper calls. */
-export interface DayTokens {
+/**
+ * Today's use of the plan (local date), as weights (see usageWeight): by the user's sessions, and by the
+ * app's own helper calls.
+ */
+export interface DayUsage {
   date: string;
   sessions: number;
   app: number;
 }
 
+/** A call's tokens by kind, as the API reports them. */
+export interface TokenUsage {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+}
+
+export function tokenUsageOf(u: { input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens: number }): TokenUsage {
+  return { input: u.input_tokens, output: u.output_tokens, cacheRead: u.cache_read_input_tokens, cacheWrite: u.cache_creation_input_tokens };
+}
+
 /** All tokens a call processed: input, output, and cache reads and writes. */
-export function usageTokens(u: { input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens: number }): number {
-  return u.input_tokens + u.output_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens;
+export function usageTokens(u: TokenUsage): number {
+  return u.input + u.output + u.cacheRead + u.cacheWrite;
+}
+
+/**
+ * Roughly what a call weighs against the plan's usage limits, which follow what calls cost: tokens
+ * weighted like the API prices (cache reads a tenth of input, cache writes 1.25, output five times),
+ * times the model's price level (Haiku 1, Sonnet 3, the others 5).
+ */
+export function usageWeight(u: TokenUsage, model: string): number {
+  const level = /haiku/i.test(model) ? 1 : /sonnet/i.test(model) ? 3 : 5;
+  return level * (u.input + 1.25 * u.cacheWrite + 0.1 * u.cacheRead + 5 * u.output);
 }
 
 /** Percent used at which a usage bar turns yellow / orange / red. */
@@ -417,7 +442,7 @@ export type SessionEvent =
   | { type: 'model_changed'; sessionId: string; model: ModelChoice }
   | { type: 'effort_changed'; sessionId: string; effort: EffortChoice }
   /** `tokens`: this turn's input, output and cache tokens together. */
-  | { type: 'turn_finished'; sessionId: string; result: string; isError: boolean; interrupted: boolean; tokens: number; durationMs: number }
+  | { type: 'turn_finished'; sessionId: string; result: string; isError: boolean; interrupted: boolean; tokens: number; durationMs: number; usage?: TokenUsage }
   | { type: 'context_usage'; sessionId: string; usage: ContextUsage }
   | { type: 'context_window_changed'; sessionId: string; window: ContextWindowChoice }
   /** `resetsAt` (ISO) is when the window that refused the request opens again, when known. */
@@ -651,8 +676,8 @@ export interface ImportCandidate {
 
 /** Renderer -> main requests. `req` is the argument, `res` the resolved value. */
 export interface IpcInvokeMap {
-  /** Today's tokens, for the usage details. */
-  'usage:day-tokens': { req: void; res: DayTokens };
+  /** Today's use of the plan, for the usage details. */
+  'usage:day': { req: void; res: DayUsage };
   'app:get-state': { req: void; res: { sessions: SessionSummary[]; usage: UsageSnapshot; settings: AppSettings; account: AccountSnapshot; update: UpdateStatus } };
   /** Lets the user pick the projects folder; the updated settings, or null when cancelled. */
   'settings:choose-projects-root': { req: void; res: AppSettings | null };

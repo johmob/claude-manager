@@ -7,7 +7,7 @@ import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import iconPath from '../../resources/icon.png?asset';
-import { CHAT_DETAILS, CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
+import { usageWeight, CHAT_DETAILS, CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
@@ -27,7 +27,8 @@ import type {
   SavedQuestions,
   SessionRecord,
   SessionSummary,
-  DayTokens,
+  DayUsage,
+  TokenUsage,
   TaggedBlock,
   TodoNode,
   TodoTree,
@@ -161,14 +162,14 @@ function boot(): void {
   // Every Claude process the app starts (sessions and one-shot calls) must use the same executable.
   const claudeExecutable = { pathToClaudeCodeExecutable: packagedClaudeBinary() };
   const engine = createSessionEngine(onSessionEvent, claudeExecutable);
-  // Tokens processed today, split into the user's sessions and the app's own helper calls.
-  const dayTokensStore = createJsonStore<DayTokens>(join(userData, 'day-tokens.json'), { date: '', sessions: 0, app: 0 });
-  let dayTokens = dayTokensStore.read();
-  const countTokens = (kind: 'sessions' | 'app', tokens: number): void => {
-    dayTokens = addTokens(dayTokens, localDate(new Date()), kind, tokens);
-    dayTokensStore.write(dayTokens);
+  // Today's use of the plan (weighted by model and cache), split into the user's sessions and the app's own helper calls.
+  const dayUsageStore = createJsonStore<DayUsage>(join(userData, 'day-usage.json'), { date: '', sessions: 0, app: 0 });
+  let dayUsage = dayUsageStore.read();
+  const countUsage = (kind: 'sessions' | 'app', usage: TokenUsage, model: string): void => {
+    dayUsage = addTokens(dayUsage, localDate(new Date()), kind, usageWeight(usage, model));
+    dayUsageStore.write(dayUsage);
   };
-  const structuredQuery = createStructuredQuery({ ...claudeExecutable, onTokens: (tokens) => countTokens('app', tokens) });
+  const structuredQuery = createStructuredQuery({ ...claudeExecutable, onUsage: (usage, model) => countUsage('app', usage, model) });
   const todo = createTodoWatcher((id, tree) => {
     model.setTodo(id, tree);
     // The map is done once the agent has written it, even if its turn goes on: the card and schema stop
@@ -295,7 +296,7 @@ function boot(): void {
         break;
       case 'turn_finished': {
         if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
-        countTokens('sessions', event.tokens);
+        if (event.usage) countUsage('sessions', event.usage, record?.model ?? 'default');
         const completed = !event.isError && !event.interrupted;
         const asks = model.summary(event.sessionId);
         if (event.sessionId === QUICK_ID) {
@@ -976,7 +977,7 @@ function boot(): void {
   });
 
   handle('usage:refresh', () => usage.refreshNow());
-  handle('usage:day-tokens', () => todayOf(dayTokens, localDate(new Date())));
+  handle('usage:day', () => todayOf(dayUsage, localDate(new Date())));
   handle('window:snap', (req) => windows.snap(req.mode));
   handle('window:ensure-width', (req) => windows.ensureWidth(req.width));
   handle('window:show-session', (req) => showSession(req.id));

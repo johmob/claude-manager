@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
-import type { DayTokens, SessionSummary, UsageSnapshot, UsageWindow } from '../../../shared/contracts';
+import type { DayUsage, SessionSummary, UsageSnapshot, UsageWindow } from '../../../shared/contracts';
 import { AgentsIcon, ChatIcon } from '../components/Icons';
 import { QuickChatBody, useQuickChat } from '../components/QuickChat';
 import { QuickQuestion, questionsKey } from '../components/QuestionFlow';
@@ -33,19 +33,19 @@ function UsageRow({ label, window: w }: { label: string; window: UsageWindow | n
 
 const LEVEL_COLOR = { ok: '#3fb950', notice: '#facc15', warn: '#ff8a1f', crit: '#ff3b30' } as const;
 
-/** What share of today's tokens went to the app's own helper calls (tagging, icons, summaries). */
+/** What share of today's use of the plan went to the app's own helper calls (tagging, icons, summaries). */
 function AppShare() {
-  const [day, setDay] = useState<DayTokens | null>(null);
+  const [day, setDay] = useState<DayUsage | null>(null);
   useEffect(() => {
-    void window.cm.invoke('usage:day-tokens', undefined).then(setDay);
+    void window.cm.invoke('usage:day', undefined).then(setDay);
   }, []);
   const total = day ? day.sessions + day.app : 0;
   if (!day || !total) return null;
   const share = (day.app / total) * 100;
   return (
     <InfoRow label="Appen">
-      <span title={`Appens egna anrop (taggning, ikoner, sammanfattningar): ${day.app.toLocaleString('sv-SE')} av ${total.toLocaleString('sv-SE')} tokens i dag`}>
-        {share < 0.1 ? '<0,1' : share.toLocaleString('sv-SE', { maximumFractionDigits: share < 10 ? 1 : 0 })} % <span className="si-dim">av dagens tokens</span>
+      <span title="Appens egna anrop (taggning, ikoner, sammanfattningar) som andel av det du använt av kvoten i dag. Vägt som kvoten: modell och cache räknas in, så billiga Haiku-anrop väger lätt.">
+        {share < 0.1 ? '<0,1' : share.toLocaleString('sv-SE', { maximumFractionDigits: share < 10 ? 1 : 0 })} % <span className="si-dim">av dagens användning</span>
       </span>
     </InfoRow>
   );

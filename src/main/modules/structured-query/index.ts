@@ -1,13 +1,13 @@
 // structured-query: one stateless Claude call through the Agent SDK (on the user's Claude Code login)
 // whose answer must match a JSON schema. Nothing is saved to Claude Code's session history.
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import { usageTokens, type StructuredQuery } from '../../../shared/contracts';
+import { tokenUsageOf, type StructuredQuery, type TokenUsage } from '../../../shared/contracts';
 
 export interface StructuredQueryOptions {
   /** Claude Code executable to run; needed in the installed app, where the SDK cannot find its own. */
   pathToClaudeCodeExecutable?: string;
-  /** Told the tokens each call processed (input, output, cache). */
-  onTokens?: (tokens: number) => void;
+  /** Told what each call used, and on which model. */
+  onUsage?: (usage: TokenUsage, model: string) => void;
 }
 
 export function createStructuredQuery(options: StructuredQueryOptions = {}): StructuredQuery {
@@ -28,7 +28,7 @@ export function createStructuredQuery(options: StructuredQueryOptions = {}): Str
     });
     for await (const message of run) {
       if (message.type !== 'result') continue;
-      options.onTokens?.(usageTokens(message.usage));
+      options.onUsage?.(tokenUsageOf(message.usage), request.model);
       return message.subtype === 'success' ? (message.structured_output ?? null) : null;
     }
     return null;
