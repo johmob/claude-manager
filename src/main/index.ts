@@ -12,6 +12,9 @@ import { isRecord } from '../shared/guards';
 import { PASTE_MAX_BYTES, PASTE_TYPES } from '../shared/pastedImages';
 /** How long pasted images are kept in the temp folder. */
 const PASTE_KEEP_MS = 30 * 24 * 60 * 60 * 1000;
+/** Tool calls in a turn that count as real work, after which the work schema should have been touched. */
+const SCHEMA_REMINDER_TOOLS = 3;
+const SCHEMA_REMINDER = 'Under förra turen arbetade du utan att röra arbetsschemat (.claude-manager/todo.json). Uppdatera det först: markera det som blev klart, sätt pågår bara på det som faktiskt pågår just nu och återställ resten, lägg till det som tillkommit och stryk det som blivit överflödigt. Nämn det inte i chatten.';
 import type {
   AppSettings,
   TranscriptEntry,
@@ -212,7 +215,13 @@ function boot(): void {
     dayUsageStore.write(dayUsage);
   };
   const structuredQuery = createStructuredQuery({ ...claudeExecutable, onUsage: (usage, model) => countUsage('app', usage, model) });
+  // The agent keeps the work schema current itself. A turn that did real work without touching the schema
+  // gets a short reminder along with the user's next message (no extra turn, no tokens of its own).
+  const turnWork = new Map<string, { since: number; tools: number }>();
+  const schemaChangedAt = new Map<string, number>();
+  const schemaStale = new Set<string>();
   const todo = createTodoWatcher((id, tree) => {
+    schemaChangedAt.set(id, Date.now());
     model.setTodo(id, tree);
     // The map is done once the agent has written it, even if its turn goes on: the card and schema stop
     // saying "Kartlägger". The model switch back and the held first message still wait for the turn's end.
@@ -378,7 +387,15 @@ function boot(): void {
         // A mapping waiting for this session starts now; one whose turn was running ends with the process.
         if (event.type === 'exited' && mappingActive?.id === event.sessionId) void (mappingActive.restore ? endMapping('stopped') : sendMappingTurn());
         break;
+      case 'tool_use': {
+        const work = turnWork.get(event.sessionId) ?? { since: Date.now(), tools: 0 };
+        turnWork.set(event.sessionId, { ...work, tools: work.tools + 1 });
+        break;
+      }
       case 'turn_finished': {
+        const work = turnWork.get(event.sessionId);
+        turnWork.delete(event.sessionId);
+        if (work && work.tools >= SCHEMA_REMINDER_TOOLS && record && record.kind !== 'quick' && !mappingTurn(record.id) && hasSchema(record.cwd) && (schemaChangedAt.get(record.id) ?? 0) < work.since) schemaStale.add(record.id);
         if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
         void stampMark(event.sessionId);
         if (event.usage) countUsage('sessions', event.usage, record?.model ?? 'default');
@@ -455,7 +472,12 @@ function boot(): void {
       model.setDrift(id, null);
       scheduleSync();
     }
-    sendToSession(id, drift ? `${appContext('Ändringar gjorda utanför appen följde med', describeDrift(drift))}\n\n${text}` : text);
+    const schema = !text.trimStart().startsWith('/') && schemaStale.delete(id);
+    const notes = [
+      ...(drift ? [appContext('Ändringar gjorda utanför appen följde med', describeDrift(drift))] : []),
+      ...(schema ? [appContext('Påminnelse om arbetsschemat', SCHEMA_REMINDER)] : []),
+    ];
+    sendToSession(id, notes.length ? `${notes.join('\n\n')}\n\n${text}` : text);
   }
 
   function sendToSession(id: string, text: string): void {
