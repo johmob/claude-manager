@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { describeDrift, driftSince, markOf } from './index';
+import { describeDrift, driftSince, markAt, markOf } from './index';
 
 describe('project drift', () => {
   const dirs: string[] = [];
@@ -34,6 +34,18 @@ describe('project drift', () => {
     expect(drift).toMatchObject({ commits: 1, fileCount: 1, files: ['b.txt'], uncommitted: 1 });
     expect(drift.log[0]).toMatch(/Lade till b$/);
     expect(describeDrift(drift)).toContain('1 ny commit, 1 ändrad fil, 1 fil med ändringar som inte är committade');
+  }, 30_000);
+
+  it('takes the commit before a time as the starting point for cards that have no mark yet', async () => {
+    const dir = repo();
+    const first = (await markOf(dir))!;
+    await new Promise((r) => setTimeout(r, 1100));
+    const schemaUpdated = new Date().toISOString();
+    await new Promise((r) => setTimeout(r, 1100));
+    commit(dir, 'b.txt', 'Efter schemat');
+    const base = (await markAt(dir, schemaUpdated))!;
+    expect(base.head).toBe(first.head);
+    expect((await driftSince(dir, base))?.commits).toBe(1);
   }, 30_000);
 
   it('gives no mark for a folder that is not a git repository', async () => {

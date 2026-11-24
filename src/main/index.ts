@@ -54,7 +54,7 @@ import { messagesForTagging, readTags, splitBlocks, tagRequest, taggedBlocks } f
 import { createTagMemory } from './modules/tag-memory';
 import { iconRequest, readIcon } from './modules/icon-picker';
 import { addTokens, localDate, todayOf } from './modules/day-tokens';
-import { describeDrift, driftSince, markOf } from './modules/project-drift';
+import { describeDrift, driftSince, markAt, markOf } from './modules/project-drift';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 
@@ -652,11 +652,14 @@ function boot(): void {
     for (const record of activeRecords()) {
       const s = model.summary(record.id);
       if (!s || record.kind === 'quick' || s.status === 'working' || s.activeAgents || s.mapping) continue;
-      if (!record.mark) {
+      // A card from before marks existed starts from the project as it stood when its schema was last updated.
+      const known = record.mark ?? (s.todo?.updated ? await markAt(record.cwd, s.todo.updated) : null);
+      if (!known) {
         await stampMark(record.id);
         continue;
       }
-      const drift = await driftSince(record.cwd, record.mark);
+      const drift = await driftSince(record.cwd, known);
+      if (!drift && !record.mark) await stampMark(record.id);
       if (drift && JSON.stringify(drift.mark) !== JSON.stringify(s.drift?.mark)) {
         model.setDrift(record.id, drift);
         scheduleSync();

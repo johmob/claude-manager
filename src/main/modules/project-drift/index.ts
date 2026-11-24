@@ -26,6 +26,16 @@ export async function markOf(cwd: string): Promise<ProjectMark | null> {
   return { head, changes };
 }
 
+/**
+ * The project as it stood at a time (e.g. when its work schema was last updated): the last commit made
+ * before then, with today's uncommitted changes (their age cannot be told). Null without git or commits.
+ */
+export async function markAt(cwd: string, at: string): Promise<ProjectMark | null> {
+  const now = await markOf(cwd);
+  const head = (await git(cwd, ['rev-list', '-1', `--before=${at}`, 'HEAD']))?.trim();
+  return now && head ? { head, changes: now.changes } : null;
+}
+
 /** What changed since `known`: commits and files, and uncommitted work. Null when nothing did (or it cannot tell). */
 export async function driftSince(cwd: string, known: ProjectMark): Promise<ProjectDrift | null> {
   const now = await markOf(cwd);

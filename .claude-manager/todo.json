@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T07:12:20Z",
+  "updated": "2026-11-24T07:21:04Z",
   "tracks": [
     {
       "id": "eng",
@@ -483,7 +483,7 @@
               "id": "life.1.4",
               "title": "Arbetsschema och kontext när projektet ändrats utanför appen",
               "status": "done",
-              "notes": "Användaren valde: fråga med Uppdatera schemat förvalt, och fortsätt samtalet med ändringslistan. Appen noterar git-läget vid varje turs slut och jämför vid start och var 10:e minut; rad på kort och chatt med Uppdatera schemat, Kartlägg om, Ignorera. Provat dolt. Projekt utan git kontrolleras inte."
+              "notes": "Användaren valde: fråga med Uppdatera schemat förvalt, och fortsätt samtalet med ändringslistan. Appen noterar git-läget vid varje turs slut och jämför vid start och var 10:e minut; rad på kort och chatt med Uppdatera schemat, Kartlägg om, Ignorera. Provat dolt. Projekt utan git kontrolleras inte. Kort utan sparat git-läge utgår från senaste commit före schemats updated-tid, så tidigare ändringar syns direkt. Användaren bekräftade att projekt utan git inte kontrolleras."
             }
           ]
         },
