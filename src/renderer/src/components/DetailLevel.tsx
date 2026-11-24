@@ -4,7 +4,7 @@ const NAMES: Record<ChatDetail, string> = { minimal: 'Minimal', moderate: 'Moder
 const SWITCH_TITLES: Record<ChatDetail, string> = {
   minimal: 'Minimal: bara svar, frågor, antaganden, fel, risker och varningar',
   moderate: 'Moderat: även resultat, godkända kontroller, beslut och förslag',
-  detailed: 'Detaljerat: allt, även planer, lägesrapporter och bakgrund',
+  detailed: 'Detaljerat: allt ofiltrerat, som i Claude Code: varje meddelande utan taggar; bara kommandon fälls ihop',
 };
 
 /** One to three dots: how far down a level reaches (one dot shows even in Minimal, three only in Detaljerat). */

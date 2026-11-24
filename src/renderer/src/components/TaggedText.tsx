@@ -31,13 +31,14 @@ export function hasWeight(blocks: TaggedBlock[] | undefined, detail: ChatDetail)
  * The agent's text, block by block as the turn's tags read it: each block marked by what it is (result,
  * passed check, failure, question …), with the label once per run of the same tag; narration is dimmed.
  * Each block carries one to three dots for the lowest detail it shows at (one: even in Minimal).
- * Blocks below the chat's detail are hidden behind "Visa N stycken till". Untagged text (before the tags
- * arrive) shows as plain markdown.
+ * Blocks below the chat's detail are hidden behind "Visa N stycken till". Detaljerat, and untagged text
+ * (before the tags arrive), show as plain markdown.
  */
 export function TaggedText({ text, blocks }: { text: string; blocks?: TaggedBlock[] }) {
   const detail = useContext(ChatDetailContext);
   const [all, setAll] = useState(false);
-  if (!blocks?.length) return <MarkdownText text={text} />;
+  // Detaljerat is the raw text, untagged; so is text whose tags have not arrived.
+  if (!blocks?.length || detail === 'detailed') return <MarkdownText text={text} />;
   const visible = blocks.filter((b) => b.tag === null || tagShows(b.tag, detail));
   const hidden = blocks.length - visible.length;
   const shown = all ? blocks : visible;

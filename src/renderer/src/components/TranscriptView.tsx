@@ -108,15 +108,21 @@ function standsOut(entry: TranscriptEntry, finals: Set<string>, detail: ChatDeta
   }
 }
 
-type Shown = { kind: 'entry'; entry: Exclude<TranscriptEntry, ToolEntry> } | { kind: 'log'; entries: TranscriptEntry[] };
+type Shown = { kind: 'entry'; entry: Exclude<TranscriptEntry, ToolEntry> } | { kind: 'log'; entries: TranscriptEntry[] } | { kind: 'tools'; tools: ToolEntry[] };
 
 /** "14:32" for entries from this run; saved history has no times, so it shows none. */
 function timeOf(entry: TranscriptEntry): string {
   return entry.id.startsWith('history:') ? '' : new Date(entry.at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
 }
 
-/** Everything that does not stand out is gathered into work logs between the entries that do. */
+/**
+ * Everything that does not stand out is gathered into work logs between the entries that do. Detaljerat is
+ * the raw stream: every entry on its own; only each run of commands folds to one line.
+ */
 function arrange(entries: TranscriptEntry[], finals: Set<string>, detail: ChatDetail): Shown[] {
+  if (detail === 'detailed') {
+    return groupTools(entries).map((item): Shown => (Array.isArray(item) ? { kind: 'tools', tools: item } : { kind: 'entry', entry: item }));
+  }
   const shown: Shown[] = [];
   for (const entry of entries) {
     if (standsOut(entry, finals, detail) && entry.kind !== 'tool') {
@@ -128,6 +134,10 @@ function arrange(entries: TranscriptEntry[], finals: Set<string>, detail: ChatDe
     else shown.push({ kind: 'log', entries: [entry] });
   }
   return shown;
+}
+
+function keyOf(item: Shown): string {
+  return item.kind === 'log' ? item.entries[0]!.id : item.kind === 'tools' ? item.tools[0]!.id : item.entry.id;
 }
 
 /** Rounds: each message from the user starts one, holding everything up to the next (work log, answer, callouts). */
@@ -210,8 +220,9 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
 
 /**
  * Scrollable live transcript: your messages, each turn's answer, callouts and questions stand out; the
- * agent's narration and commands along the way are folded into work logs. Sticks to the bottom unless
- * the user scrolled up.
+ * agent's narration and commands along the way are folded into work logs (Detaljerat shows it all raw,
+ * with only the runs of commands folded).
+ * Sticks to the bottom unless the user scrolled up.
  */
 export function TranscriptView({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -232,12 +243,14 @@ export function TranscriptView({ entries, sessionId }: { entries: TranscriptEntr
   return (
     <div className="transcript" ref={ref} onScroll={onScroll}>
       {rounds(arrange(entries, finals, detail)).map((round) => (
-        <section key={round[0]!.kind === 'log' ? round[0]!.entries[0]!.id : round[0]!.entry.id} className="t-round">
+        <section key={keyOf(round[0]!)} className="t-round">
           {round.map((item) =>
-            item.kind === 'log' ? (
+            item.kind === 'tools' ? (
+              <ToolGroup key={item.tools[0]!.id} tools={item.tools} />
+            ) : item.kind === 'log' ? (
               <WorkLog key={item.entries[0]!.id} entries={item.entries} sessionId={sessionId} />
             ) : (
-              <Entry key={item.entry.id} entry={item.entry} sessionId={sessionId} final={finals.has(item.entry.id)} />
+              <Entry key={item.entry.id} entry={item.entry} sessionId={sessionId} final={detail !== 'detailed' && finals.has(item.entry.id)} />
             ),
           )}
         </section>
