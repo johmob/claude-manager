@@ -975,3 +975,17 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .sp-state[data-on] .sp-state-dot { background: var(--green); animation: sp-live 1.6s ease-out infinite; }
 @keyframes sp-live { 0% { box-shadow: 0 0 0 0 rgba(62,207,142,.6); } 100% { box-shadow: 0 0 0 7px rgba(62,207,142,0); } }
 .sp-count[data-active] { background: var(--green); animation: sp-live 1.6s ease-out infinite; }
+
+/* Clicking a scheduled job: a small card in place with what it is for and what it runs */
+.sp-job { position: relative; }
+.sp-job-click { cursor: pointer; }
+.sp-job-click:hover .sp-job-name { text-decoration: underline; text-underline-offset: 2px; }
+.sp-job[data-open] { border-color: var(--accent-ui); }
+.sp-pop { margin-top: 6px; padding: 10px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); box-shadow: 0 18px 40px rgba(0,0,0,.5); display: flex; flex-direction: column; gap: 7px; font-size: 0.8rem; animation: t-latest-in .15s ease-out; }
+.sp-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sp-pop-desc { margin: 0; line-height: 1.45; }
+.sp-pop-facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; }
+.sp-pop-facts dt { color: var(--muted); }
+.sp-pop-facts dd { margin: 0; }
+.sp-pop-label { color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.sp-pop-run { margin: 0; padding: 6px 8px; border-radius: 6px; background: rgba(0,0,0,.3); font-size: 0.74rem; white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow-y: auto; }

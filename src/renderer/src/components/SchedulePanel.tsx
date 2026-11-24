@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { ScheduledJobView, SessionSummary } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { SessionMark } from './SessionMark';
@@ -27,12 +27,60 @@ function lastRunText(job: ScheduledJobView): string {
   return `${job.lastRun.ok ? '✓' : '✕'} ${at}`;
 }
 
+/** A small card in place over the panel: what the job is for, what it runs, when, and how the last run went. */
+function JobDetail({ job, onClose }: { job: ScheduledJobView; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose();
+    };
+    const onDown = (e: MouseEvent): void => {
+      if (ref.current && !ref.current.parentElement?.contains(e.target as Node)) onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('mousedown', onDown);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousedown', onDown);
+    };
+  }, [onClose]);
+  const runs = job.kind === 'agent' ? job.prompt : job.command;
+  return (
+    <div ref={ref} className="sp-pop" role="dialog" aria-label={job.name}>
+      <div className="sp-pop-head">
+        <strong>{job.name}</strong>
+        <button type="button" className="icon-btn" title="Stäng" onClick={onClose}>×</button>
+      </div>
+      <p className="sp-pop-desc">{job.description || <span className="muted">Ingen beskrivning.</span>}</p>
+      <dl className="sp-pop-facts">
+        <dt>Typ</dt>
+        <dd>{job.kind === 'agent' ? 'Skickas till agenten (kostar tokens)' : `Körs lokalt av appen, utan tokens${job.wakeAgentOnFailure ? '; väcker agenten om det misslyckas' : ''}`}</dd>
+        <dt>När</dt>
+        <dd>{job.rhythm} <span className="muted">({job.cron})</span></dd>
+        <dt>Nästa</dt>
+        <dd>{job.enabled ? whenNext(job.nextRun) : 'pausad'}</dd>
+        <dt>Senast</dt>
+        <dd>{lastRunText(job)}</dd>
+      </dl>
+      <div className="sp-pop-label">{job.kind === 'agent' ? 'Meddelande till agenten' : 'Kommando'}</div>
+      <pre className="sp-pop-run">{runs}</pre>
+      {job.lastRun?.output && (
+        <>
+          <div className="sp-pop-label">Utdata senast</div>
+          <pre className="sp-pop-run">{job.lastRun.output}</pre>
+        </>
+      )}
+    </div>
+  );
+}
+
 function Job({ session, job }: { session: SessionSummary; job: ScheduledJobView }) {
+  const [open, setOpen] = useState(false);
   const act = (action: 'run' | 'pause' | 'resume' | 'delete'): void => send('schedule:act', { id: session.id, jobId: job.id, action });
   return (
-    <li className="sp-job" data-paused={job.enabled ? undefined : 'true'}>
-      <div className="sp-job-head">
-        <span className="sp-job-name" title={job.kind === 'agent' ? job.prompt : job.command}>{job.name}</span>
+    <li className="sp-job" data-paused={job.enabled ? undefined : 'true'} data-open={open ? 'true' : undefined}>
+      <div className="sp-job-head sp-job-click" title="Visa detaljer" onClick={() => setOpen((o) => !o)}>
+        <span className="sp-job-name">{job.name}</span>
         <span className="sp-kind" data-kind={job.kind} title={job.kind === 'agent' ? 'Skickas till agenten (kostar tokens)' : 'Körs av appen utan agent (inga tokens)'}>
           {job.kind === 'agent' ? 'Agent' : 'Lokalt'}
         </span>
@@ -58,6 +106,7 @@ function Job({ session, job }: { session: SessionSummary; job: ScheduledJobView 
           <button type="button" className="link-btn danger-text" onClick={() => act('delete')}>Ta bort</button>
         </span>
       </div>
+      {open && <JobDetail job={job} onClose={() => setOpen(false)} />}
     </li>
   );
 }

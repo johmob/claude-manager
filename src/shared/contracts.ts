@@ -58,6 +58,8 @@ export interface OverlayAnchor {
 export interface ScheduledJob {
   id: string;
   name: string;
+  /** One or two sentences on what the job is for, shown when the user clicks it ('' when none). */
+  description: string;
   /** 5-field cron in local time. */
   cron: string;
   /** "command": a shell command run by the app without an agent; "agent": a task sent to the project's agent. */

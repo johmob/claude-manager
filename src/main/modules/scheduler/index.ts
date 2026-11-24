@@ -24,9 +24,9 @@ When the user asks you to do something on a schedule, or you see that something 
 - CronCreate (Claude Code): only for short-lived reminders inside this session; its jobs disappear when the session ends or the app restarts, and recurring ones expire after 30 days.
 - Monitor (Claude Code): to watch a process, log or command and react when something changes, rather than polling on a schedule.
 - Windows Task Scheduler: only for jobs that must run while the app is closed; tell the user, since it lives outside the app.
-Format of \`${SCHEDULE_RELATIVE_PATH}\` (keep any jobs already there; give each a stable unique id):
+Format of \`${SCHEDULE_RELATIVE_PATH}\` (keep any jobs already there; give each a stable unique id and a "description" of one or two sentences on what it is for and why, which the user reads when clicking the job):
 { "jobs": [
-  { "id": "nightly-tests", "name": "Nattliga tester", "cron": "17 2 * * *", "kind": "command", "command": "npm test", "enabled": true, "wakeAgentOnFailure": true },
+  { "id": "nightly-tests", "name": "Nattliga tester", "cron": "17 2 * * *", "description": "Kör hela testsviten varje natt och väcker agenten om något går sönder.", "kind": "command", "command": "npm test", "enabled": true, "wakeAgentOnFailure": true },
   { "id": "weekly-summary", "name": "Veckosammanfattning", "cron": "43 8 * * 1", "kind": "agent", "prompt": "Sammanfatta veckans commits och uppdatera arbetsschemat.", "enabled": true }
 ] }
 "cron" is standard 5-field cron in local time (minute hour day-of-month month day-of-week); avoid minute 0 and 30 when the exact time does not matter. Tell the user in one line what you scheduled and how often.`;
@@ -53,6 +53,7 @@ export function readJobs(cwd: string): { jobs: ScheduledJob[]; problem: string }
       kind,
       command: str('command'),
       prompt: str('prompt'),
+      description: str('description'),
       enabled: x['enabled'] !== false,
       wakeAgentOnFailure: x['wakeAgentOnFailure'] === true,
     };

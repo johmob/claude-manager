@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T12:24:07.660Z",
+  "updated": "2026-11-24T12:35:58.479Z",
   "tracks": [
     {
       "id": "eng",
@@ -837,6 +837,12 @@
           "title": "Visa agenternas CronCreate-jobb",
           "status": "not_started",
           "notes": "Jobb skapade med CronCreate syns märkta \"bara i sessionen\". Inte gjort än: kräver att appen fångar CronCreate-anropens indata."
+        },
+        {
+          "id": "sched.6",
+          "title": "Jobb visar läge och detaljer vid klick",
+          "status": "done",
+          "notes": "Användaren: tydligt om ett jobb är aktivt, inget Kör nu på aktiva jobb, klick ger ett litet kort på plats med kort beskrivning. Jobb har nu fältet description som agenterna fyller i. Testat dolt."
         }
       ]
     }
