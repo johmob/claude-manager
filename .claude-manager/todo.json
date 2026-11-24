@@ -361,6 +361,12 @@
               "title": "Subagenter markerar först och sist",
               "status": "done",
               "notes": "Appen ger varje subagent fasta regler via en SubagentStart-hook: första åtgärden är att sätta sina punkter till pågår, sista (klar, stoppad eller misslyckad) att sätta status och en not. Provat med en riktig subagent; att ändra själva uppdraget med en PreToolUse-hook stoppades av auto-lägets granskning och användes inte. Grundregel 3 säger samma sak."
+            },
+            {
+              "id": "plan.3.9",
+              "title": "Grundregler som checklistor",
+              "status": "done",
+              "notes": "Användaren: reglerna ska vara superkoncisa och följas. Nu checklistor vid start, större arbete, klart steg och turens slut (~280 ord, förut ~600); schemaprotokollet kortat till ~560 ord. Planerare Opus medium (high för svåra konstruktioner), kodare på lägsta nivå uppgiften kräver, ingen Fable. Användaren: ingen spärr eller fråga vid viss förbrukning. Orörda gamla standardregler uppgraderas automatiskt. Når appen vid nästa installation."
             }
           ]
         }

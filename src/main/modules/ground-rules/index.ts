@@ -5,7 +5,6 @@ import { dirname } from 'node:path';
 export const DEFAULT_GROUND_RULES = `# Ground rules: check these off at each point
 
 **When a task starts**
-- [ ] Read the usage (path in the note below). If it may not cover the work, ask the user and propose steps.
 - [ ] Open the work schema \`.claude-manager/todo.json\` (create it if missing). Find the items, read their notes, set them in progress.
 
 **When work is bigger than a small fix**
