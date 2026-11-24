@@ -91,8 +91,6 @@ const QUICK_PROMPT = [
 /** Sent to a session stopped by the usage limit once it has reset. */
 const RESUME_MESSAGE =
   'Användningsgränsen har återställts. Fortsätt bara med det arbete som gränsen avbröt, och starta om de subagenter som stoppades av den. Börja inget nytt. Väntar du på ett svar eller ett val från användaren, fortsätt vänta och upprepa kort vad du behöver.';
-/** An update installs only after this long without any session event. */
-const QUIET_BEFORE_UPDATE_MS = 10 * 60 * 1000;
 /** Wait a little past the reset time, so the first request is not refused again. */
 const RESUME_MARGIN_MS = 60 * 1000;
 
@@ -118,6 +116,8 @@ interface MappingJob {
  * A test instance (CLAUDE_MANAGER_TEST=1, with its own CLAUDE_MANAGER_DATA_DIR): windows render off screen
  * without focus or taskbar entries, no notifications, no tray icon. Driven over remote debugging.
  */
+/** The notification about a ready update uses this in place of a session id. */
+const UPDATE_NOTICE_ID = 'app-update';
 /** How often the projects are checked for work done outside the app. */
 const DRIFT_CHECK_MS = 10 * 60_000;
 /** What the agent is asked to do with the change list when the user chooses "Uppdatera schemat". */
@@ -143,7 +143,6 @@ function boot(): void {
   const claudeDir = process.env['CLAUDE_CONFIG_DIR'] || join(homedir(), '.claude');
   const icon = nativeImage.createFromPath(iconPath);
   let syncTimer: NodeJS.Timeout | null = null;
-  let lastSessionEvent = 0;
   /** Mapping turns wait here and run one at a time, so several new projects never map at once. */
   const mappingQueue: MappingJob[] = [];
   /** The mapping now; `restore` (the card's own model and effort) is set once its turn has been sent. */
@@ -202,7 +201,9 @@ function boot(): void {
     startHidden: process.argv.includes(AUTOSTART_ARG),
     offscreen: TEST_INSTANCE,
   });
-  const notifier = createNotifier({ onClick: showSession, flash: (on) => windows.flash(on), muted: TEST_INSTANCE });
+  /** The version the user was last told about, so each one is announced once. */
+  let announcedUpdate: string | null = null;
+  const notifier = createNotifier({ onClick: (id) => (id === UPDATE_NOTICE_ID ? windows.showMain() : showSession(id)), flash: (on) => windows.flash(on), muted: TEST_INSTANCE });
   // A test instance has no tray icon: it must not be mistaken for the user's app.
   const tray = TEST_INSTANCE ? { setWaiting: () => undefined, setLaunchAtLogin: () => undefined, destroy: () => undefined } : createTray({
     icon,
@@ -220,17 +221,18 @@ function boot(): void {
     ? createUpdater({
         version: app.getVersion(),
         auto: settings.autoUpdate,
-        // Idle means truly quiet: no turn, no subagent, nothing waiting for the user, and no event from any
-        // session for a while (background agents and monitors keep sending events while they work).
-        isIdle: () =>
-          mappingActive === null &&
-          Date.now() - lastSessionEvent >= QUIET_BEFORE_UPDATE_MS &&
-          model.summaries().every((s) => s.status !== 'working' && !s.activeAgents && !s.pendingCount && !s.questions.length),
-        onStatus: (status) => windows.send('state:update', status),
+        onStatus: (status) => {
+          windows.send('state:update', status);
+          // A version is ready: ask once, with a notification that opens the app where the question is.
+          if (status.state === 'ready' && !status.deferred && status.available && status.available !== announcedUpdate) {
+            announcedUpdate = status.available;
+            notifier.alert({ sessionId: UPDATE_NOTICE_ID, title: `Version ${status.available} är klar att installera`, body: 'Välj Uppdatera nu eller Vid nästa omstart i appen.', urgent: false });
+          }
+        },
       })
     : null;
   const updateStatus = (): UpdateStatus =>
-    updater?.current() ?? { state: 'off', version: app.getVersion(), available: null, progress: 0, auto: settings.autoUpdate, message: 'Uppdateringar finns bara i den installerade appen.' };
+    updater?.current() ?? { state: 'off', version: app.getVersion(), available: null, progress: 0, auto: settings.autoUpdate, deferred: false, message: 'Uppdateringar finns bara i den installerade appen.' };
 
   for (const record of activeRecords()) {
     model.upsertRecord(record);
@@ -268,7 +270,6 @@ function boot(): void {
 
   // ---------- Event flow ----------
   function onSessionEvent(event: SessionEvent): void {
-    lastSessionEvent = Date.now();
     for (const entry of model.apply(event)) windows.send('session:transcript-upsert', { id: event.sessionId, entry });
     rememberLimit(event.sessionId);
     const record = findRecord(event.sessionId);
@@ -843,6 +844,7 @@ function boot(): void {
 
   handle('app:get-state', () => ({ sessions: model.summaries(), usage: usage.current(), settings, account, update: updateStatus() }));
   handle('update:install', () => updater?.installNow());
+  handle('update:defer', () => updater?.defer());
   handle('update:check', () => updater?.checkNow());
 
   handle('quick:ask', (req) => {

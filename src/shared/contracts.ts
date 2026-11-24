@@ -505,6 +505,8 @@ export interface UpdateStatus {
   /** 0–100 while downloading. */
   progress: number;
   auto: boolean;
+  /** The user chose to install the ready version at the next restart; not asked again for it. */
+  deferred: boolean;
   /** Why the last check failed, when state is "error". */
   message: string;
 }
@@ -710,6 +712,8 @@ export interface IpcInvokeMap {
   'settings:choose-projects-root': { req: void; res: AppSettings | null };
   /** Installs the newer version now (fetching it first if needed); the app restarts. */
   'update:install': { req: void; res: void };
+  /** Install the ready version at the next restart instead of now. */
+  'update:defer': { req: void; res: void };
   /** Looks for a new version now. */
   'update:check': { req: void; res: void };
   /** Asks the quick chat ("Ny chatt"); starts it on the first question. */

@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T07:21:04Z",
+  "updated": "2026-11-24T07:30:10Z",
   "tracks": [
     {
       "id": "eng",
@@ -541,8 +541,8 @@
             {
               "status": "done",
               "id": "life.3.5",
-              "title": "Uppdatering installeras bara efter 10 minuters tystnad",
-              "notes": "Kräver att inget arbetar, väntar eller har subagenter igång. Det tidigare villkoret startade om appen mitt under subagenter. Klart, inte släppt än."
+              "title": "Uppdateringar: fråga Uppdatera nu eller Vid nästa omstart",
+              "notes": "Användaren: appen ska säga att den hittat en uppdatering och fråga om man vill uppdatera nu eller vid nästa omstart. Appen startar aldrig om själv; utan svar installeras den vid nästa start. Klart."
             }
           ]
         }

@@ -29,7 +29,7 @@ function UpdatePill({ update }: { update: UpdateStatus }) {
       type="button"
       className="update-pill"
       disabled={update.state === 'downloading'}
-      title={update.auto ? 'Installeras av sig själv när inget arbetar. Klicka för att installera nu (appen startar om).' : 'Klicka för att installera (appen startar om).'}
+      title={update.state === 'ready' ? 'Installeras vid nästa omstart. Klicka för att installera nu (appen startar om).' : 'Klicka för att hämta och installera (appen startar om).'}
       onClick={() => send('update:install', undefined)}
     >
       {update.state === 'downloading' ? `Hämtar ${update.available} · ${update.progress} %` : `Version ${update.available} · Installera nu`}
@@ -80,7 +80,7 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
           />
           <Toggle
             label="Auto-uppdatera"
-            title="Nya versioner installeras av sig själva när ingen session arbetar eller väntar på dig."
+            title="Nya versioner hämtas i bakgrunden. Appen frågar om du vill uppdatera nu eller vid nästa omstart; den startar aldrig om av sig själv."
             on={update.auto}
             onChange={(autoUpdate) => send('settings:update', { autoUpdate })}
           />

@@ -11,8 +11,8 @@ A Windows app (Electron, TypeScript, React, Claude Agent SDK) that runs and supe
 Never commit personal or company data: names, e-mail addresses, user paths, customer or project details, credentials. Test data stays generic.
 
 ## Shipping a new version
-Installed apps update themselves from this repo's GitHub releases. They download in the background and install once no session is working or waiting for the user.
+Installed apps update themselves from this repo's GitHub releases. They download in the background and then ask the user: install now, or at the next restart. They never restart on their own.
 1. Commit and push the change to `main`.
-2. Run `npm run release` (`-- minor` for a minor version). It runs the checks, bumps the version, tags `vX.Y.Z`, pushes, builds the installer and publishes it as a GitHub release with the GitHub CLI (`tools/release.mjs`), then checks that the installer, blockmap and `latest.yml` are all on the release, and nudges the running app on this computer to look for it at once (it installs when no session is busy).
+2. Run `npm run release` (`-- minor` for a minor version). It runs the checks, bumps the version, tags `vX.Y.Z`, pushes, builds the installer and publishes it as a GitHub release with the GitHub CLI (`tools/release.mjs`), then checks that the installer, blockmap and `latest.yml` are all on the release, and nudges the running app on this computer to look for it at once (it downloads it and asks the user).
 
 Do not build or reinstall the user's installed app yourself unless they ask. They run many agents in it.

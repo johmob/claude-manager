@@ -1,17 +1,15 @@
-// updater: keeps the installed app current from the project's GitHub releases. It checks now and then,
-// downloads a new version in the background when auto-update is on, and installs it (restarting the app)
-// once nothing would be interrupted, or at once when the user asks. Knows nothing about sessions beyond
-// the isIdle callback.
+// updater: keeps the installed app current from the project's GitHub releases. It checks now and then and
+// downloads a new version in the background (when auto-update is on). It never restarts the app on its
+// own: once a version is ready the user is asked, and installs now or lets it install at the next restart
+// (also what happens if they never answer).
 import { autoUpdater } from 'electron-updater';
 import type { UpdateStatus } from '../../../shared/contracts';
 
 export interface UpdaterOptions {
   /** The running version. */
   version: string;
-  /** Install new versions on their own once idle. */
+  /** Fetch new versions on their own. */
   auto: boolean;
-  /** True when restarting the app would interrupt nothing (no turn running, nothing waiting for the user). */
-  isIdle: () => boolean;
   onStatus: (status: UpdateStatus) => void;
 }
 
@@ -19,6 +17,8 @@ export interface Updater {
   setAuto(on: boolean): void;
   /** Installs the new version now, fetching it first if needed. Restarts the app. */
   installNow(): void;
+  /** The user chose to install at the next restart: stop asking. */
+  defer(): void;
   /** Looks for a new version now instead of waiting for the next regular check. */
   checkNow(): void;
   current(): UpdateStatus;
@@ -28,10 +28,9 @@ export interface Updater {
 // Regular checks are rare; a new release nudges a running app to check at once (see CHECK_UPDATE_ARG).
 const FIRST_CHECK_MS = 30 * 1000;
 const CHECK_EVERY_MS = 3 * 60 * 60 * 1000;
-const IDLE_POLL_MS = 60 * 1000;
 
 export function createUpdater(opts: UpdaterOptions): Updater {
-  let status: UpdateStatus = { state: 'idle', version: opts.version, available: null, progress: 0, auto: opts.auto, message: '' };
+  let status: UpdateStatus = { state: 'idle', version: opts.version, available: null, progress: 0, auto: opts.auto, deferred: false, message: '' };
   /** The user asked to install: do it as soon as the download is done. */
   let installWhenReady = false;
 
@@ -39,20 +38,19 @@ export function createUpdater(opts: UpdaterOptions): Updater {
     status = { ...status, ...patch };
     opts.onStatus(status);
   };
-  const applyAuto = (on: boolean): void => {
-    autoUpdater.autoDownload = on;
-    autoUpdater.autoInstallOnAppQuit = on;
-  };
+  // A downloaded version always installs when the app quits, so "next restart" needs nothing more.
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.autoDownload = opts.auto;
   // Silent, and the app starts again afterwards.
   const install = (): void => autoUpdater.quitAndInstall(true, true);
   const check = (): void => void autoUpdater.checkForUpdates().catch(() => undefined); // errors arrive as 'error' events
 
-  applyAuto(opts.auto);
   autoUpdater.logger = null;
   autoUpdater.on('checking-for-update', () => set({ state: 'checking', message: '' }));
   autoUpdater.on('update-not-available', () => set({ state: 'idle', available: null }));
   autoUpdater.on('update-available', (info) => {
-    set({ state: autoUpdater.autoDownload ? 'downloading' : 'available', available: info.version, progress: 0 });
+    // A newer version than the one put off asks again.
+    set({ state: autoUpdater.autoDownload ? 'downloading' : 'available', available: info.version, progress: 0, deferred: status.deferred && status.available === info.version });
     if (!autoUpdater.autoDownload && installWhenReady) void autoUpdater.downloadUpdate();
   });
   autoUpdater.on('download-progress', (p) => set({ state: 'downloading', progress: Math.round(p.percent) }));
@@ -67,13 +65,10 @@ export function createUpdater(opts: UpdaterOptions): Updater {
 
   const first = setTimeout(check, FIRST_CHECK_MS);
   const every = setInterval(check, CHECK_EVERY_MS);
-  const idle = setInterval(() => {
-    if (status.state === 'ready' && status.auto && opts.isIdle()) install();
-  }, IDLE_POLL_MS);
 
   return {
     setAuto(on) {
-      applyAuto(on);
+      autoUpdater.autoDownload = on;
       set({ auto: on });
       if (on) check();
     },
@@ -83,6 +78,9 @@ export function createUpdater(opts: UpdaterOptions): Updater {
       if (status.state === 'available') void autoUpdater.downloadUpdate();
       else if (status.state !== 'downloading') check();
     },
+    defer() {
+      set({ deferred: true });
+    },
     checkNow() {
       if (status.state !== 'downloading' && status.state !== 'ready') check();
     },
@@ -90,7 +88,6 @@ export function createUpdater(opts: UpdaterOptions): Updater {
     stop() {
       clearTimeout(first);
       clearInterval(every);
-      clearInterval(idle);
     },
   };
 }

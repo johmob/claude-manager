@@ -10,7 +10,7 @@ The requirements are in [claude-code-manager-spec.md](claude-code-manager-spec.m
 2. The app uses your Claude subscription through Claude Code's login. If you have not used Claude Code on this computer, install it and run `claude` once in a terminal to log in.
 3. On first start, choose the folder where your projects live. You can change it later under *Nytt projekt* or *Befintligt projekt*.
 
-The app updates itself. It checks this repo's releases, downloads a new version in the background and installs it once no session is working or waiting for you. Turn this off with **Auto-uppdatera** in the top bar, or click **Installera nu** to install at once.
+The app keeps itself current. It checks this repo's releases and downloads a new version in the background, then asks: **Uppdatera nu** (the app restarts) or **Vid nästa omstart**. It never restarts on its own; without an answer the new version installs the next time the app starts. Turn off the background download with **Auto-uppdatera** in the ⚙ menu.
 
 ## Releasing
 
