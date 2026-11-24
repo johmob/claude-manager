@@ -2,6 +2,8 @@ import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ChatDetail } from '../../../shared/contracts';
 import { ChatDetailContext } from '../state/chatDetail';
 import type { TranscriptEntry } from '../../../shared/contracts';
+import { splitImageRefs } from '../../../shared/pastedImages';
+import { localImageUrl } from '../lib/localImage';
 import { send } from '../lib/api';
 import { Spinner } from './Atoms';
 import { CalloutBox } from './CalloutBox';
@@ -221,6 +223,23 @@ function WorkLog({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId
   );
 }
 
+/** The user's words, with pasted images shown as thumbnails instead of their file paths. */
+function UserText({ text }: { text: string }) {
+  const { text: words, images } = splitImageRefs(text);
+  return (
+    <>
+      {words}
+      {images.length > 0 && (
+        <div className="user-images">
+          {images.map((path) => (
+            <img key={path} src={localImageUrl(path) ?? ''} alt="Inklistrad bild" title={path} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, ToolEntry>; sessionId: string; final: boolean }) {
   const time = timeOf(entry);
   switch (entry.kind) {
@@ -237,7 +256,7 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
                 </button>
               )}
             </div>
-            {entry.text}
+            <UserText text={entry.text} />
           </div>
         </div>
       );

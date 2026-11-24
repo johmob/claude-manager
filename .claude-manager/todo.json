@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T12:50:28.447Z",
+  "updated": "2026-11-24T14:53:22.705Z",
   "tracks": [
     {
       "id": "eng",
@@ -537,15 +537,14 @@
             {
               "id": "ui.6.22",
               "title": "Frågans underlag: bilder, länkar, tabeller från turen",
-              "status": "in_progress",
-              "progress": 70,
-              "notes": "Användaren: Haiku ska analysera vad agenten skrivit innan, även bilder, och ta med det inför frågan; fick en fråga som refererade till bilder och info som inte visades. Måste klara länkar och flera bilder. Gjort, ej committat: turn-tags ger per fråga context (block-id); root bygger frågans detail av de blocken (bilder och länkar visas via MarkdownText). Kvar: riktigt prov i dold instans (agent visar bild i ett meddelande, frågar i nästa), med flera bilder och en länk. Haiku ser inte bildinnehållet, bara länk och text runt."
+              "status": "done",
+              "notes": "Testat dolt: flera bilder, länk och fråga i en tur; frågerutan visar bilderna och värdena som underlag. Länken räknades som bakgrund och kom inte med som underlag."
             },
             {
               "id": "ui.6.23",
               "title": "Det användaren ska göra eller veta om nästa steg döljs inte",
-              "status": "not_started",
-              "notes": "Användaren: i svaret syntes allt utom sista stycket (\"Inget är committat. Kör komprimeringen. Efteråt gör jag provet och frågar sedan om commit och release.\"), som var det relevanta. Troligen taggat plan/progress och dolt i Moderat. Åtgärd: i Haikus taggning ska uppmaningar till användaren och läget för commit/release taggas som next/answer (syns), och/eller turens sista block i slutsvaret visas alltid i Moderat. Agera på detta efter komprimeringen. Användaren: speca mindre exakt hur Haiku ska göra och beskriv i stället syftet, så tar den kanske bättre beslut. Plan: skriv om tagRequest-prompten (src/main/modules/turn-tags/index.ts) till att förklara sammanhanget: användaren styr många agenter och skummar; vad varje nivå visar och döljer; att det kostar mycket att dölja något användaren måste göra, svara på eller känna till, medan det kostar lite att visa en rad för mycket; frågor dyker upp i ett helskärmsflöde och ska vara äkta och fristående. Behåll schemat och taggnamnen, korta ned regellistan. Prova sedan på riktiga turer (dolt) innan commit. Sett i test: Haikus bakgrund i frågerutan läckte interna block-id (\"bilden finns i block 1.1\"); prompten ska förbjuda det. Användaren (skärmdump claude.png på skrivbordet): det står fortfarande \"question\" i en ruta, och en jättelång och stor rubrik visas. Haiku behöver veta hur rubriker (#, **fet**) presenteras i UI för att välja rätt; kolla om ui.6.19/21 redan löser det."
+              "status": "done",
+              "notes": "Haiku-prompten beskriver nu syfte och vad som står på spel i stället för regler, förklarar nivåerna, rutan Under arbetet och att frågan blir en rubrik. Frågans underlag rensas från markering och från block som bara upprepar frågan; långa frågor får mindre rubrik."
             },
             {
               "id": "ui.6.24",
@@ -556,8 +555,8 @@
             {
               "id": "ui.6.25",
               "title": "Klistra in bilder i chatten",
-              "status": "not_started",
-              "notes": "Användaren: kunna klistra in bilder (Ctrl+V) i chattrutan så agenten kan granska dem. Räcker att appen sparar bilden i en temp-mapp och skickar sökvägen (eller skickar den som bildblock via SDK:n)."
+              "status": "done",
+              "notes": "Ctrl+V eller dra in bilder i chattrutan: miniatyrer med × före sändning, bara bilder går att skicka. Main sparar dem i temp-mappen och meddelandet får en rad [Bild: sökväg] som agenten läser; chatten visar rader som miniatyrer, även efter omstart."
             }
           ]
         },
@@ -590,7 +589,74 @@
           "id": "ui.9",
           "title": "Utred röststyrning",
           "status": "not_started",
-          "notes": "Användaren: utred om Claude API (eller annan väg) kan användas för röststyrning, så användaren kan prata i stället för att skriva; appen visar fortfarande bara text. Att utreda: tal till text (API-stöd, lokalt i Windows, kostnad), push-to-talk eller alltid lyssnande, och svar som tal eller bara text."
+          "notes": "Prata i stället för att skriva; appen visar fortfarande text. Förslag: (1) Nu, utan kod: Windows röstinmatning (Win+H) skriver i alla textrutor, gratis, svenska fungerar hyggligt. (2) Rekommenderat: mikrofonknapp (håll in för att prata) som spelar in och transkriberar lokalt med Whisper (whisper.cpp med KBLab:s svenska modell): gratis, offline, inget lämnar datorn, bra svenska; nackdel cirka 1–3 s fördröjning och en modellfil på några hundra MB. Haiku kan därefter städa talspråket till en tydlig instruktion. (3) Molntjänst för tal till text (Azure, OpenAI): snabbt och bra men kostar per minut och ljudet lämnar datorn; Claude API har ingen egen tal-till-text. Uppläsning av svar kan senare göras med Windows inbyggda röster, bara för korta sammanfattningar."
+        },
+        {
+          "id": "ui.10",
+          "title": "Tydligare träd och ärligare status",
+          "notes": "Trädet är plottrigt: för mycket text per punkt, svag hierarki och status som inte stämmer. Ska inte kodas än.",
+          "items": [
+            {
+              "id": "ui.10.1",
+              "title": "Lösa punkter samlas under en grupp",
+              "status": "done",
+              "notes": "Lösa punkter bredvid grupper samlas i trädet under en grupp \"Övrigt\" sist på nivån, och regeln mot att blanda finns i agenternas protokoll och grundregel 1."
+            },
+            {
+              "id": "ui.10.2",
+              "title": "Grupper på alla nivåer får tydliga rubriker",
+              "status": "done",
+              "notes": "Grupper är nu rubrikrader i accentfärg med hela titeln radbruten och större text; nästlade grupper är inte längre lådor utan rubrik med indragen lista."
+            },
+            {
+              "id": "ui.10.3",
+              "title": "Pågår syns längs hela grenen",
+              "status": "done",
+              "notes": "En markering (pulserande prick) visas på varje grupp med pågående delar och på spåret, utöver bladen."
+            },
+            {
+              "id": "ui.10.4",
+              "title": "Pågår bara när någon arbetar",
+              "status": "done",
+              "notes": "Pågående punkter visas som \"Pågår nu\" bara när en agent arbetar (aktiva agenter eller status arbetar), annars som \"Vilande\" med ihålig prick."
+            },
+            {
+              "id": "ui.10.5",
+              "title": "Huvudagenten styr efter trädet och stänger saker",
+              "status": "done",
+              "notes": "TODO_PROTOCOL och grundregel 1 säger att trädet styr arbetet, att in_progress bara gäller medan arbetet pågår, att överflödiga punkter stryks eller slås ihop och att nivåer inte blandar blad och grupper."
+            },
+            {
+              "id": "ui.10.6",
+              "title": "Mindre text per punkt",
+              "status": "done",
+              "notes": "Beroenden är ett litet märke \"väntar på N\" med detaljer vid hovring, id är nedtonade efter titeln och titlarna radbryts i stället för att kapas."
+            },
+            {
+              "id": "ui.10.7",
+              "title": "Klara punkter som en rad sist",
+              "status": "done",
+              "notes": "Klara punkter och \"Klart (\"-punkter ligger som en ihopfälld rad \"N klara\" sist på varje nivå."
+            },
+            {
+              "id": "ui.10.8",
+              "title": "Mindre brus i status och förlopp",
+              "status": "done",
+              "notes": "Förloppsstaplar visas bara över 0 %, spårstatus bara för klar eller pågår med aktiv agent, och en punkt som pågår visar aldrig också väntar."
+            },
+            {
+              "id": "ui.10.9",
+              "title": "Bredd och läsbarhet",
+              "status": "done",
+              "notes": "Spåren är minst 320 px breda med horisontell rullning och raden \"Just nu\" är en rad med ellipsis och hela texten vid hovring."
+            }
+          ]
+        },
+        {
+          "id": "ui.11",
+          "title": "Nedräkning till återställning i overlayn",
+          "status": "done",
+          "notes": "När 5 tim eller vecka är förbrukad visar overlayn en nedräkning i timmar och minuter till återställningen. Inte provad med en riktig nådd gräns."
         }
       ]
     },
@@ -868,7 +934,7 @@
           "id": "mob.1",
           "title": "Utred och planera",
           "status": "not_started",
-          "notes": "Användaren: två Claude-konton, två datorer, en mobil. Att utreda: hur datorerna når mobilen (relätjänst, tunnel, molnsynk), inloggning och säkerhet (jobbdatorns nätverk, Zscaler), webbapp/PWA eller egen app, och vad som ska gå att göra (läsa, svara på frågor, skicka meddelanden, se användning per konto)."
+          "notes": "Styra alla projekt från mobilen, från två datorer med var sitt Claude-konto. Förslag: (A) Rekommenderat: en liten relätjänst i molnet (t.ex. Cloudflare Worker med websockets, gratisnivån räcker). Båda apparna ansluter utgående, vilket brukar gå igenom företagsproxy, och mobilen är en webbapp (PWA) som visar projekten från båda datorerna. Innehållet krypteras från ände till ände med en nyckel som paras via QR-kod, så relät ser ingenting. (B) Tunnel till varje dator (Tailscale eller liknande) och appen serverar sitt gränssnitt direkt: enklast att bygga men kräver att VPN-klienten är tillåten på jobbdatorn. (C) Claude Codes egen fjärrstyrning i Claude-appen: kolla om den kan nå sessioner som startats via SDK:n; i så fall behövs ingen egen mobilapp för grundfunktionen, men frågeflödet och översikten följer inte med. Att avgöra först: vad jobbdatorns IT-policy tillåter (utgående websocket eller VPN)."
         },
         {
           "id": "mob.2",

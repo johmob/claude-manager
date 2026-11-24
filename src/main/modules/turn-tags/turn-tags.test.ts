@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { messagesForTagging, readTags, splitBlocks, tagRequest, taggedBlocks } from './index';
+import { messagesForTagging, questionDetail, readTags, splitBlocks, tagRequest, taggedBlocks } from './index';
 
 describe('turn tags', () => {
   it('splits a message into blocks at blank lines, keeping code blocks and lone headings whole', () => {
@@ -63,5 +63,10 @@ describe('turn tags', () => {
     });
     expect(readTags(null, [1])).toBeNull();
     expect(taggedBlocks(['a', 'b'], ['pass'])).toEqual([{ text: 'a', tag: 'pass' }, { text: 'b', tag: null }]);
+  });
+  it('drops markup and blocks that only repeat the question from its background', () => {
+    const q = 'Hur ska läget mappa avtryckaren: vilken nivå när den precis är intryckt och när den är helt intryckt?';
+    expect(questionDetail(['> [!QUESTION] **Läget:** Hur ska läget mappa avtryckaren: vilken nivå när den precis är intryckt och när helt intryckt?', 'Nuvarande intervall är 10–75 kPa.', '![bild](C:/x.png)'], q)).toBe('Nuvarande intervall är 10–75 kPa.\n\n![bild](C:/x.png)');
+    expect(questionDetail(['[!NOTE] Spänningen antas vara 24 V.'], 'Stämmer det?')).toBe('Spänningen antas vara 24 V.');
   });
 });

@@ -20,8 +20,37 @@ function shortName(name: string): string {
 /** Small mark on the icon for states that need a glance: waiting, done, error. */
 const STATUS_MARK: Partial<Record<SessionSummary['status'], string>> = { waiting: '!', done: '✓', error: '×', limited: '⏸' };
 
+/** Hours and minutes left, "17:29"; "0:00" once passed. */
+function countdown(resetsAt: string, now: number): string {
+  const minutes = Math.max(0, Math.ceil((new Date(resetsAt).getTime() - now) / 60_000));
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/** Ticks every half minute while it is needed, so a countdown stays current. */
+function useNow(active: boolean): number {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (!active) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, [active]);
+  return now;
+}
+
+/** One usage window; once it is used up, a countdown to its reset takes the bar's place. */
 function UsageRow({ label, window: w }: { label: string; window: UsageWindow | null }) {
   const used = w ? Math.round(Math.min(100, Math.max(0, w.utilization))) : null;
+  const spent = used !== null && used >= 100 && !!w?.resetsAt;
+  const now = useNow(spent);
+  if (spent) {
+    const at = new Date(w!.resetsAt!).toLocaleString('sv-SE', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    return (
+      <span className="ov-usage-row ov-usage-spent" data-level="crit" title={`Gränsen är nådd. Återställs ${at}.`}>
+        <span className="ov-usage-label">{label}</span>
+        <span className="ov-countdown">⏳ {countdown(w!.resetsAt!, now)}</span>
+      </span>
+    );
+  }
   return (
     <span className="ov-usage-row" data-level={used === null ? 'ok' : usageLevel(used)}>
       <span className="ov-usage-label">{label}</span>

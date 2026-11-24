@@ -3,12 +3,13 @@
 import { app, dialog, ipcMain, nativeImage, shell } from 'electron';
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import iconPath from '../../resources/icon.png?asset';
 import { appContext, usageWeight, CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
+import { PASTE_MAX_BYTES, PASTE_TYPES } from '../shared/pastedImages';
 import type {
   AppSettings,
   TranscriptEntry,
@@ -52,7 +53,7 @@ import { probeAccount, UNVERIFIED_ACCOUNT } from './modules/account';
 import { bringIntoFocus, expireFocus } from './modules/focus-rules';
 import { createUpdater } from './modules/updater';
 import { createKeepAwake } from './modules/keep-awake';
-import { messagesForTagging, readTags, splitBlocks, tagRequest, taggedBlocks } from './modules/turn-tags';
+import { messagesForTagging, questionDetail, readTags, splitBlocks, tagRequest, taggedBlocks } from './modules/turn-tags';
 import { createTagMemory } from './modules/tag-memory';
 import { iconRequest, readIcon } from './modules/icon-picker';
 import { createAppLog } from './modules/app-log';
@@ -613,7 +614,7 @@ function boot(): void {
       // What the user needs to answer: the blocks the tagger pointed to (pictures, tables, options), else the question's own message.
       const contextOf = (q: (typeof tags.questions)[number]): string => {
         const blocks = q.context.map(([m, b]) => (m <= entries.length ? toTag[m - 1]?.[b - 1] : plainNotes.join('\n\n')) ?? '').filter(Boolean);
-        return [...new Set(blocks)].join('\n\n') || (entries[q.message - 1]?.text ?? plainNotes.join('\n\n'));
+        return questionDetail(blocks.length ? blocks : splitBlocks(entries[q.message - 1]?.text ?? plainNotes.join('\n\n')), q.text);
       };
       const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, about: q.about, detail: contextOf(q), brief: q.brief, options: q.options }));
       const blocks = entries.map((e, i) => ({ entryId: e.id, blocks: taggedBlocks(messages[i]!, tags.tags[i]!) }));
@@ -1121,6 +1122,18 @@ function boot(): void {
   handle('session:map-project', (req) => startMapping(req.id, req.guidance));
 
   handle('session:send', (req) => sendFromUser(req.id, req.text));
+
+  handle('session:paste-image', (req) => {
+    const ext = PASTE_TYPES[req.mime];
+    if (!ext) throw new Error('Bara PNG, JPEG, GIF och WebP kan klistras in.');
+    const bytes = Buffer.from(req.data, 'base64');
+    if (bytes.length > PASTE_MAX_BYTES) throw new Error('Bilden är större än 5 MB.');
+    const dir = join(tmpdir(), 'claude-manager-paste', req.id);
+    mkdirSync(dir, { recursive: true });
+    const path = join(dir, `paste-${Date.now()}-${randomUUID().slice(0, 6)}.${ext}`);
+    writeFileSync(path, bytes);
+    return path.split('\\').join('/');
+  });
 
   handle('session:redirect', async (req) => {
     // The running turn stops; the message waiting (or this one) is what the agent takes up next.

@@ -102,35 +102,23 @@ export function tagRequest(messages: string[][], cwd: string, work: string[] = [
     .map((blocks, m) => blocks.map((b, i) => `[${m + 1}.${i + 1}]\n${b.length > MAX_BLOCK_CHARS ? `${b.slice(0, MAX_BLOCK_CHARS)}…` : b}`).join('\n\n'))
     .join('\n\n');
   const prompt = [
-    'Nedan är en AI-agents meddelanden till användaren under en arbetstur, uppdelade i block med nummer [meddelande.block]. Tagga dem; skriv inte om något.',
-    '1. blocks: en tagg för varje block, med blockets nummer som id (t.ex. "2.3"). Välj den som bäst beskriver vad blocket är för användaren:',
-    '   answer: ett direkt svar på det användaren frågade.',
-    '   result: vad som gjorts, byggts eller ändrats; ett utfall.',
-    '   pass: en kontroll, ett test eller en verifiering som gick igenom.',
-    '   fail: något som misslyckades, är trasigt eller inte fungerar.',
-    '   warning: en begränsning, något som hoppades över, är osäkert eller bör bevakas.',
-    '   risk: något destruktivt, oåterkalleligt eller säkerhetsrelaterat.',
-    '   question: ber uttryckligen användaren svara eller välja.',
-    '   assumption: något agenten antagit som användaren bör bekräfta eller rätta.',
-    '   decision: ett val agenten gjort på egen hand.',
-    '   next: ett förslag på nästa steg.',
-    '   plan: vad agenten ska göra härnäst.',
-    '   progress: rutinmässig lägesrapport på vägen.',
-    '   background: förklaring, sammanhang, resonemang.',
-    '   Ett block med blandat innehåll får taggen för det viktigaste det innehåller (fail före warning före result).',
-    '2. questions: varje fråga eller val agenten uttryckligen ber användaren svara på eller ta ställning till, och varje antagande användaren ska bekräfta.',
-    '   Rutor märkta [!QUESTION] är frågor till användaren. Rutor märkta [!NOTE] är antaganden bara om agenten antagit något i användarens ställe som användaren kan rätta; information, osäkerheter agenten själv nämner, förklaringar och sådant som ska kontrolleras eller verifieras senare (av agenten, i test eller på hårdvaran) är inga antaganden att bekräfta.',
-    '   Varje ruta märkt [!QUESTION] ska alltid finnas med i listan. Är samma fråga ställd flera gånger i turen, ta med den en gång.',
-    '   Lägesrapporter, resultat, listor över vad som gjorts eller ska göras, rubriker och förklaringar är aldrig frågor, inte heller i punktlistor eller efter ett kolon.',
-    '   Ta inte med frågor som agenten själv besvarar i samma tur. Hellre en fråga för lite än en påhittad. För varje:',
-    '   Användaren har många agenter och projekt igång och läser frågan utan resten av texten, så den måste gå att förstå fristående.',
-    '   text: frågan med agentens ord, kort, men med det tillagt som behövs för att förstå den fristående (vilken modell, del eller version den gäller; "Är skruvarna M3?" blir "Är skruvarna i handtag v4 M3?"); kind: "question" eller "assumption";',
-    '   about: vad frågan gäller, högst 80 tecken: modell, del, version eller delmoment med agentens namn på dem (t.ex. "Handtag v4, kåpan mot greppet"), och punktens id ur arbetsschemat först om det framgår vilken punkt det är (t.ex. "cad.2.1 Handtag v4: kåpan"); "" om det inte framgår;',
-    '   options: svarsalternativen om agenten gav några (t.ex. ["1", "1b"] eller ["A", "B"]), annars [];',
-    '   brief: en till två meningar, högst 200 tecken, med det användaren behöver veta för att svara direkt, bara från texten, och som nämner vad det gäller;',
-    '   message: numret på meddelandet där frågan står;',
-    '   context: id på de block användaren behöver se för att kunna svara (t.ex. "2.3"): bilder och länkar frågan syftar på, tabeller, alternativen som jämförs, mätvärden, även från tidigare meddelanden i turen. Inte hela turen; tom lista om frågan går att besvara som den står;',
-    '   repeats: true om frågan frågar samma sak som en fråga i listorna nedan (redan öppen eller nyss besvarad), även med andra ord, mer detaljer eller ett annat punkt-id; annars false. Är du osäker, false.',
+    'Du hjälper en användare som styr många AI-agenter i olika projekt samtidigt och bara hinner skumma det de skriver. Nedan är en agents meddelanden från en arbetstur, uppdelade i block med nummer [meddelande.block]. Ditt jobb är att avgöra vad användaren behöver se, så att det viktiga syns direkt och resten håller sig undan. Du skriver inte om något.',
+    '',
+    'Hur appen använder det du svarar:',
+    '- Varje block får en tagg. Användaren läser chatten på en av tre nivåer. Minimal visar bara answer, question, assumption, fail, risk och warning. Moderat visar också result, pass, decision och next. Detaljerat visar allt.',
+    '- Block som bara är plan, progress eller background tonas ned. Består ett meddelande bara av sådana fälls det in i rutan "Under arbetet", som visar det senaste meddelandet på två rader medan agenten arbetar och annars är ihopfälld. Där passar löpande berättande; det användaren måste göra eller veta hör inte hemma där.',
+    '- Varje fråga i questions öppnas i ett eget fönster som användaren läser långt senare, utan resten av texten, bland frågor från andra projekt. text visas som en stor rubrik, brief som en kort ingress ovanför, och blocken i context visas under rubriken som underlag.',
+    '',
+    'Vad som står på spel: att dölja något användaren måste göra, svara på, bestämma eller känna till (nästa steg, vad som inte är klart, vad som är committat eller släppt, risker) är dyrt. Att visa en rad för mycket är billigt. Att ställa en fråga som inte är en äkta fråga är dyrt, eftersom den avbryter användaren; samma fråga två gånger likaså. Välj utifrån det, inte efter ytliga ord som frågetecken eller kolon.',
+    '',
+    'Taggarna: answer (svar på det användaren frågade), result (vad som gjorts eller blev resultatet), pass (en kontroll som gick igenom), fail (något som misslyckades), warning (en begränsning, något överhoppat eller osäkert), risk (destruktivt, oåterkalleligt, säkerhet), question (ber användaren svara eller välja), assumption (något agenten antagit i användarens ställe som användaren kan rätta), decision (ett val agenten gjort själv), next (nästa steg att ta ställning till), plan (vad agenten ska göra), progress (rutinmässig lägesrapport), background (förklaring och resonemang). Ett block med blandat innehåll får taggen för det viktigaste i det.',
+    '',
+    'questions: de äkta frågor och val agenten ber användaren ta ställning till, och de antaganden användaren bör bekräfta. Rutor märkta [!QUESTION] är frågor från agenten och ska med. Rutor märkta [!NOTE] är bara antaganden om agenten verkligen antagit något i användarens ställe; information och sådant som ska verifieras senare är det inte. Det som agenten själv besvarar i turen är ingen fråga. Hellre en fråga för lite än en påhittad. Per fråga:',
+    '- text: frågan, kort nog för en rubrik (helst under 90 tecken) och begriplig fristående. Lägg detaljer, värden och villkor i brief, inte i rubriken. Inga markeringar som [!QUESTION] och inga block-id.',
+    '- kind: "question" eller "assumption". about: vad det gäller, högst 80 tecken, med arbetsschemats punkt-id först om det framgår (t.ex. "cad.2.1 Handtag v4: kåpan"), annars "".',
+    '- options: svarsalternativen agenten gav, annars []. brief: en till två meningar, högst 200 tecken, med det användaren behöver veta för att svara; skriv aldrig block-id eller "se block" där.',
+    '- message: meddelandets nummer. context: id på de block användaren behöver se för att svara (bilder, länkar, tabeller, alternativ, mätvärden), även från tidigare meddelanden; inte blocket som bara upprepar frågan själv; [] om frågan räcker.',
+    '- repeats: true om den frågar samma sak som en fråga i listorna nedan, även med andra ord; annars false.',
     'Svara med JSON.',
     '',
     ...(work.length ? ['Pågående punkter i arbetsschemat:', ...work.map((w) => `- ${w}`), ''] : []),
@@ -189,4 +177,27 @@ export function readTags(reply: unknown, blockCounts: number[]): TurnTags | null
 /** A message's blocks with their tags, for the transcript. */
 export function taggedBlocks(blocks: string[], tags: Array<BlockTag | null>): TaggedBlock[] {
   return blocks.map((text, i) => ({ text, tag: tags[i] ?? null }));
+}
+
+const MARKER = /^\s*>?\s*\[!(?:QUESTION|NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/gim;
+const WORD = /[\p{L}\p{N}]{3,}/gu;
+
+/** The words of a text, lower-cased, for telling whether a block only repeats the question. */
+function words(text: string): Set<string> {
+  return new Set((text.toLowerCase().match(WORD) ?? []));
+}
+
+/**
+ * A question's background as the user sees it under the question: the blocks without callout markup, and
+ * without blocks that only repeat the question itself (most of their words are in it).
+ */
+export function questionDetail(blocks: string[], question: string): string {
+  const asked = words(question);
+  const kept = blocks
+    .map((b) => b.replace(MARKER, '').trim())
+    .filter((b) => {
+      const own = [...words(b)];
+      return b.length > 0 && (own.length === 0 || own.filter((w) => asked.has(w)).length / own.length < 0.6);
+    });
+  return [...new Set(kept)].join('\n\n');
 }

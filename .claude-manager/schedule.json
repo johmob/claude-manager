@@ -7,7 +7,7 @@
       "cron": "47 15 24 11 *",
       "kind": "agent",
       "prompt": "Användningsgränsen har återställts. Läs .claude-manager/resume.md och arbeta igenom kön där, uppifrån, enligt reglerna i filen. Stäng sedan av det här jobbet (enabled: false i .claude-manager/schedule.json).",
-      "enabled": true
+      "enabled": false
     }
   ]
 }

@@ -856,6 +856,8 @@ export interface IpcInvokeMap {
   'session:import-candidates': { req: void; res: ImportCandidate[] };
   'session:import': { req: { claudeSessionIds: string[] }; res: void };
   'session:send': { req: { id: string; text: string }; res: void };
+  /** Saves a pasted image (base64) in a temp folder and returns its path. */
+  'session:paste-image': { req: { id: string; mime: string; data: string }; res: string };
   'session:answer': { req: { id: string; requestId: string; answers: QuestionAnswers }; res: void };
   'session:permission': { req: { id: string; requestId: string; decision: PermissionDecision }; res: void };
   'session:interrupt': { req: { id: string }; res: void };

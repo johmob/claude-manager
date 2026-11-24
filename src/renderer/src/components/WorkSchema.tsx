@@ -16,9 +16,11 @@ interface Entry {
   path: TodoNode[];
 }
 
-/** What every part of the chart needs: titles for dependency text, the open item, and how to open one. */
+/** What every part of the chart needs: every item by id, whether an agent works now, the open item, and how to open one. */
 interface ChartContext {
-  titles: Map<string, string>;
+  nodes: Map<string, TodoNode>;
+  /** An agent is working in the session now; in-progress items are only "live" then. */
+  active: boolean;
   /** Short labels for long titles, by id. */
   labels: Record<string, string>;
   selectedId: string | null;
@@ -34,9 +36,9 @@ function Progress({ value, color }: { value: number; color?: string }) {
   );
 }
 
-/** "Väntar på: fw-a.2 Protokoll, …" for an item whose dependencies are not done. */
-function waitingFor(node: TodoNode, titles: Map<string, string>): string {
-  return `Väntar på: ${node.dependsOn.map((id) => (titles.has(id) ? `${id} ${titles.get(id)}` : id)).join(', ')}`;
+/** "fw-a.2 Protokoll" for each dependency of the item that is not done yet. */
+function waitingFor(node: TodoNode, nodes: Map<string, TodoNode>): string[] {
+  return node.dependsOn.filter((id) => nodes.get(id)?.status !== 'done').map((id) => (nodes.has(id) ? `${id} ${nodes.get(id)?.title}` : id));
 }
 
 /** The reference put in front of the user's message, so Claude knows which part of the schema it is about. */
@@ -67,82 +69,164 @@ function shownTitle(node: TodoNode, ctx: ChartContext): string {
   return ctx.labels[node.id] ?? node.title;
 }
 
+const OTHER_TITLE = 'Övrigt';
+
+/** Finished items, and the agent-written "Klart (…)" summary items, are shown as one folded row instead of as items. */
+const isDoneRow = (node: TodoNode): boolean => node.status === 'done' || node.title.startsWith('Klart (');
+
 /**
- * A package: an item with sub-items, shown as a group with its own heading, how many of its parts are
- * done and a progress bar. It folds; a finished package starts folded.
+ * The items of one level in reading order. A level is either all groups or all leaves: loose items
+ * beside groups are gathered under one group "Övrigt", last. Finished items are set aside for the folded row.
  */
-function Package({ node, track, trackOwner, ctx }: { node: TodoNode; track: TodoNode; trackOwner: string; ctx: ChartContext }) {
-  const [open, setOpen] = useState(node.status !== 'done');
-  const parts = leavesOf(node);
-  const done = parts.filter((l) => l.status === 'done').length;
-  const owner = node.owner || trackOwner;
+function arrangeLevel(parent: TodoNode): { open: TodoNode[]; done: TodoNode[] } {
+  const done = parent.children.filter(isDoneRow);
+  const rest = parent.children.filter((c) => !isDoneRow(c));
+  const groups = rest.filter((c) => c.children.length);
+  const loose = rest.filter((c) => !c.children.length);
+  if (!groups.length || !loose.length) return { open: rest, done };
+  const other: TodoNode = {
+    id: `${parent.id}.other`,
+    title: OTHER_TITLE,
+    status: loose.some((l) => l.status === 'in_progress') ? 'in_progress' : 'not_started',
+    progress: Math.round(loose.reduce((sum, l) => sum + l.progress, 0) / loose.length),
+    owner: '',
+    dependsOn: [],
+    blocked: false,
+    notes: '',
+    focus: false,
+    children: loose,
+  };
+  return { open: [...groups, other], done };
+}
+
+/** In progress somewhere in the item, and whether an agent is working now ("live") or not ("rest"). */
+function workState(node: TodoNode, ctx: ChartContext): 'live' | 'rest' | undefined {
+  if (!leavesOf(node).some((l) => l.status === 'in_progress')) return undefined;
+  return ctx.active ? 'live' : 'rest';
+}
+
+const REST_TEXT = 'Markerad som pågående, men ingen agent arbetar just nu';
+
+/** The mark for work along a branch: a pulsing dot while an agent works, a hollow one when it rests. */
+function WorkMark({ state }: { state: 'live' | 'rest' }) {
+  return <span className="ws-mark" data-state={state} title={state === 'live' ? 'Pågår nu' : REST_TEXT} />;
+}
+
+interface Place {
+  track: TodoNode;
+  trackOwner: string;
+  depth: number;
+  ctx: ChartContext;
+}
+
+/** One level of items: the open ones, then the finished ones folded into one row. */
+function Level({ parent, root, ...place }: Place & { parent: TodoNode; root?: boolean }) {
+  const { open, done } = arrangeLevel(parent);
   return (
-    <li className="ws-item ws-package" data-todo={node.status} data-open={open ? 'true' : undefined} data-blocked={node.blocked ? 'true' : undefined}>
-      <div className="ws-package-head ws-askable" data-selected={ctx.selectedId === node.id ? 'true' : undefined} {...pickHandlers(node.id, ctx)}>
-        <button type="button" className="ws-package-fold" aria-expanded={open} title={open ? 'Fäll ihop' : 'Fäll ut'} onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>
-          {open ? '▾' : '▸'}
-        </button>
-        <span className="ws-item-id">{node.id}</span>
-        <span className="ws-package-title" title={node.title}>{shownTitle(node, ctx)}</span>
-        <span className="ws-package-count">{done}/{parts.length}</span>
-      </div>
-      <Progress value={node.progress} />
+    <ul className={root ? 'ws-items ws-items-root' : 'ws-items'}>
+      {open.map((c) => <Item key={c.id} node={c} {...place} />)}
+      {done.length > 0 && <DoneRow items={done} {...place} />}
+    </ul>
+  );
+}
+
+/** The finished items of a level as one row, "11 klara"; a click unfolds them. */
+function DoneRow({ items, ...place }: Place & { items: TodoNode[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <li className="ws-done-row">
+      <button type="button" className="ws-done-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {open ? '▾' : '▸'} {items.length} klara
+      </button>
       {open && (
         <ul className="ws-items">
-          {node.children.map((c) => <Item key={c.id} node={c} track={track} trackOwner={owner} ctx={ctx} />)}
+          {items.map((c) => <Item key={c.id} node={c} {...place} />)}
         </ul>
       )}
     </li>
   );
 }
 
-function Item({ node, track, trackOwner, ctx }: { node: TodoNode; track: TodoNode; trackOwner: string; ctx: ChartContext }) {
-  if (node.children.length) return <Package node={node} track={track} trackOwner={trackOwner} ctx={ctx} />;
-  const now = node.status === 'in_progress';
-  const otherOwner = node.owner && node.owner !== trackOwner ? node.owner : '';
-  const hasMeta = node.status === 'in_progress' || node.blocked || otherOwner;
+/**
+ * A group: an item with sub-items, shown as a heading row with its full title, how many of its parts
+ * are done and, once something is done, a progress bar. It folds; a finished group starts folded.
+ * The group made by arrangeLevel is no schema item: clicking it only folds it.
+ */
+function Package({ node, ...place }: Place & { node: TodoNode }) {
+  const { ctx } = place;
+  const [open, setOpen] = useState(node.status !== 'done');
+  const parts = leavesOf(node);
+  const done = parts.filter((l) => l.status === 'done').length;
+  const work = workState(node, ctx);
+  const toggle = (): void => setOpen(!open);
+  const pick = ctx.nodes.has(node.id) ? pickHandlers(node.id, ctx) : { role: 'button', tabIndex: 0, onClick: toggle };
   return (
-    <li className="ws-item" data-todo={node.status} data-now={now ? 'true' : undefined} data-blocked={node.blocked ? 'true' : undefined}>
+    <li className="ws-item ws-package" data-depth={place.depth > 0 ? 'nested' : undefined} data-todo={node.status} data-open={open ? 'true' : undefined}>
+      <div className="ws-package-head ws-askable" data-selected={ctx.selectedId === node.id ? 'true' : undefined} {...pick}>
+        <button type="button" className="ws-package-fold" aria-expanded={open} title={open ? 'Fäll ihop' : 'Fäll ut'} onClick={(e) => { e.stopPropagation(); toggle(); }}>
+          {open ? '▾' : '▸'}
+        </button>
+        <span className="ws-package-title" title={node.title}>{shownTitle(node, ctx)}</span>
+        {work && <WorkMark state={work} />}
+        <span className="ws-package-count">{done}/{parts.length}</span>
+      </div>
+      {node.progress > 0 && <Progress value={node.progress} />}
+      {open && <Level parent={node} {...place} trackOwner={node.owner || place.trackOwner} depth={place.depth + 1} />}
+    </li>
+  );
+}
+
+function Item({ node, ...place }: Place & { node: TodoNode }) {
+  if (node.children.length) return <Package node={node} {...place} />;
+  const { ctx, trackOwner } = place;
+  const work = workState(node, ctx);
+  const otherOwner = node.owner && node.owner !== trackOwner ? node.owner : '';
+  // Work wins over waiting: an item that is being worked on is never shown as waiting.
+  const waiting = work ? [] : waitingFor(node, ctx.nodes);
+  const showProgress = node.status === 'in_progress' && node.progress > 0;
+  return (
+    <li className="ws-item" data-todo={node.status} data-work={work}>
       <div className="ws-item-box ws-askable" data-selected={ctx.selectedId === node.id ? 'true' : undefined} {...pickHandlers(node.id, ctx)}>
         <div className="ws-item-row">
           <TodoIcon status={node.status} />
-          <span className="ws-item-id">{node.id}</span>
           <span className="ws-item-title" title={node.title}>{shownTitle(node, ctx)}</span>
+          <span className="ws-item-id">{node.id}</span>
         </div>
-        {hasMeta && (
+        {(work || waiting.length > 0 || otherOwner || showProgress) && (
           <div className="ws-item-meta">
-            {now && <span className="ws-now">Pågår nu</span>}
-            {node.blocked && <span className="ws-blocked">Väntar</span>}
+            {work === 'live' && <span className="ws-now">Pågår nu</span>}
+            {work === 'rest' && <span className="ws-rest" title={REST_TEXT}>Vilande</span>}
+            {waiting.length > 0 && <span className="ws-blocked" title={`Väntar på:\n${waiting.join('\n')}`}>väntar på {waiting.length}</span>}
             {otherOwner && <span className="ws-owner">{otherOwner}</span>}
-            {node.status === 'in_progress' && <Progress value={node.progress} />}
+            {showProgress && <Progress value={node.progress} />}
           </div>
         )}
-        {node.blocked && <div className="ws-waiting">{waitingFor(node, ctx.titles)}</div>}
       </div>
     </li>
   );
 }
 
 function Track({ track, ctx }: { track: TodoNode; ctx: ChartContext }) {
+  const work = workState(track, ctx);
+  // The track's state only when it says something: finished, or an agent is working in it.
+  const state = track.status === 'done' ? 'Klar' : work === 'live' ? 'Pågår' : '';
   return (
-    <div className="ws-track" data-todo={track.status} data-blocked={track.blocked ? 'true' : undefined} data-focus={track.focus ? 'true' : undefined}>
+    <div className="ws-track" data-todo={track.status} data-work={work} data-blocked={track.blocked ? 'true' : undefined} data-focus={track.focus ? 'true' : undefined}>
       <div className="ws-track-card ws-askable" data-selected={ctx.selectedId === track.id ? 'true' : undefined} {...pickHandlers(track.id, ctx)}>
         <div className="ws-track-head">
           <TodoIcon status={track.status} />
           <span className="ws-track-title" title={track.title}>{shownTitle(track, ctx)}</span>
           {track.focus && <span className="ws-focus-badge">I fokus</span>}
         </div>
-        <div className="ws-track-meta">
-          {track.owner ? <span className="ws-owner">{track.owner}</span> : <span />}
-          <span className="ws-track-status">{STATUS_TEXT[track.status]}</span>
-        </div>
-        <Progress value={track.progress} />
+        {(track.owner || state) && (
+          <div className="ws-track-meta">
+            {track.owner ? <span className="ws-owner">{track.owner}</span> : <span />}
+            {state && <span className="ws-track-status">{state}</span>}
+          </div>
+        )}
+        {track.progress > 0 && <Progress value={track.progress} />}
       </div>
-      {track.children.length > 0 && (
-        <ul className="ws-items ws-items-root">
-          {track.children.map((c) => <Item key={c.id} node={c} track={track} trackOwner={track.owner} ctx={ctx} />)}
-        </ul>
-      )}
+      {track.children.length > 0 && <Level parent={track} track={track} trackOwner={track.owner} depth={0} ctx={ctx} root />}
     </div>
   );
 }
@@ -358,7 +442,7 @@ function useHideDone(): [boolean, (on: boolean) => void] {
 }
 
 /** Width a track column needs to read comfortably, the gap between columns, and the modal's own margins. */
-const TRACK_WIDTH = 290;
+const TRACK_WIDTH = 340;
 const TRACK_GAP = 16;
 const MODAL_CHROME = 90;
 
@@ -399,7 +483,7 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
   useRoomForTracks(standalone ? 0 : tracks.length);
   const index = todo ? indexSchema(todo) : new Map<string, Entry>();
   const open = openId ? index.get(openId) : undefined;
-  const ctx: ChartContext = { titles: new Map([...index].map(([id, e]) => [id, e.node.title])), labels: session.todoLabels, selectedId: openId, onPick: setOpenId };
+  const ctx: ChartContext = { nodes: new Map([...index].map(([id, e]) => [id, e.node])), active: session.activeAgents > 0 || session.status === 'working', labels: session.todoLabels, selectedId: openId, onPick: setOpenId };
   const left = todo ? todo.totalItems - todo.doneItems : 0;
 
   return (
@@ -407,7 +491,7 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
       <div className="ws-session">
         <StatusChip status={session.status} />
         {session.startedAt !== null && <span className="muted">Tid sedan start {formatElapsed(now - session.startedAt)}</span>}
-        {session.currentTask && <span className="ws-session-task">Just nu: {session.currentTask}</span>}
+        {session.currentTask && <span className="ws-session-task" title={session.currentTask}>Just nu: {session.currentTask}</span>}
         {todo && (
           <label className="ws-toggle" title="Visa bara det som återstår">
             <input type="checkbox" checked={hideDone} onChange={(e) => setHideDone(e.target.checked)} />
@@ -437,7 +521,7 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
               <div className="ws-root-left">{left === 0 ? 'Allt klart' : `${left} av ${todo.totalItems} punkter kvar`}</div>
               <Progress value={todo.progress} color={session.color} />
               <div className="muted ws-root-count">
-                Projektet {todo.progress} % klart · {todo.inProgressItems} pågår · {todo.tracks.length} spår
+                Projektet {todo.progress} % klart · {todo.inProgressItems} {ctx.active ? 'pågår' : 'vilande'} ·{todo.tracks.length} spår
               </div>
             </div>
           </div>
@@ -453,8 +537,9 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
             <span><TodoIcon status="done" /> Klar</span>
             <span><TodoIcon status="in_progress" /> Pågår</span>
             <span><TodoIcon status="not_started" /> Ej påbörjad</span>
-            <span><span className="ws-now">Pågår nu</span> arbetas med just nu</span>
-            <span><span className="ws-blocked">Väntar</span> väntar på annan punkt</span>
+            <span><span className="ws-now">Pågår nu</span> en agent arbetar</span>
+            <span><span className="ws-rest">Vilande</span> pågående, ingen agent arbetar</span>
+            <span><span className="ws-blocked">väntar på 2</span> väntar på andra punkter</span>
             <span className="ws-legend-hint">Klicka på ett spår eller en punkt för detaljer och för att kommentera.</span>
           </div>
         </div>

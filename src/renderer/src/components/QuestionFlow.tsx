@@ -185,7 +185,7 @@ function QuestionFlow({ session, queue, onClose, onSent }: { session: SessionSum
             </div>
             <QuestionSource session={session} about={q.about} />
             {q.brief && <div className="qf-brief">{q.brief}</div>}
-            <div className="qf-question">{q.text}</div>
+            <div className="qf-question" data-long={q.text.length > 90 ? (q.text.length > 180 ? 'very' : 'true') : undefined}>{q.text}</div>
             {q.detail && (
               <div className="qf-detail">
                 <MarkdownText text={q.detail} />

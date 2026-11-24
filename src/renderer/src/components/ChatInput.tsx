@@ -1,6 +1,21 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
-import { send } from '../lib/api';
+import { PASTE_MAX_BYTES, PASTE_TYPES, withImages } from '../../../shared/pastedImages';
+import { errorMessage, send } from '../lib/api';
+
+interface Attached {
+  path: string;
+  preview: string;
+}
+
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 /** Commands that are not on the context meter: clear the conversation, or stop the running turn. */
 function ActionsMenu({ session, onClose }: { session: SessionSummary; onClose: () => void }) {
@@ -32,6 +47,40 @@ function normalizeCommand(c: string): string {
 export function ChatInput({ session, compact = false }: { session: SessionSummary; compact?: boolean }) {
   const [text, setText] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [images, setImages] = useState<Attached[]>([]);
+  const [problem, setProblem] = useState('');
+
+  /** Saves pasted or dropped image files through main and shows them as thumbnails until the message is sent. */
+  const attach = async (files: File[]): Promise<void> => {
+    setProblem('');
+    for (const file of files) {
+      if (!PASTE_TYPES[file.type]) continue;
+      if (file.size > PASTE_MAX_BYTES) {
+        setProblem('Bilden är större än 5 MB.');
+        continue;
+      }
+      try {
+        const preview = await readAsDataUrl(file);
+        const path = await window.cm.invoke('session:paste-image', { id: session.id, mime: file.type, data: preview.slice(preview.indexOf(',') + 1) });
+        setImages((prev) => [...prev, { path, preview }]);
+      } catch (e) {
+        setProblem(errorMessage(e));
+      }
+    }
+  };
+  const imageFiles = (items: DataTransfer | null): File[] => [...(items?.files ?? [])].filter((f) => f.type.startsWith('image/'));
+  const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>): void => {
+    const files = imageFiles(e.clipboardData);
+    if (files.length === 0) return;
+    e.preventDefault();
+    void attach(files);
+  };
+  const onDrop = (e: DragEvent<HTMLDivElement>): void => {
+    const files = imageFiles(e.dataTransfer);
+    if (files.length === 0) return;
+    e.preventDefault();
+    void attach(files);
+  };
 
   const suggestions =
     text.startsWith('/') && !text.includes(' ')
@@ -41,11 +90,13 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
   const busy = session.status === 'working';
   /** Enter sends (it waits while the agent is busy); Ctrl+Enter stops what the agent is doing and has it do this instead. */
   const submit = (redirect = false): void => {
-    const value = text.trim();
+    const value = withImages(text, images.map((i) => i.path));
     if (!value) return;
     if (redirect && busy) send('session:redirect', { id: session.id, text: value });
     else send('session:send', { id: session.id, text: value });
     setText('');
+    setImages([]);
+    setProblem('');
   };
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -55,7 +106,18 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
   };
 
   return (
-    <div className={compact ? 'chat-input compact' : 'chat-input'}>
+    <div className={compact ? 'chat-input compact' : 'chat-input'} onDragOver={(e) => e.dataTransfer.types.includes('Files') && e.preventDefault()} onDrop={onDrop}>
+      {(images.length > 0 || problem) && (
+        <div className="paste-strip">
+          {images.map((img) => (
+            <span className="paste-thumb" key={img.path}>
+              <img src={img.preview} alt="Inklistrad bild" />
+              <button type="button" aria-label="Ta bort bilden" title="Ta bort bilden" onClick={() => setImages((prev) => prev.filter((i) => i !== img))}>×</button>
+            </span>
+          ))}
+          {problem && <span className="paste-problem">{problem}</span>}
+        </div>
+      )}
       {suggestions.length > 0 && (
         <div className="suggestions">
           {suggestions.map((c) => (
@@ -77,6 +139,7 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
         }
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKey}
+        onPaste={onPaste}
       />
       {!compact && (
         <div className="chat-input-side">
