@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T07:03:35Z",
+  "updated": "2026-11-24T07:12:20Z",
   "tracks": [
     {
       "id": "eng",
@@ -478,6 +478,12 @@
               "id": "life.1.3",
               "title": "Terminalsessioner: lista och spärr",
               "status": "done"
+            },
+            {
+              "id": "life.1.4",
+              "title": "Arbetsschema och kontext när projektet ändrats utanför appen",
+              "status": "done",
+              "notes": "Användaren valde: fråga med Uppdatera schemat förvalt, och fortsätt samtalet med ändringslistan. Appen noterar git-läget vid varje turs slut och jämför vid start och var 10:e minut; rad på kort och chatt med Uppdatera schemat, Kartlägg om, Ignorera. Provat dolt. Projekt utan git kontrolleras inte."
             }
           ]
         },

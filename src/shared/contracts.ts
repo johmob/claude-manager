@@ -44,6 +44,29 @@ export interface SessionRecord {
   icon?: SessionIconName;
   /** Questions the latest turn left unanswered, kept across restarts; absent when there are none. */
   openQuestions?: SavedQuestions;
+  /** The project's git state as the app last saw it (taken when a turn ends); absent for folders without git. */
+  mark?: ProjectMark;
+}
+
+/** A project's git state: HEAD and a fingerprint of its uncommitted changes. */
+export interface ProjectMark {
+  head: string;
+  changes: string;
+}
+
+/** Work done on a project outside the app since its mark. */
+export interface ProjectDrift {
+  /** The project as it is now. */
+  mark: ProjectMark;
+  /** New commits; -1 when the history was rewritten and the old HEAD is gone. */
+  commits: number;
+  /** "abc1234 Message", newest first (at most 30). */
+  log: string[];
+  /** Files changed by those commits (at most 40) and how many in all. */
+  files: string[];
+  fileCount: number;
+  /** Files with changes not committed. */
+  uncommitted: number;
 }
 
 export interface SavedQuestions {
@@ -523,6 +546,8 @@ export interface SessionSummary {
   limitResetsAt: string | null;
   /** The card's icon; null until one is chosen (initials show instead). */
   icon: SessionIconName | null;
+  /** Work done on the project outside the app since the app last saw it; null when none. */
+  drift: ProjectDrift | null;
   /** Questions and assumptions the latest turn left for the user; empty once answered or dismissed. */
   questions: OpenQuestion[];
   /** Changes with every turn that leaves new questions, so a set put off can be told from a new one. */
@@ -722,6 +747,8 @@ export interface IpcInvokeMap {
   'session:set-focus': { req: { id: string; focused: boolean }; res: void };
   /** Has the session's main agent map the project into its work schema; `guidance` may be empty. */
   'session:map-project': { req: { id: string; guidance: string }; res: void };
+  /** What to do about work done outside the app: update the schema from the change list, map it anew, or let it be. */
+  'session:drift': { req: { id: string; action: 'update' | 'remap' | 'ignore' }; res: void };
   'session:dismiss-callouts': { req: { id: string }; res: void };
   'ground-rules:edit': { req: { instructions: string }; res: string };
   'settings:update': { req: Partial<AppSettings>; res: AppSettings };

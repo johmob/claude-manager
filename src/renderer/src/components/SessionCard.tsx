@@ -10,6 +10,7 @@ import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
 import { TaggedText } from './TaggedText';
 import { SessionMark } from './SessionMark';
+import { DriftBar } from './DriftBar';
 import { ChatDetailContext, useChatDetail } from '../state/chatDetail';
 import { useTranscript } from '../state/useTranscript';
 import { QuestionsButton } from './QuestionFlow';
@@ -127,6 +128,7 @@ export function SessionCard({ session, onOpen, roomy = false }: SessionCardProps
         <ContextMeter session={session} />
         {session.lastError && <div className="card-error">{session.lastError}{limitNote(session)}</div>}
       </div>
+      <DriftBar session={session} />
       {roomy && <LatestAnswer sessionId={session.id} />}
       <QuestionsButton session={session} />
       <CardCallouts session={session} />

@@ -54,6 +54,7 @@ import { messagesForTagging, readTags, splitBlocks, tagRequest, taggedBlocks } f
 import { createTagMemory } from './modules/tag-memory';
 import { iconRequest, readIcon } from './modules/icon-picker';
 import { addTokens, localDate, todayOf } from './modules/day-tokens';
+import { describeDrift, driftSince, markOf } from './modules/project-drift';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 
@@ -117,6 +118,10 @@ interface MappingJob {
  * A test instance (CLAUDE_MANAGER_TEST=1, with its own CLAUDE_MANAGER_DATA_DIR): windows render off screen
  * without focus or taskbar entries, no notifications, no tray icon. Driven over remote debugging.
  */
+/** How often the projects are checked for work done outside the app. */
+const DRIFT_CHECK_MS = 10 * 60_000;
+/** What the agent is asked to do with the change list when the user chooses "Uppdatera schemat". */
+const DRIFT_UPDATE_PROMPT = 'Uppdatera arbetsschemat efter detta: läs det som behövs i ändringarna, markera det som blivit klart, lägg till nya punkter för nytt arbete och rätta anteckningarna. Kartlägg inte om hela projektet och börja inget annat arbete. Svara kort med vad du ändrade i schemat.';
 /** How long a turn's end waits for its tags before it shows without them. */
 const TAG_TIMEOUT_MS = 90_000;
 const TEST_INSTANCE = process.env['CLAUDE_MANAGER_TEST'] === '1';
@@ -236,6 +241,9 @@ function boot(): void {
     // Questions left unanswered before a restart still wait for the user.
     if (record.openQuestions) model.setQuestions(record.id, record.openQuestions);
   }
+  // Work done on the projects outside the app, now and every little while.
+  void checkDrift();
+  setInterval(() => void checkDrift(), DRIFT_CHECK_MS);
   notifier.setDoNotDisturb(settings.doNotDisturb);
   usage.start();
   // Sessions without work for days leave Fokus: checked at start and then every hour.
@@ -299,6 +307,7 @@ function boot(): void {
         break;
       case 'turn_finished': {
         if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
+        void stampMark(event.sessionId);
         if (event.usage) countUsage('sessions', event.usage, record?.model ?? 'default');
         const completed = !event.isError && !event.interrupted;
         if (event.sessionId === QUICK_ID) {
@@ -625,6 +634,36 @@ function boot(): void {
     }
   }
 
+  /** Notes the project's git state as the app leaves it after a turn, so later changes made elsewhere stand out. */
+  async function stampMark(id: string): Promise<void> {
+    const record = findRecord(id);
+    if (!record || record.kind === 'quick') return;
+    const mark = await markOf(record.cwd);
+    const latest = findRecord(id);
+    if (!mark || !latest || (latest.mark?.head === mark.head && latest.mark.changes === mark.changes)) return;
+    saveRecord({ ...latest, mark });
+  }
+
+  /**
+   * Looks for work done on each project outside the app since its mark (sessions busy right now are left
+   * alone: their own changes are not drift). A card without a mark gets one now.
+   */
+  async function checkDrift(): Promise<void> {
+    for (const record of activeRecords()) {
+      const s = model.summary(record.id);
+      if (!s || record.kind === 'quick' || s.status === 'working' || s.activeAgents || s.mapping) continue;
+      if (!record.mark) {
+        await stampMark(record.id);
+        continue;
+      }
+      const drift = await driftSince(record.cwd, record.mark);
+      if (drift && JSON.stringify(drift.mark) !== JSON.stringify(s.drift?.mark)) {
+        model.setDrift(record.id, drift);
+        scheduleSync();
+      }
+    }
+  }
+
   /** The work schema's items in progress ("cad.2.1 Kåpan"), so the tagger can tie a question to its step. */
   function workInProgress(tree: TodoTree | null): string[] {
     const leaves = (n: TodoNode): TodoNode[] => (n.children.length ? n.children.flatMap(leaves) : n.status === 'in_progress' ? [n] : []);
@@ -897,7 +936,25 @@ function boot(): void {
 
   handle('session:map-project', (req) => startMapping(req.id, req.guidance));
 
-  handle('session:send', (req) => sendToSession(req.id, req.text));
+  handle('session:send', (req) => {
+    // Work done outside the app since the agent last worked here: it reads the change list with the message.
+    const drift = model.summary(req.id)?.drift;
+    if (drift) {
+      model.setDrift(req.id, null);
+      scheduleSync();
+    }
+    sendToSession(req.id, drift ? `${describeDrift(drift)}\n\n---\n\n${req.text}` : req.text);
+  });
+
+  handle('session:drift', (req) => {
+    const drift = model.summary(req.id)?.drift;
+    if (!drift) return;
+    model.setDrift(req.id, null);
+    if (req.action === 'update') sendToSession(req.id, `${describeDrift(drift)}\n\n${DRIFT_UPDATE_PROMPT}`);
+    else if (req.action === 'remap') startMapping(req.id, '');
+    else saveRecord({ ...requireRecord(req.id), mark: drift.mark });
+    scheduleSync();
+  });
 
   handle('session:answer', (req) => engine.answerQuestion(req.id, req.requestId, req.answers));
   handle('session:permission', (req) => engine.resolvePermission(req.id, req.requestId, req.decision));
@@ -1103,6 +1160,9 @@ function validRecords(raw: unknown): SessionRecord[] | null {
     const record: SessionRecord = { ...(r as unknown as SessionRecord), color, effort, focused, lastActiveAt, contextWindow, tokensUsed, limitResetsAt };
     if (icon) record.icon = icon;
     else delete record.icon;
+    const mark = isRecord(r['mark']) && typeof r['mark']['head'] === 'string' && typeof r['mark']['changes'] === 'string' ? { head: r['mark']['head'], changes: r['mark']['changes'] } : null;
+    if (mark) record.mark = mark;
+    else delete record.mark;
     const saved = validSavedQuestions(r['openQuestions']);
     if (saved) record.openQuestions = saved;
     else delete record.openQuestions;

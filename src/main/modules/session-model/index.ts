@@ -10,6 +10,7 @@ import type {
   SessionRecord,
   SessionStatus,
   SavedQuestions,
+  ProjectDrift,
   SessionSummary,
   TaggedBlock,
   TodoNode,
@@ -45,6 +46,8 @@ export interface SessionModel {
    * questions show as they are. Ignored if a new turn has started since. Returns the entries that changed.
    */
   endTagging(id: string, afterEntryId: string | null): TranscriptEntry[];
+  /** Work done on the project outside the app (null: none, or dealt with). */
+  setDrift(id: string, drift: ProjectDrift | null): void;
   /** Puts back questions left unanswered before a restart. */
   setQuestions(id: string, saved: SavedQuestions): void;
   setMapping(id: string, mapping: boolean): void;
@@ -90,6 +93,7 @@ interface SessionState {
    * text and questions are held back, so the turn's end shows all at once.
    */
   tagging: boolean;
+  drift: ProjectDrift | null;
   /** Questions the user has already replied to in this session (normalised), so a repeat is not asked again. */
   answered: string[];
   mapping: boolean;
@@ -134,6 +138,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       taggedQuestions: [],
       earlierQuestions: [],
       tagging: false,
+      drift: null,
       answered: [],
       mapping: false,
       context: null,
@@ -380,6 +385,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       lastError: s.lastError,
       limitResetsAt: s.limitResetsAt,
       icon: record.icon ?? null,
+      drift: s.drift,
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
       questions: s.tagging ? [] : s.questions,
       questionsId: s.questionsId,
@@ -443,6 +449,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     setBlocks: (id, blocks) => {
       const s = states.get(id);
       return s ? setBlocks(s, blocks) : [];
+    },
+    setDrift: (id, drift) => {
+      const s = states.get(id);
+      if (s) s.drift = drift;
     },
     setQuestions: (id, saved) => {
       const s = states.get(id);

@@ -878,3 +878,10 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 /* A message sent while the agent was busy, not read yet */
 .t-user[data-queued] .bubble { opacity: .6; font-style: italic; filter: saturate(.4); }
 .bubble-queued { font-weight: 500; }
+
+/* Work done on the project outside the app */
+.drift-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin: 6px 0; padding: 7px 10px; border-radius: 8px; border-left: 3px solid var(--c-warning); background: color-mix(in srgb, var(--c-warning) 9%, transparent); font-size: 0.8rem; }
+.drift-text { color: var(--muted); min-width: 0; }
+.drift-text strong { color: var(--text); font-weight: 650; }
+.drift-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.tile > .drift-bar { margin: 6px 12px; }

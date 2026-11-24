@@ -11,6 +11,7 @@ import { TranscriptView } from './TranscriptView';
 import { WorkSchema } from './WorkSchema';
 import { SessionMark } from './SessionMark';
 import { DetailSwitch } from './DetailLevel';
+import { DriftBar } from './DriftBar';
 import { ChatDetailContext, useChatDetail } from '../state/chatDetail';
 
 /** One focus-mode tile: header (name on its own row, controls below), live transcript, pending input, message box. */
@@ -36,6 +37,7 @@ export function SessionTile({ session }: { session: SessionSummary }) {
       <div className="tile-context">
         <ContextMeter session={session} />
       </div>
+      <DriftBar session={session} />
       <ChatDetailContext.Provider value={detail}>
         <TranscriptView entries={entries} sessionId={session.id} />
       </ChatDetailContext.Provider>
