@@ -5,6 +5,15 @@ import { describeTool, savedUserText, splitCallouts, translate } from './index';
 const sdk = (message: object): SDKMessage => message as SDKMessage;
 
 describe('translate', () => {
+  it('reports compacting as it starts, fails and ends', () => {
+    expect(translate('s', sdk({ type: 'system', subtype: 'status', status: 'compacting' }))).toEqual([{ type: 'compacting', sessionId: 's', active: true }]);
+    expect(translate('s', sdk({ type: 'system', subtype: 'status', status: 'requesting' }))).toEqual([]);
+    expect(translate('s', sdk({ type: 'system', subtype: 'status', status: null, compact_result: 'failed', compact_error: 'för stort' }))).toEqual([{ type: 'compacting', sessionId: 's', active: false, error: 'för stort' }]);
+    expect(translate('s', sdk({ type: 'system', subtype: 'compact_boundary', compact_metadata: { trigger: 'manual', pre_tokens: 412000, post_tokens: 38000, duration_ms: 72000 } }))).toEqual([
+      { type: 'compacted', sessionId: 's', preTokens: 412000, postTokens: 38000, durationMs: 72000 },
+    ]);
+  });
+
   it('splits assistant content into labelled events', () => {
     const events = translate(
       's',

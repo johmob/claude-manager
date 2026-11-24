@@ -160,7 +160,7 @@ const STATUS_DWELL_MS = 30_000;
  * opens for more), never commands. A message stays at least half a minute, so the box does not flicker
  * when the agent writes in quick succession; then the newest one takes over.
  */
-function LatestAction({ entries }: { entries: TranscriptEntry[] }) {
+function LatestAction({ entries, running, onOpen }: { entries: TranscriptEntry[]; running: boolean; onOpen: () => void }) {
   const latest = [...entries].reverse().find((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim());
   const [shown, setShown] = useState<{ id: string; text: string; since: number } | null>(null);
   useEffect(() => {
@@ -169,11 +169,20 @@ function LatestAction({ entries }: { entries: TranscriptEntry[] }) {
     const timer = window.setTimeout(() => setShown({ id: latest.id, text: latest.text, since: Date.now() }), wait);
     return () => window.clearTimeout(timer);
   }, [latest?.id, shown?.id]);
+  const body = useRef<HTMLDivElement>(null);
+  const [cut, setCut] = useState(false);
+  // A long message fades out at the bottom; a short one (two points of a list) shows whole.
+  useLayoutEffect(() => {
+    const el = body.current;
+    setCut(!!el && el.scrollHeight > el.clientHeight + 2);
+  }, [shown?.id]);
   if (!shown) return null;
   return (
-    <div className="t-latest">
-      <MarkdownText text={shown.text} />
-    </div>
+    <button type="button" key={shown.id} className="t-latest" data-running={running ? 'true' : undefined} data-cut={cut ? 'true' : undefined} title="Visa allt under arbetet" onClick={onOpen}>
+      <div className="t-latest-body" ref={body}>
+        <MarkdownText text={shown.text} />
+      </div>
+    </button>
   );
 }
 
@@ -200,7 +209,7 @@ function WorkLog({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId
         Under arbetet · {parts.join(' · ')}
         {running && <Spinner small />}
       </button>
-      {!open && <LatestAction entries={entries} />}
+      {!open && <LatestAction entries={entries} running={running} onOpen={() => setOpen(true)} />}
       {open && (
         <div className="t-log-body">
           {groupTools(entries).map((item) =>

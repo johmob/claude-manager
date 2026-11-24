@@ -12,7 +12,8 @@ const MAX_BRIEF_CHARS = 240;
 const MAX_ABOUT_CHARS = 100;
 
 export interface TurnTags {
-  questions: Array<Omit<OpenQuestion, 'detail'> & { message: number }>;
+  /** `context`: the blocks (message, block; 1-based) the user needs to see to answer: pictures, tables, the options compared. */
+  questions: Array<Omit<OpenQuestion, 'detail'> & { message: number; context: Array<[number, number]> }>;
   /** Per message, per block: its tag (null when the model gave none). */
   tags: Array<Array<BlockTag | null>>;
 }
@@ -41,8 +42,9 @@ const SCHEMA = {
           brief: { type: 'string' },
           message: { type: 'integer' },
           repeats: { type: 'boolean' },
+          context: { type: 'array', items: { type: 'string' } },
         },
-        required: ['text', 'kind', 'about', 'options', 'brief', 'message', 'repeats'],
+        required: ['text', 'kind', 'about', 'options', 'brief', 'message', 'repeats', 'context'],
         additionalProperties: false,
       },
     },
@@ -127,6 +129,7 @@ export function tagRequest(messages: string[][], cwd: string, work: string[] = [
     '   options: svarsalternativen om agenten gav några (t.ex. ["1", "1b"] eller ["A", "B"]), annars [];',
     '   brief: en till två meningar, högst 200 tecken, med det användaren behöver veta för att svara direkt, bara från texten, och som nämner vad det gäller;',
     '   message: numret på meddelandet där frågan står;',
+    '   context: id på de block användaren behöver se för att kunna svara (t.ex. "2.3"): bilder och länkar frågan syftar på, tabeller, alternativen som jämförs, mätvärden, även från tidigare meddelanden i turen. Inte hela turen; tom lista om frågan går att besvara som den står;',
     '   repeats: true om frågan frågar samma sak som en fråga i listorna nedan (redan öppen eller nyss besvarad), även med andra ord, mer detaljer eller ett annat punkt-id; annars false. Är du osäker, false.',
     'Svara med JSON.',
     '',
@@ -171,6 +174,12 @@ export function readTags(reply: unknown, blockCounts: number[]): TurnTags | null
         options: Array.isArray(x['options']) ? x['options'].filter((o): o is string => typeof o === 'string' && !!o.trim()).map((o) => o.trim()).slice(0, 6) : [],
         brief: brief.length > MAX_BRIEF_CHARS ? `${brief.slice(0, MAX_BRIEF_CHARS - 1)}…` : brief,
         message: x['message'] as number,
+        context: (Array.isArray(x['context']) ? x['context'] : []).flatMap((id): Array<[number, number]> => {
+          const at = typeof id === 'string' ? /^(\d+)\.(\d+)$/.exec(id.trim()) : null;
+          const m = at ? Number(at[1]) : 0;
+          const b = at ? Number(at[2]) : 0;
+          return at && m >= 1 && m <= blockCounts.length && b >= 1 && b <= blockCounts[m - 1]! ? [[m, b]] : [];
+        }),
       },
     ];
   });

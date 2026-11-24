@@ -75,6 +75,11 @@ function UsageDetail({ usage }: { usage: UsageSnapshot }) {
         {row('Vecka', usage.sevenDay, true)}
         <AppShare />
       </div>
+      {usage.available && (
+        <ul className="ov-available">
+          {usage.available.length ? usage.available.map((line) => <li key={line}>{line}</li>) : <li>Inga återställningar eller krediter kvar på kontot</li>}
+        </ul>
+      )}
     </div>
   );
 }
@@ -223,18 +228,14 @@ export function OverlayWindow() {
           ) : (
             session && <SessionInfo session={session} account={state.account} />
           )}
-          {hovered === 'usage' ? (
-            <div className="ov-hint">Uppdateras automatiskt</div>
-          ) : (
-            session && (
-              <div className="ov-actions">
-                {session.questions.length > 0 && (
-                  <button type="button" className="btn small primary" onClick={() => send('popup:open', { kind: 'questions', id: session.id })}>Svara</button>
-                )}
-                <button type="button" className="btn small" onClick={() => send('window:show-session', { id: session.id })}>Öppna</button>
-                <button type="button" className="btn small" onClick={() => send('popup:open', { kind: 'schema', id: session.id })}>Arbetsschema</button>
-              </div>
-            )
+          {hovered !== 'usage' && session && (
+            <div className="ov-actions">
+              {session.questions.length > 0 && (
+                <button type="button" className="btn small primary" onClick={() => send('popup:open', { kind: 'questions', id: session.id })}>Svara</button>
+              )}
+              <button type="button" className="btn small" onClick={() => send('window:show-session', { id: session.id })}>Öppna</button>
+              <button type="button" className="btn small" onClick={() => send('popup:open', { kind: 'schema', id: session.id })}>Arbetsschema</button>
+            </div>
           )}
         </div>
       )}

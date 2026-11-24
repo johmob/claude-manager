@@ -56,6 +56,7 @@ import { messagesForTagging, readTags, splitBlocks, tagRequest, taggedBlocks } f
 import { createTagMemory } from './modules/tag-memory';
 import { iconRequest, readIcon } from './modules/icon-picker';
 import { createAppLog } from './modules/app-log';
+import { labelRequest, needsLabel, readLabels } from './modules/short-labels';
 import { addTokens, localDate, todayOf } from './modules/day-tokens';
 import { describeDrift, driftSince, markAt, markOf } from './modules/project-drift';
 import { SCHEDULE_PROTOCOL, createScheduler, describeCron, nextRunOf, readJobs, runCommand, writeJobs } from './modules/scheduler';
@@ -185,6 +186,10 @@ function boot(): void {
   appLog.write('start', { version: app.getVersion() });
   // Cards whose icon is being chosen; declared before the schema watcher, which picks icons from its first read.
   const pickingIcon = new Set<string>();
+  // Short labels for long schema titles, kept by title so only new titles go to the cheap model.
+  const labelStore = createJsonStore<Record<string, string>>(join(userData, 'schema-labels.json'), {});
+  let labelCache = labelStore.read();
+  const labelling = new Set<string>();
   // Every Claude process the app starts (sessions and one-shot calls) must use the same executable.
   const claudeExecutable = { pathToClaudeCodeExecutable: packagedClaudeBinary() };
   const engine = createSessionEngine(onSessionEvent, claudeExecutable);
@@ -202,6 +207,7 @@ function boot(): void {
     // saying "Kartlägger". The model switch back and the held first message still wait for the turn's end.
     if (tree && mappingTurn(id)) model.setMapping(id, false);
     if (tree) void pickIcon(id, tree);
+    if (tree) void labelSchema(id, tree);
     scheduleSync();
   });
   const usage = createUsageMonitor({
@@ -432,7 +438,8 @@ function boot(): void {
   /** Sends a message to a session, starting (resuming) it first when it is not running. */
   /** A message from the user. Work done outside the app since the agent last worked here goes along with it. */
   function sendFromUser(id: string, text: string): void {
-    const drift = model.summary(id)?.drift;
+    // A slash command (/compact, /clear…) only works first in the message; the drift note waits for the next message.
+    const drift = text.trimStart().startsWith('/') ? null : model.summary(id)?.drift;
     if (drift) {
       model.setDrift(id, null);
       scheduleSync();
@@ -588,6 +595,8 @@ function boot(): void {
     // and drops repeats of questions already open or answered.
     const notes = transcript.slice(from).flatMap((e) => (e.kind === 'callout' && (e.callout.kind === 'note' || e.callout.kind === 'question') ? [`> [!${e.callout.kind.toUpperCase()}] ${e.callout.title ? `**${e.callout.title}:** ` : ''}${e.callout.text}`] : []));
     const toTag = notes.length ? [...messages, splitBlocks(notes.join('\n\n'))] : messages;
+    // The same boxes as the user reads them, for a question's background: no markup.
+    const plainNotes = transcript.slice(from).flatMap((e) => (e.kind === 'callout' && (e.callout.kind === 'note' || e.callout.kind === 'question') ? [e.callout.title ? `${e.callout.title}: ${e.callout.text}` : e.callout.text] : []));
     const show = (changed: TranscriptEntry[]): void => {
       for (const entry of changed) showEntry(id, entry);
     };
@@ -601,7 +610,12 @@ function boot(): void {
       const tags = readTags(reply, toTag.map((m) => m.length));
       if (!tags) return;
       tagMemory.remember(id, entries.map((e, i) => ({ text: e.text, tags: tags.tags[i]! })));
-      const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, about: q.about, detail: entries[q.message - 1]?.text ?? notes.join('\n\n'), brief: q.brief, options: q.options }));
+      // What the user needs to answer: the blocks the tagger pointed to (pictures, tables, options), else the question's own message.
+      const contextOf = (q: (typeof tags.questions)[number]): string => {
+        const blocks = q.context.map(([m, b]) => (m <= entries.length ? toTag[m - 1]?.[b - 1] : plainNotes.join('\n\n')) ?? '').filter(Boolean);
+        return [...new Set(blocks)].join('\n\n') || (entries[q.message - 1]?.text ?? plainNotes.join('\n\n'));
+      };
+      const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, about: q.about, detail: contextOf(q), brief: q.brief, options: q.options }));
       const blocks = entries.map((e, i) => ({ entryId: e.id, blocks: taggedBlocks(messages[i]!, tags.tags[i]!) }));
       show(model.applyTurnTags(id, after, questions, blocks));
     } catch {
@@ -695,6 +709,38 @@ function boot(): void {
       const blocks = tags && splitBlocks(e.text);
       return blocks && blocks.length === tags.length ? [{ entryId: e.id, blocks: taggedBlocks(blocks, tags) }] : [];
     });
+  }
+
+  /**
+   * Gives a work schema's long titles short labels for the tree: from the cache, and for new ones from a
+   * cheap model (one call per change, only the titles not seen before).
+   */
+  async function labelSchema(id: string, tree: TodoTree): Promise<void> {
+    const nodes: Array<{ id: string; title: string }> = [{ id: 'root', title: tree.title }];
+    const walk = (n: TodoNode): void => {
+      nodes.push({ id: n.id, title: n.title });
+      n.children.forEach(walk);
+    };
+    tree.tracks.forEach(walk);
+    const long = nodes.filter((n) => n.title && needsLabel(n.title));
+    const apply = (): void => {
+      model.setTodoLabels(id, Object.fromEntries(long.flatMap((n) => (labelCache[n.title] ? [[n.id, labelCache[n.title]!]] : []))));
+      scheduleSync();
+    };
+    apply();
+    const missing = [...new Set(long.map((n) => n.title).filter((t) => !labelCache[t]))];
+    if (!missing.length || labelling.has(id)) return;
+    labelling.add(id);
+    try {
+      const labels = readLabels(await structuredQuery(labelRequest(missing, userData)), missing.length);
+      labelCache = { ...labelCache, ...Object.fromEntries(missing.flatMap((t, i) => (labels[i] ? [[t, labels[i]!]] : []))) };
+      labelStore.write(labelCache);
+      apply();
+    } catch {
+      // The full titles show until the next schema change tries again.
+    } finally {
+      labelling.delete(id);
+    }
   }
 
   /** Gives a card without an icon one that suits its project, once it has a work schema to go by. */

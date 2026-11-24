@@ -8,35 +8,16 @@ import { CalloutBox } from './CalloutBox';
 import { ChatInput } from './ChatInput';
 import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
-import { TaggedText } from './TaggedText';
 import { SessionMark } from './SessionMark';
 import { DriftBar } from './DriftBar';
-import { ChatDetailContext, useChatDetail } from '../state/chatDetail';
-import { useTranscript } from '../state/useTranscript';
 import { QuestionsButton } from './QuestionFlow';
 import { SchemaButton } from './SchemaButton';
 
 interface SessionCardProps {
   session: SessionSummary;
   onOpen: () => void;
-  /** Few cards share the window: show the latest answer and a larger message box. */
-  roomy?: boolean;
 }
 
-/** The main agent's latest answer, for a card with room to show it. */
-function LatestAnswer({ sessionId }: { sessionId: string }) {
-  const entries = useTranscript(sessionId);
-  const [detail] = useChatDetail(sessionId);
-  const latest = [...entries].reverse().find((e) => e.kind === 'assistant' && !e.agentId && !e.held && e.text.trim());
-  if (!latest || latest.kind !== 'assistant') return <div className="card-latest card-latest-empty">Inget svar ännu.</div>;
-  return (
-    <div className="card-latest">
-      <ChatDetailContext.Provider value={detail}>
-        <TaggedText text={latest.text} blocks={latest.blocks} />
-      </ChatDetailContext.Provider>
-    </div>
-  );
-}
 
 function RenameField({ session, onDone }: { session: SessionSummary; onDone: () => void }) {
   const [value, setValue] = useState(session.name);
@@ -104,13 +85,13 @@ function CardCallouts({ session }: { session: SessionSummary }) {
   );
 }
 
-export function SessionCard({ session, onOpen, roomy = false }: SessionCardProps) {
+export function SessionCard({ session, onOpen }: SessionCardProps) {
   const [renaming, setRenaming] = useState(false);
   const working = session.status === 'working' && session.turnStartedAt !== null;
   const now = useNow(working);
 
   return (
-    <article className={roomy ? 'card roomy' : 'card'} data-status={session.status} data-expanded={session.pending ? 'true' : 'false'} style={{ '--accent': session.color } as CSSProperties}>
+    <article className="card" data-status={session.status} data-expanded={session.pending ? 'true' : 'false'} style={{ '--accent': session.color } as CSSProperties}>
       <div className="card-strip" />
       <div className="card-main">
         <div className="card-top">
@@ -120,7 +101,7 @@ export function SessionCard({ session, onOpen, roomy = false }: SessionCardProps
         </div>
         <div className="card-sub">
           <ModelEffortPicker session={session} />
-          <AgentDots count={session.activeAgents} color={session.color} />
+          <AgentDots session={session} />
           {working && session.turnStartedAt !== null && <span className="elapsed">{formatElapsed(now - session.turnStartedAt)}</span>}
         </div>
         <div className="card-task">{session.mapping ? <><Spinner small /> Kartlägger projektet…</> : session.currentTask || " "}</div>
@@ -129,13 +110,12 @@ export function SessionCard({ session, onOpen, roomy = false }: SessionCardProps
         {session.lastError && <div className="card-error">{session.lastError}{limitNote(session)}</div>}
       </div>
       <DriftBar session={session} />
-      {roomy && <LatestAnswer sessionId={session.id} />}
       <QuestionsButton session={session} />
       <CardCallouts session={session} />
       <PendingPanel session={session} />
       {!session.pending && (
         <div className="card-input">
-          <ChatInput session={session} compact={!roomy} />
+          <ChatInput session={session} compact />
         </div>
       )}
       <div className="card-foot">

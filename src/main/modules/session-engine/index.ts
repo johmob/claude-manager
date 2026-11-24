@@ -438,8 +438,11 @@ export function translate(sessionId: string, m: SDKMessage): SessionEvent[] {
         if (block.type === 'thinking' && block.thinking.trim()) return [{ type: 'thinking', sessionId, text: block.thinking, agentId }];
         if (block.type === 'text') return textEvents(sessionId, block.text, agentId);
         if (block.type === 'tool_use') {
-          const summary = describeTool(block.name, asRecord(block.input));
-          return [{ type: 'tool_use', sessionId, toolUseId: block.id, name: block.name, summary: firstLine(summary), agentId }];
+          const input = asRecord(block.input);
+          const summary = describeTool(block.name, input);
+          // An Agent call carries the model and kind of the subagent it starts.
+          const spawn = block.name === 'Agent' || block.name === 'Task' ? { model: typeof input['model'] === 'string' ? input['model'] : '', agentType: typeof input['subagent_type'] === 'string' ? input['subagent_type'] : '' } : undefined;
+          return [{ type: 'tool_use', sessionId, toolUseId: block.id, name: block.name, summary: firstLine(summary), agentId, ...(spawn ? { spawn } : {}) }];
         }
         return [];
       });
@@ -480,10 +483,20 @@ function translateSystem(sessionId: string, m: Extract<SDKMessage, { type: 'syst
   switch (m.subtype) {
     case 'init':
       return [{ type: 'init', sessionId, claudeSessionId: m.session_id, model: m.model, slashCommands: m.slash_commands }];
-    case 'compact_boundary':
-      return [{ type: 'compacted', sessionId }];
+    case 'compact_boundary': {
+      const meta = m.compact_metadata;
+      return [{ type: 'compacted', sessionId, preTokens: meta.pre_tokens, ...(meta.post_tokens ? { postTokens: meta.post_tokens } : {}), ...(meta.duration_ms ? { durationMs: meta.duration_ms } : {}) }];
+    }
+    case 'status':
+      if (m.status === 'compacting') return [{ type: 'compacting', sessionId, active: true }];
+      if (m.status === 'requesting' && !m.compact_result) return [];
+      return [{ type: 'compacting', sessionId, active: false, ...(m.compact_result === 'failed' ? { error: m.compact_error || 'okänt fel' } : {}) }];
     case 'task_started':
-      return m.task_type === 'local_agent' && !m.ambient ? [{ type: 'subagent_started', sessionId, taskId: m.task_id, description: m.description }] : [];
+      return m.task_type === 'local_agent' && !m.ambient
+        ? [{ type: 'subagent_started', sessionId, taskId: m.task_id, description: m.description, ...(m.tool_use_id ? { toolUseId: m.tool_use_id } : {}), ...(m.subagent_type ? { agentType: m.subagent_type } : {}) }]
+        : [];
+    case 'task_progress':
+      return [{ type: 'subagent_progress', sessionId, taskId: m.task_id, tokens: m.usage.total_tokens, toolUses: m.usage.tool_uses, lastTool: m.last_tool_name ?? '', summary: typeof m.summary === 'string' ? m.summary : '' }];
     case 'task_notification':
       return [{ type: 'subagent_finished', sessionId, taskId: m.task_id }];
     case 'informational':

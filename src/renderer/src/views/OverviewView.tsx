@@ -1,11 +1,4 @@
-import { useState, type CSSProperties } from 'react';
-
-const MAX_FILLING = 6;
-
-/** Columns for a few cards sharing the window: 1, 2, 3, 2 (2x2), 3, 3. */
-function columns(count: number): number {
-  return count === 4 ? 2 : Math.min(count, 3);
-}
+import { useState } from 'react';
 import type { SessionSummary, UsageSnapshot } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { SessionCard } from '../components/SessionCard';
@@ -36,8 +29,6 @@ function EmptyState({ onDialog }: { onDialog: (k: DialogKind) => void }) {
 export function OverviewView({ sessions, usage, onDialog }: OverviewViewProps) {
   const [openId, setOpenId] = useState<string | null>(null);
   const openSession = sessions.find((s) => s.id === openId) ?? null;
-  // Up to six cards share the window (larger cards with the latest answer); more scroll as a grid.
-  const fills = sessions.length > 0 && sessions.length <= MAX_FILLING;
 
   const open = (s: SessionSummary): void => {
     setOpenId(s.id);
@@ -50,9 +41,9 @@ export function OverviewView({ sessions, usage, onDialog }: OverviewViewProps) {
         {sessions.length === 0 ? (
           <EmptyState onDialog={onDialog} />
         ) : (
-          <div className="card-grid" data-fill={fills ? 'true' : undefined} style={fills ? ({ '--cols': columns(sessions.length) } as CSSProperties) : undefined}>
+          <div className="card-grid">
             {sessions.map((s) => (
-              <SessionCard key={s.id} session={s} onOpen={() => open(s)} roomy={fills} />
+              <SessionCard key={s.id} session={s} onOpen={() => open(s)} />
             ))}
           </div>
         )}

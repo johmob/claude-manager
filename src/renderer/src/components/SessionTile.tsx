@@ -29,7 +29,7 @@ export function SessionTile({ session }: { session: SessionSummary }) {
         </div>
         <div className="tile-controls">
           <ModelEffortPicker session={session} />
-          <AgentDots count={session.activeAgents} color={session.color} />
+          <AgentDots session={session} />
           <SchemaButton session={session} onOpen={() => setSchemaOpen(true)} compact />
           <DetailSwitch value={detail} onChange={setDetail} />
         </div>

@@ -19,6 +19,7 @@ describe('parseUsageResponse', () => {
     expect(parseUsageResponse({ five_hour: { utilization: 12, resets_at: 'x' }, seven_day: { utilization: 40, resets_at: null } })).toEqual({
       fiveHour: { utilization: 12, resetsAt: 'x' },
       sevenDay: { utilization: 40, resetsAt: null },
+      available: [],
     });
   });
 
@@ -26,6 +27,7 @@ describe('parseUsageResponse', () => {
     expect(parseUsageResponse({ five_hour: null, seven_day: null })).toEqual({
       fiveHour: { utilization: 0, resetsAt: null },
       sevenDay: null,
+      available: [],
     });
   });
 });
@@ -59,5 +61,14 @@ describe('usage monitor', () => {
     const monitor = createUsageMonitor({ onSnapshot: () => undefined, credentialsPath: 'missing' });
     monitor.ingest({ fiveHour: { utilization: 30, resetsAt: null }, sevenDay: null });
     expect(monitor.current()).toMatchObject({ source: 'stream', fiveHour: { utilization: 30 }, sevenDay: null });
+  });
+});
+
+describe('what the account has beyond the limits', () => {
+  it('lists extra usage and credits, and nothing when there is none', async () => {
+    const { availableBeyondLimits } = await import('./index');
+    expect(availableBeyondLimits({ extra_usage: { is_enabled: false }, spend: { enabled: false, balance: null }, promo_credits: null })).toEqual([]);
+    expect(availableBeyondLimits({ extra_usage: { is_enabled: true }, spend: { enabled: true, balance: { amount_minor: 1250, currency: 'USD', exponent: 2 } } })).toEqual(['Extra användning är på, 12,50 USD kvar']);
+    expect(availableBeyondLimits({ spend: { enabled: false, balance: { amount_minor: 500, currency: 'USD', exponent: 2 } }, promo_credits: { amount: 1 } })).toEqual(['Krediter: 5,00 USD', 'Kampanjkrediter finns']);
   });
 });

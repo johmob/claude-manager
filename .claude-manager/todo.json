@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T11:27:34Z",
+  "updated": "2026-11-24T12:24:07.660Z",
   "tracks": [
     {
       "id": "eng",
@@ -174,6 +174,12 @@
               "status": "done"
             }
           ]
+        },
+        {
+          "id": "plan.4",
+          "title": "Stramare regler för arbetsschemat",
+          "status": "done",
+          "notes": "Användaren valde. TODO_PROTOCOL (src/main/modules/todo-tree/index.ts): titel högst 5 ord, substantivfras, inte mening; projekttitel högst 4 ord; detaljer i notes; högst ca 7 punkter per nivå, annars dela upp i paket. Ett av användarens projekt: titel 82 tecken, titlar median 47 max 164, spår med 13–14 platta punkter. Gjort, ej committat: regeln står i TODO_PROTOCOL."
         }
       ]
     },
@@ -215,8 +221,8 @@
             {
               "status": "done",
               "id": "ui.1.6",
-              "title": "Korten fyller fönstret och har knappen Öppna chatten",
-              "notes": "Med högst sex kort fyller de fönstret (upp till tre kolumner) och visar senaste svaret stort. Knappen Öppna chatten ersätter dubbelklick. Klart, inte släppt än."
+              "title": "Korten: knappen Öppna chatten, ingen chatt i översikten",
+              "notes": "Användaren: på översikten behöver vi inte se chatten alls, och korten ska inte maxa höjden. Senaste svaret och fyllnaden av fönstret borttagna; korten har naturlig höjd. Gjort, ej committat."
             }
           ]
         },
@@ -238,13 +244,19 @@
               "id": "ui.2.3",
               "title": "Status under Under arbetet",
               "status": "done",
-              "notes": "Användaren: statusen ska ligga där Under arbetet står, som en indragen ruta med senaste händelsen, utan kommandon, och ett meddelande ska stå kvar ca 30 s. Gjort (ej committat): huvudagentens senaste meddelande, minst 30 s per meddelande. Viktighet går inte att bedöma live utan extra Haiku-anrop per meddelande."
+              "notes": "Användaren: statusen ska ligga där Under arbetet står, som en indragen ruta med senaste händelsen, utan kommandon, och ett meddelande ska stå kvar ca 30 s. Gjort (ej committat): huvudagentens senaste meddelande, minst 30 s per meddelande. Viktighet går inte att bedöma live utan extra Haiku-anrop per meddelande. Användaren: snyggare och dynamisk, storleken ska anpassas så det viktigaste kommer med (bara en av två punkter visades). Nu: ruta i kortets färg som tonar in, skimrar medan ett kommando körs, växer upp till ca 8 rader och tonar ut om texten är längre; klick fäller ut loggen. Provat dolt: båda punkterna syns. Ej committat."
             },
             {
               "id": "ui.2.4",
               "title": "Tydligare Arbetar vid agentbollarna",
               "status": "done",
               "notes": "Användaren: bollarna i Fokus måste förtydligas; texten Arbetar vid bollarna, tydligare ikon/animation; nuvarande blinkande text är för diskret och pulserar för långsamt. Overlayen är bra. Klart: piller med snurrande ring, Arbetar (och antal) och vågande prickar; statusetiketten pulserar snabbare med glöd. Provat dolt."
+            },
+            {
+              "id": "ui.2.5",
+              "title": "Agentlista vid Arbetar",
+              "status": "done",
+              "notes": "Användaren: mouse over på Arbetar ska visa snygg lista med agenternas modell, nivå och kontext. Gjort, ej committat: engine skickar Agent-anropens model/subagent_type och task_progress (tokens, verktyg, senaste verktyg); summary.agents; lista vid hover/fokus. Provat dolt med riktig delagent. Nivåer på svenska."
             }
           ]
         },
@@ -291,6 +303,18 @@
               "id": "ui.3.7",
               "title": "Dölj avklarade",
               "status": "done"
+            },
+            {
+              "id": "ui.3.8",
+              "title": "Paket ser ut som paket",
+              "status": "done",
+              "notes": "Användaren valde. Punkt med delpunkter visas som grupp: fet rubrik, klara/totalt, egen framstegsstapel, kan fällas ihop, helt klara paket hopfällda från start. Fil: src/renderer/src/components/WorkSchema.tsx (Item, Track). Gjort, ej committat: Package-komponent i WorkSchema.tsx; provat dolt."
+            },
+            {
+              "id": "ui.3.9",
+              "title": "Korta etiketter från Haiku i trädet",
+              "status": "done",
+              "notes": "Användaren valde. Haiku skriver etikett på högst ca 4 ord per lång titel (t.ex. över 32 tecken), visas i trädet; hela titeln i detaljrutan. Agentens fil rörs inte; cache per titelhash i appens datamapp; bara ändrade titlar skickas. Ny modul (som icon-picker) + root anropar när schemat ändras; summary eller separat IPC levererar etiketterna. Gjort, ej committat: modul short-labels, cache schema-labels.json, summary.todoLabels; provat dolt (t.ex. ISO 9409-fäste med styrstift)."
             }
           ]
         },
@@ -346,6 +370,12 @@
               "title": "Dockan och overlayen alltid överst",
               "status": "done",
               "notes": "Användaren: dockan låg inte längre över andra program. Appen återställer överst-läget och lyfter fönstren var 3:e sekund. Klart."
+            },
+            {
+              "id": "ui.4.10",
+              "title": "Användningsrutan: vad kontot har utöver gränserna",
+              "status": "done",
+              "notes": "Användaren: ta bort Uppdateras automatiskt och lista som punkter om det finns återställningar på kontot, annars skriv att det inte finns några. Användnings-API:t har inget fält för antal återställningar; listar extra användning, krediter/saldo och kampanjkrediter, annars Inga återställningar eller krediter kvar på kontot. Ej committat."
             }
           ]
         },
@@ -497,6 +527,31 @@
               "title": "Alla överhoppade: inget skickas till agenten",
               "status": "done",
               "notes": "Användaren: hoppar man över alla frågor ska inget skickas, annars blir det en loop av erbjudanden och nya frågor. Frågorna stängs och räknas som avklarade så samma fråga inte kommer tillbaka. Gjort, ej committat."
+            },
+            {
+              "id": "ui.6.21",
+              "title": "Frågor från agentens rutor utan rå märkning",
+              "status": "done",
+              "notes": "Användaren: frågeflödet visade \"[!QUESTION] …\". Bakgrunden är nu rutans egen text. Gjort, ej committat."
+            },
+            {
+              "id": "ui.6.22",
+              "title": "Frågans underlag: bilder, länkar, tabeller från turen",
+              "status": "in_progress",
+              "progress": 70,
+              "notes": "Användaren: Haiku ska analysera vad agenten skrivit innan, även bilder, och ta med det inför frågan; fick en fråga som refererade till bilder och info som inte visades. Måste klara länkar och flera bilder. Gjort, ej committat: turn-tags ger per fråga context (block-id); root bygger frågans detail av de blocken (bilder och länkar visas via MarkdownText). Kvar: riktigt prov i dold instans (agent visar bild i ett meddelande, frågar i nästa), med flera bilder och en länk. Haiku ser inte bildinnehållet, bara länk och text runt."
+            },
+            {
+              "id": "ui.6.23",
+              "title": "Det användaren ska göra eller veta om nästa steg döljs inte",
+              "status": "not_started",
+              "notes": "Användaren: i svaret syntes allt utom sista stycket (\"Inget är committat. Kör komprimeringen. Efteråt gör jag provet och frågar sedan om commit och release.\"), som var det relevanta. Troligen taggat plan/progress och dolt i Moderat. Åtgärd: i Haikus taggning ska uppmaningar till användaren och läget för commit/release taggas som next/answer (syns), och/eller turens sista block i slutsvaret visas alltid i Moderat. Agera på detta efter komprimeringen. Användaren: speca mindre exakt hur Haiku ska göra och beskriv i stället syftet, så tar den kanske bättre beslut. Plan: skriv om tagRequest-prompten (src/main/modules/turn-tags/index.ts) till att förklara sammanhanget: användaren styr många agenter och skummar; vad varje nivå visar och döljer; att det kostar mycket att dölja något användaren måste göra, svara på eller känna till, medan det kostar lite att visa en rad för mycket; frågor dyker upp i ett helskärmsflöde och ska vara äkta och fristående. Behåll schemat och taggnamnen, korta ned regellistan. Prova sedan på riktiga turer (dolt) innan commit. Sett i test: Haikus bakgrund i frågerutan läckte interna block-id (\"bilden finns i block 1.1\"); prompten ska förbjuda det."
+            },
+            {
+              "id": "ui.6.24",
+              "title": "Komprimering visas med laddikon och förlopp",
+              "status": "done",
+              "notes": "Användaren: under /compact syntes ingen status, och ingen fejkad förloppsstapel (avskyr det). Nu visas en blå bricka med snurrande ikon: \"Komprimerar · cirka 1 minut · 0:04\" (tiden skattas från kontextens storlek och tidigare komprimeringar; \"tar längre än vanligt\" om den drar över). Efteråt står storlek före/efter och tid i chatten. Testat dolt. Rättat samtidigt: snedstreckskommandon fick appens dolda ändringsnotis före sig och gick fram som vanlig text."
             }
           ]
         },

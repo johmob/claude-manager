@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
-import type { EffortChoice, ModelChoice, SessionStatus, SessionSummary, TodoStatus } from '../../../shared/contracts';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import type { CompactProgress, EffortChoice, ModelChoice, SessionStatus, SessionSummary, TodoStatus } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { EFFORT_LABEL, STATUS_LABEL } from '../lib/format';
 import { effortOptions, modelOptions, useAccount } from '../state/account';
@@ -43,15 +43,54 @@ export function ModelEffortPicker({ session }: { session: SessionSummary }) {
 }
 
 /** One dot per active agent, filled in the session colour. */
+const MODEL_NAMES: Record<string, string> = { opus: 'Opus', sonnet: 'Sonnet', haiku: 'Haiku', fable: 'Fable', default: 'Standard' };
+
+/** "Opus", "Sonnet 5.5" or the model id as given; the main agent's model when a subagent names none. */
+function modelName(model: string): string {
+  return MODEL_NAMES[model] ?? (model.replace(/^claude-/, '').replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/^./, (c) => c.toUpperCase()) || 'Som huvudagenten');
+}
+
+const EFFORT_NAMES: Record<string, string> = { low: 'låg', medium: 'medel', high: 'hög', xhigh: 'extra hög', max: 'max', default: 'standard' };
+
+function tokensText(n: number): string {
+  return n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)} M` : n >= 1000 ? `${Math.round(n / 1000)}k` : String(n);
+}
+
+/** The agents at work: one row each with model, effort and context or tokens so far, and what it is doing. */
+function AgentList({ session }: { session: SessionSummary }) {
+  return (
+    <div className="agent-list" role="tooltip">
+      {session.agents.map((agent) => (
+        <div key={agent.id} className="agent-row" data-role={agent.role}>
+          <div className="agent-row-head">
+            <span className="agent-row-name">{agent.name}</span>
+            {agent.agentType && <span className="agent-row-type">{agent.agentType}</span>}
+          </div>
+          <div className="agent-row-facts">
+            <span>{modelName(agent.model)}</span>
+            <span>{agent.effort ? `nivå ${EFFORT_NAMES[agent.effort] ?? agent.effort}` : 'nivå som huvudagenten'}</span>
+            {agent.contextPercent !== null && <span>kontext {agent.contextPercent} %</span>}
+            {agent.tokens !== null && <span>{tokensText(agent.tokens)} tokens</span>}
+            {agent.toolUses > 0 && <span>{agent.toolUses} verktyg</span>}
+          </div>
+          {(agent.summary || agent.lastTool) && <div className="agent-row-doing">{agent.summary || `Senast: ${agent.lastTool}`}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Agents at work, readable at a glance: a spinning ring, "Arbetar", and one dot per agent in a quick wave
- * (the count in words when there are several).
+ * (the count when there are several). Hovering shows each agent's model, effort, context and task.
  */
-export function AgentDots({ count, color }: { count: number; color: string }) {
+export function AgentDots({ session }: { session: SessionSummary }) {
+  if (session.compacting) return <CompactBadge progress={session.compacting} color={session.color} />;
+  const count = session.activeAgents;
   if (count <= 0) return null;
   const dots = Array.from({ length: Math.min(count, 10) }, (_, i) => i);
   return (
-    <span className="agent-work" title={`${count} ${count === 1 ? 'agent arbetar' : 'agenter arbetar'}`} style={{ '--c': color } as CSSProperties}>
+    <span className="agent-work" tabIndex={0} style={{ '--c': session.color } as CSSProperties}>
       <span className="agent-spin" aria-hidden />
       <span className="agent-work-text">Arbetar{count > 1 ? ` · ${count}` : ''}</span>
       <span className="agent-dots" aria-hidden>
@@ -59,6 +98,42 @@ export function AgentDots({ count, color }: { count: number; color: string }) {
           <span key={i} className="agent-dot" style={{ animationDelay: `${i * 0.12}s` }} />
         ))}
       </span>
+      {session.agents.length > 0 && <AgentList session={session} />}
+    </span>
+  );
+}
+
+function clock(ms: number): string {
+  const sec = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+}
+
+/** "cirka 1 minut", "cirka 3 minuter", "under en minut". */
+function aboutText(ms: number): string {
+  const min = Math.round(ms / 60_000);
+  if (min < 1) return 'under en minut';
+  return `cirka ${min} ${min === 1 ? 'minut' : 'minuter'}`;
+}
+
+/**
+ * Compacting the conversation: a spinner, how long it usually takes and the time so far. The stream
+ * reports no progress, so no share is shown; the expected time comes from the context's size and how
+ * fast earlier compactions went.
+ */
+export function CompactBadge({ progress, color }: { progress: CompactProgress; color: string }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const elapsed = now - progress.startedAt;
+  const size = progress.preTokens ? ` ${Math.round(progress.preTokens / 1000)}k tokens.` : '';
+  return (
+    <span className="compact-badge" style={{ '--c': color } as CSSProperties} title={`Komprimerar samtalet.${size} Det brukar ta ${aboutText(progress.expectedMs)}, uppskattat från kontextens storlek och tidigare komprimeringar.`}>
+      <span className="compact-spin" aria-hidden />
+      <span className="compact-text">Komprimerar</span>
+      <span className="compact-about">{elapsed > progress.expectedMs * 1.5 ? 'tar längre än vanligt' : aboutText(progress.expectedMs)}</span>
+      <span className="compact-time">{clock(elapsed)}</span>
     </span>
   );
 }

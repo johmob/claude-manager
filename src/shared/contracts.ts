@@ -361,6 +361,11 @@ export interface UsageWindows {
 }
 
 export interface UsageSnapshot extends UsageWindows {
+  /**
+   * What the account has beyond the plan's limits, in words (extra usage, credits, balance); empty when
+   * nothing. Undefined until the first reading from the account.
+   */
+  available?: string[];
   updatedAt: number;
   source: 'oauth' | 'stream' | 'none';
   error?: string;
@@ -507,6 +512,36 @@ export interface Callout {
 
 // ---------- Events from session-engine (normalised, labelled) ----------
 
+/** One agent at work in a session, for the list behind "Arbetar". */
+export interface AgentInfo {
+  id: string;
+  role: 'main' | 'sub';
+  /** The main agent, or the subagent's task as the main agent described it. */
+  name: string;
+  /** The kind of subagent (e.g. "general-purpose"); '' for the main agent. */
+  agentType: string;
+  /** The model chosen (alias or id); '' when the subagent runs on the main agent's model. */
+  model: string;
+  /** The main agent's effort; subagents inherit it ('' then). */
+  effort: string;
+  /** Main agent: how full its context is (percent); null when not known. */
+  contextPercent: number | null;
+  /** Subagent: tokens processed so far; null before its first progress report. */
+  tokens: number | null;
+  toolUses: number;
+  lastTool: string;
+  /** A one-line status, when Claude Code gives one. */
+  summary: string;
+}
+
+export interface CompactProgress {
+  /** ms epoch. */
+  startedAt: number;
+  /** Tokens in the context when it began; null when unknown. */
+  preTokens: number | null;
+  expectedMs: number;
+}
+
 export interface ContextUsage {
   percentage: number;
   totalTokens: number;
@@ -519,14 +554,20 @@ export type SessionEvent =
   | { type: 'turn_started'; sessionId: string; prompt: string }
   | { type: 'thinking'; sessionId: string; text: string; agentId?: string }
   | { type: 'text'; sessionId: string; text: string; agentId?: string }
-  | { type: 'tool_use'; sessionId: string; toolUseId: string; name: string; summary: string; agentId?: string }
+  | { type: 'tool_use'; sessionId: string; toolUseId: string; name: string; summary: string; spawn?: { model: string; agentType: string }; agentId?: string }
   | { type: 'tool_result'; sessionId: string; toolUseId: string; isError: boolean }
   | { type: 'input_requested'; sessionId: string; pending: PendingInput }
   | { type: 'input_resolved'; sessionId: string; requestId: string; answer: string }
-  | { type: 'subagent_started'; sessionId: string; taskId: string; description: string }
+  /** `toolUseId`: the Agent call that started it (its model is on that call); `agentType`: the kind of subagent. */
+  | { type: 'subagent_started'; sessionId: string; taskId: string; description: string; toolUseId?: string; agentType?: string }
+  /** How far a subagent has come: tokens so far, tool calls, the last tool, a one-line status when given. */
+  | { type: 'subagent_progress'; sessionId: string; taskId: string; tokens: number; toolUses: number; lastTool: string; summary: string }
   | { type: 'subagent_finished'; sessionId: string; taskId: string }
   | { type: 'notice'; sessionId: string; text: string; level: 'info' | 'warning' }
-  | { type: 'compacted'; sessionId: string }
+  /** Claude Code started compacting the conversation (`active`), or stopped; `error` when it failed. */
+  | { type: 'compacting'; sessionId: string; active: boolean; error?: string }
+  /** The conversation was compacted: its size before and after, and how long it took, when known. */
+  | { type: 'compacted'; sessionId: string; preTokens?: number; postTokens?: number; durationMs?: number }
   | { type: 'cleared'; sessionId: string }
   | { type: 'model_changed'; sessionId: string; model: ModelChoice }
   | { type: 'effort_changed'; sessionId: string; effort: EffortChoice }
@@ -605,6 +646,8 @@ export interface SessionSummary {
   turnStartedAt: number | null;
   /** ms epoch when the session was started or resumed in this app run. */
   startedAt: number | null;
+  /** The conversation is being compacted: since when, its size, and how long it is expected to take (an estimate; the stream gives no progress). */
+  compacting: CompactProgress | null;
   lastError: string | null;
   /** Callouts from the latest turn, most severe first, until dismissed or the next turn starts. */
   callouts: Callout[];
@@ -614,6 +657,10 @@ export interface SessionSummary {
   icon: SessionIconName | null;
   /** Work done on the project outside the app since the app last saw it; null when none. */
   drift: ProjectDrift | null;
+  /** The agents at work: the main agent while its turn runs, and each running subagent. */
+  agents: AgentInfo[];
+  /** Short labels for long titles in the work schema, by id ("root" for its title). */
+  todoLabels: Record<string, string>;
   /** The project's scheduled jobs, and a problem with its schedule file ('' when fine). */
   schedule: ScheduledJobView[];
   scheduleProblem: string;

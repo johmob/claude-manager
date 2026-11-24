@@ -50,7 +50,7 @@ describe('turn tags', () => {
           { id: '2.1', tag: 'nonsense' },
         ],
         questions: [
-          { text: 'Ska greppet vara 1 eller 1b?', kind: 'question', about: 'cad.2 Handtag v4', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2 },
+          { text: 'Ska greppet vara 1 eller 1b?', kind: 'question', about: 'cad.2 Handtag v4', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2, context: ['1.1', '2.2', '7.1'] },
           { text: 'Fel nummer', kind: 'question', options: [], brief: '', message: 9 },
           { text: 'Samma som förut?', kind: 'question', options: [], brief: '', message: 1, repeats: true },
         ],
@@ -59,7 +59,7 @@ describe('turn tags', () => {
     );
     expect(tags).toEqual({
       tags: [['result'], [null, 'fail']],
-      questions: [{ text: 'Ska greppet vara 1 eller 1b?', kind: 'question', about: 'cad.2 Handtag v4', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2 }],
+      questions: [{ text: 'Ska greppet vara 1 eller 1b?', kind: 'question', about: 'cad.2 Handtag v4', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2, context: [[1, 1], [2, 2]] }],
     });
     expect(readTags(null, [1])).toBeNull();
     expect(taggedBlocks(['a', 'b'], ['pass'])).toEqual([{ text: 'a', tag: 'pass' }, { text: 'b', tag: null }]);

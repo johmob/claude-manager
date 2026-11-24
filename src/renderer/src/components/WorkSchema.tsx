@@ -19,6 +19,8 @@ interface Entry {
 /** What every part of the chart needs: titles for dependency text, the open item, and how to open one. */
 interface ChartContext {
   titles: Map<string, string>;
+  /** Short labels for long titles, by id. */
+  labels: Record<string, string>;
   selectedId: string | null;
   onPick: (id: string) => void;
 }
@@ -60,8 +62,43 @@ function pickHandlers(id: string, ctx: ChartContext) {
   };
 }
 
+/** What the tree shows as a title: the short label when the title is long (the full title is the tooltip). */
+function shownTitle(node: TodoNode, ctx: ChartContext): string {
+  return ctx.labels[node.id] ?? node.title;
+}
+
+/**
+ * A package: an item with sub-items, shown as a group with its own heading, how many of its parts are
+ * done and a progress bar. It folds; a finished package starts folded.
+ */
+function Package({ node, track, trackOwner, ctx }: { node: TodoNode; track: TodoNode; trackOwner: string; ctx: ChartContext }) {
+  const [open, setOpen] = useState(node.status !== 'done');
+  const parts = leavesOf(node);
+  const done = parts.filter((l) => l.status === 'done').length;
+  const owner = node.owner || trackOwner;
+  return (
+    <li className="ws-item ws-package" data-todo={node.status} data-open={open ? 'true' : undefined} data-blocked={node.blocked ? 'true' : undefined}>
+      <div className="ws-package-head ws-askable" data-selected={ctx.selectedId === node.id ? 'true' : undefined} {...pickHandlers(node.id, ctx)}>
+        <button type="button" className="ws-package-fold" aria-expanded={open} title={open ? 'Fäll ihop' : 'Fäll ut'} onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>
+          {open ? '▾' : '▸'}
+        </button>
+        <span className="ws-item-id">{node.id}</span>
+        <span className="ws-package-title" title={node.title}>{shownTitle(node, ctx)}</span>
+        <span className="ws-package-count">{done}/{parts.length}</span>
+      </div>
+      <Progress value={node.progress} />
+      {open && (
+        <ul className="ws-items">
+          {node.children.map((c) => <Item key={c.id} node={c} track={track} trackOwner={owner} ctx={ctx} />)}
+        </ul>
+      )}
+    </li>
+  );
+}
+
 function Item({ node, track, trackOwner, ctx }: { node: TodoNode; track: TodoNode; trackOwner: string; ctx: ChartContext }) {
-  const now = node.status === 'in_progress' && !node.children.length;
+  if (node.children.length) return <Package node={node} track={track} trackOwner={trackOwner} ctx={ctx} />;
+  const now = node.status === 'in_progress';
   const otherOwner = node.owner && node.owner !== trackOwner ? node.owner : '';
   const hasMeta = node.status === 'in_progress' || node.blocked || otherOwner;
   return (
@@ -70,7 +107,7 @@ function Item({ node, track, trackOwner, ctx }: { node: TodoNode; track: TodoNod
         <div className="ws-item-row">
           <TodoIcon status={node.status} />
           <span className="ws-item-id">{node.id}</span>
-          <span className="ws-item-title">{node.title}</span>
+          <span className="ws-item-title" title={node.title}>{shownTitle(node, ctx)}</span>
         </div>
         {hasMeta && (
           <div className="ws-item-meta">
@@ -82,11 +119,6 @@ function Item({ node, track, trackOwner, ctx }: { node: TodoNode; track: TodoNod
         )}
         {node.blocked && <div className="ws-waiting">{waitingFor(node, ctx.titles)}</div>}
       </div>
-      {node.children.length > 0 && (
-        <ul className="ws-items">
-          {node.children.map((c) => <Item key={c.id} node={c} track={track} trackOwner={node.owner || trackOwner} ctx={ctx} />)}
-        </ul>
-      )}
     </li>
   );
 }
@@ -97,7 +129,7 @@ function Track({ track, ctx }: { track: TodoNode; ctx: ChartContext }) {
       <div className="ws-track-card ws-askable" data-selected={ctx.selectedId === track.id ? 'true' : undefined} {...pickHandlers(track.id, ctx)}>
         <div className="ws-track-head">
           <TodoIcon status={track.status} />
-          <span className="ws-track-title">{track.title}</span>
+          <span className="ws-track-title" title={track.title}>{shownTitle(track, ctx)}</span>
           {track.focus && <span className="ws-focus-badge">I fokus</span>}
         </div>
         <div className="ws-track-meta">
@@ -367,7 +399,7 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
   useRoomForTracks(standalone ? 0 : tracks.length);
   const index = todo ? indexSchema(todo) : new Map<string, Entry>();
   const open = openId ? index.get(openId) : undefined;
-  const ctx: ChartContext = { titles: new Map([...index].map(([id, e]) => [id, e.node.title])), selectedId: openId, onPick: setOpenId };
+  const ctx: ChartContext = { titles: new Map([...index].map(([id, e]) => [id, e.node.title])), labels: session.todoLabels, selectedId: openId, onPick: setOpenId };
   const left = todo ? todo.totalItems - todo.doneItems : 0;
 
   return (
@@ -401,7 +433,7 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
         <div className="ws-chart" style={{ '--accent': session.color } as CSSProperties}>
           <div className="ws-root">
             <div className="ws-root-card">
-              <div className="ws-root-title">{todo.title || session.name}</div>
+              <div className="ws-root-title" title={todo.title}>{session.todoLabels['root'] ?? (todo.title || session.name)}</div>
               <div className="ws-root-left">{left === 0 ? 'Allt klart' : `${left} av ${todo.totalItems} punkter kvar`}</div>
               <Progress value={todo.progress} color={session.color} />
               <div className="muted ws-root-count">

@@ -35,6 +35,20 @@ function setup() {
 }
 
 describe('session-model', () => {
+  it('shows compacting with an estimate from the context size, and its result when done', () => {
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    apply({ type: 'context_usage', usage: { percentage: 80, totalTokens: 400000, maxTokens: 500000 } });
+    apply({ type: 'compacting', active: true });
+    expect(model.summary('s1')).toMatchObject({ status: 'working', currentTask: 'Komprimerar samtalet…', compacting: { startedAt: 1000, preTokens: 400000, expectedMs: 60000 } });
+    const shown = apply({ type: 'compacted', preTokens: 400000, postTokens: 38000, durationMs: 72000 });
+    expect(shown).toMatchObject([{ kind: 'system', text: 'Konversationen komprimerades: 400k → 38k tokens på 1:12.' }]);
+    expect(model.summary('s1')?.compacting).toBeNull();
+    apply({ type: 'compacting', active: true });
+    expect(model.summary('s1')?.compacting?.expectedMs).toBe(66000);
+    expect(apply({ type: 'compacting', active: false, error: 'för stort' })).toMatchObject([{ kind: 'system', level: 'warning' }]);
+  });
+
   it('starts stopped and resumable', () => {
     const { model } = setup();
     expect(model.summary('s1')).toMatchObject({ status: 'stopped', resumable: true, activeAgents: 0 });

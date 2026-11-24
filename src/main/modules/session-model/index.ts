@@ -4,6 +4,7 @@ import { CALLOUT_KINDS, splitAppContext, whenText } from '../../../shared/contra
 import type {
   OpenQuestion,
   Callout,
+  CompactProgress,
   ContextUsage,
   PendingInput,
   SessionEvent,
@@ -11,6 +12,7 @@ import type {
   SessionStatus,
   SavedQuestions,
   ProjectDrift,
+  AgentInfo,
   ScheduledJobView,
   SessionSummary,
   TaggedBlock,
@@ -49,6 +51,8 @@ export interface SessionModel {
   endTagging(id: string, afterEntryId: string | null): TranscriptEntry[];
   /** Work done on the project outside the app (null: none, or dealt with). */
   setDrift(id: string, drift: ProjectDrift | null): void;
+  /** Short labels for the work schema's long titles, by id. */
+  setTodoLabels(id: string, labels: Record<string, string>): void;
   /** The project's scheduled jobs as the side panel shows them. */
   setSchedule(id: string, jobs: ScheduledJobView[], problem: string): void;
   /** What the tagger must not ask again: the questions still open from earlier turns, and the ones answered lately. */
@@ -64,6 +68,20 @@ export interface SessionModel {
 }
 
 const MAX_TRANSCRIPT = 500;
+/** How long compacting takes per token in the context before any has been timed (about 45 s for 300k tokens). */
+const DEFAULT_COMPACT_MS_PER_TOKEN = 0.15;
+const DEFAULT_COMPACT_MS = 60_000;
+
+/** "412k" for 412 345 tokens. */
+function kTokens(n: number): string {
+  return n >= 1000 ? `${Math.round(n / 1000)}k` : String(n);
+}
+
+/** "1:12" for 72 000 ms. */
+function minutesText(ms: number): string {
+  const sec = Math.round(ms / 1000);
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+}
 
 interface SessionState {
   record: SessionRecord;
@@ -72,10 +90,15 @@ interface SessionState {
   unseenDone: boolean;
   pending: PendingInput[];
   subagents: Set<string>;
+  /** What each running subagent is: its task, kind, model and progress. */
+  subagentInfo: Map<string, AgentInfo>;
+  /** Agent calls by tool use id: the model and kind they asked for, until their subagent starts. */
+  spawns: Map<string, { model: string; agentType: string }>;
   /** Subagents of the current turn, running or finished (and those still running from earlier turns). */
   turnAgents: Set<string>;
   turnStartedAt: number | null;
   startedAt: number | null;
+  compacting: CompactProgress | null;
   lastActivity: string;
   lastError: string | null;
   /** Stopped by the usage limit: when it resets ('' when unknown); null when not limited. Kept until a new turn starts. */
@@ -99,6 +122,7 @@ interface SessionState {
    */
   tagging: boolean;
   drift: ProjectDrift | null;
+  todoLabels: Record<string, string>;
   schedule: ScheduledJobView[];
   scheduleProblem: string;
   /** Questions the user has already replied to in this session (normalised), so a repeat is not asked again. */
@@ -116,6 +140,8 @@ interface SessionState {
 
 export function createSessionModel(now: () => number = Date.now): SessionModel {
   const states = new Map<string, SessionState>();
+  /** Learned from finished compactions, so the next estimate fits this machine and plan. */
+  let compactMsPerToken = DEFAULT_COMPACT_MS_PER_TOKEN;
 
   function upsertRecord(record: SessionRecord): void {
     const existing = states.get(record.id);
@@ -130,8 +156,11 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       unseenDone: false,
       pending: [],
       subagents: new Set(),
+      subagentInfo: new Map(),
+      spawns: new Map(),
       turnAgents: new Set(),
       turnStartedAt: null,
+      compacting: null,
       startedAt: null,
       lastActivity: '',
       lastError: null,
@@ -146,6 +175,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       earlierQuestions: [],
       tagging: false,
       drift: null,
+      todoLabels: {},
       schedule: [],
       scheduleProblem: '',
       answered: [],
@@ -260,6 +290,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         return add({ kind: 'assistant', text: event.text, thinking: takeThinking(), agentId: event.agentId, ...(!event.agentId && s.record.kind !== 'quick' ? { held: true } : {}) });
       case 'tool_use':
         markActive(event.summary ? `${event.name}: ${event.summary}` : event.name);
+        if (event.spawn) s.spawns.set(event.toolUseId, event.spawn);
         if (event.name === 'AskUserQuestion') return [];
         return add(
           { kind: 'tool', name: event.name, summary: event.summary, status: 'running', thinking: takeThinking(), agentId: event.agentId },
@@ -281,18 +312,44 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         if (resolved?.kind === 'permission') return system(`${event.answer}: ${resolved.summary}`, 'info');
         return update(event.requestId, (e) => (e.kind === 'question' ? { ...e, answer: event.answer } : e));
       }
-      case 'subagent_started':
+      case 'subagent_started': {
+        const spawn = event.toolUseId ? s.spawns.get(event.toolUseId) : undefined;
+        s.subagentInfo.set(event.taskId, { id: event.taskId, role: 'sub', name: event.description, agentType: event.agentType ?? spawn?.agentType ?? '', model: spawn?.model ?? '', effort: '', contextPercent: null, tokens: null, toolUses: 0, lastTool: '', summary: '' });
         s.subagents.add(event.taskId);
         s.turnAgents.add(event.taskId);
         s.lastActivity = `Subagent: ${event.description}`;
         return [];
+      }
+      case 'subagent_progress': {
+        const info = s.subagentInfo.get(event.taskId);
+        if (info) s.subagentInfo.set(event.taskId, { ...info, tokens: event.tokens, toolUses: event.toolUses, lastTool: event.lastTool, summary: event.summary || info.summary });
+        return [];
+      }
       case 'subagent_finished':
         s.subagents.delete(event.taskId);
+        s.subagentInfo.delete(event.taskId);
         return [];
       case 'notice':
         return system(event.text, event.level);
-      case 'compacted':
-        return system('Konversationen komprimerades.', 'info');
+      case 'compacting': {
+        if (event.active) {
+          if (s.compacting) return [];
+          const preTokens = s.context?.totalTokens ?? null;
+          s.compacting = { startedAt: at, preTokens, expectedMs: preTokens ? Math.max(10_000, Math.round(preTokens * compactMsPerToken)) : DEFAULT_COMPACT_MS };
+          return [];
+        }
+        const was = s.compacting;
+        s.compacting = null;
+        return was && event.error ? system(`Komprimeringen misslyckades: ${event.error}`, 'warning') : [];
+      }
+      case 'compacted': {
+        const startedAt = s.compacting?.startedAt;
+        s.compacting = null;
+        const took = event.durationMs ?? (startedAt !== undefined ? at - startedAt : undefined);
+        if (took && event.preTokens) compactMsPerToken = compactMsPerToken * 0.5 + (took / event.preTokens) * 0.5;
+        const size = event.preTokens ? `: ${kTokens(event.preTokens)}${event.postTokens ? ` → ${kTokens(event.postTokens)}` : ''} tokens` : '';
+        return system(`Konversationen komprimerades${size}${took ? ` på ${minutesText(took)}` : ''}.`, 'info');
+      }
       case 'cleared':
         return system('Konversationen rensades.', 'info');
       case 'model_changed':
@@ -309,6 +366,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.turnAgents = new Set(s.subagents);
         s.turnActive = false;
         s.turnStartedAt = null;
+        s.compacting = null;
         s.lastActivity = '';
         s.unseenDone = !event.isError && !event.interrupted;
         // A turn that ran into the usage limit ends like any other; it stays marked as limited, not done.
@@ -337,10 +395,13 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         return system(event.message, 'error');
       case 'exited':
         s.running = false;
+        s.compacting = null;
         s.turnActive = false;
         s.turnStartedAt = null;
         s.pending = [];
         s.subagents.clear();
+        s.subagentInfo.clear();
+        s.spawns.clear();
         s.turnAgents.clear();
         s.pendingThinking = '';
         s.tagging = false;
@@ -386,17 +447,23 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       effort: record.effort,
       permissionMode: record.permissionMode,
       status: statusOf(s),
-      currentTask: (s.tagging ? s.lastActivity : null) ?? currentTask(s.todo) ?? s.lastActivity,
+      currentTask: s.compacting ? 'Komprimerar samtalet…' : ((s.tagging ? s.lastActivity : null) ?? currentTask(s.todo) ?? s.lastActivity),
       activeAgents: (s.turnActive ? 1 : 0) + s.subagents.size,
       agentCount: s.running ? 1 + s.turnAgents.size : 0,
       pending: s.pending[0] ?? null,
       pendingCount: s.pending.length,
       turnStartedAt: s.turnStartedAt,
       startedAt: s.startedAt,
+      compacting: s.compacting,
       lastError: s.lastError,
       limitResetsAt: s.limitResetsAt,
       icon: record.icon ?? null,
       drift: s.drift,
+      todoLabels: s.todoLabels,
+      agents: [
+        ...(s.turnActive ? [{ id: 'main', role: 'main' as const, name: 'Huvudagent', agentType: '', model: record.model, effort: record.effort, contextPercent: s.context ? Math.round(s.context.percentage) : null, tokens: null, toolUses: 0, lastTool: '', summary: s.lastActivity }] : []),
+        ...s.subagentInfo.values(),
+      ],
       schedule: s.schedule,
       scheduleProblem: s.scheduleProblem,
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
@@ -468,6 +535,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       if (!s) return;
       s.schedule = jobs;
       s.scheduleProblem = problem;
+    },
+    setTodoLabels: (id, labels) => {
+      const s = states.get(id);
+      if (s) s.todoLabels = labels;
     },
     setDrift: (id, drift) => {
       const s = states.get(id);
@@ -544,7 +615,7 @@ function statusOf(s: SessionState): SessionStatus {
   if (s.limitResetsAt !== null && !s.turnActive && !s.pending.length) return 'limited';
   if (!s.running) return s.lastError ? 'error' : s.questions.length ? 'waiting' : 'stopped';
   if (s.pending.length) return 'waiting';
-  if (s.turnActive) return 'working';
+  if (s.turnActive || s.compacting) return 'working';
   if (s.questions.length) return 'waiting';
   if (s.lastError) return 'error';
   return s.unseenDone ? 'done' : 'idle';
