@@ -543,8 +543,9 @@ function boot(): void {
     const all = transcript.slice(from).filter((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim());
     const messages = messagesForTagging(all.map((e) => e.text));
     const entries = all.slice(-messages.length);
-    // The agent's [!NOTE] callouts go along last: the tagger decides whether each is an assumption to confirm.
-    const notes = transcript.slice(from).flatMap((e) => (e.kind === 'callout' && e.callout.kind === 'note' ? [`> [!NOTE] ${e.callout.title ? `**${e.callout.title}:** ` : ''}${e.callout.text}`] : []));
+    // The agent's question and note callouts go along last: the tagger keeps real questions and assumptions
+    // and drops repeats of questions already open or answered.
+    const notes = transcript.slice(from).flatMap((e) => (e.kind === 'callout' && (e.callout.kind === 'note' || e.callout.kind === 'question') ? [`> [!${e.callout.kind.toUpperCase()}] ${e.callout.title ? `**${e.callout.title}:** ` : ''}${e.callout.text}`] : []));
     const toTag = notes.length ? [...messages, splitBlocks(notes.join('\n\n'))] : messages;
     const show = (changed: TranscriptEntry[]): void => {
       for (const entry of changed) windows.send('session:transcript-upsert', { id, entry });
@@ -552,7 +553,7 @@ function boot(): void {
     try {
       if (!entries.length && !notes.length) return;
       const reply = await Promise.race([
-        structuredQuery(tagRequest(toTag, userData, workInProgress(model.summary(id)?.todo ?? null))),
+        structuredQuery(tagRequest(toTag, userData, workInProgress(model.summary(id)?.todo ?? null), model.askedQuestions(id))),
         new Promise<null>((resolve) => setTimeout(() => resolve(null), TAG_TIMEOUT_MS)),
       ]);
       const tags = readTags(reply, toTag.map((m) => m.length));

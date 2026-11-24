@@ -292,7 +292,8 @@ describe('turn tags from a cheap model', () => {
     const changed = model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Greppet: 1 eller 1b?', about: '', detail: '', brief: 'Två varianter.', options: ['1', '1b'] }], [{ entryId: choice.id, blocks: [{ text: 'E väntar på ditt val mellan 1 och 1b.', tag: 'question' }] }]);
     expect(changed.map((e) => e.id)).toContain(choice.id);
     expect(model.transcript('s1').find((e) => e.id === choice.id)).toMatchObject({ blocks: [{ tag: 'question' }] });
-    expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Får jag beställa kortet?', 'Greppet: 1 eller 1b?']);
+    // The agent's own callout question went to the tagger too; the tagger's list stands.
+    expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Greppet: 1 eller 1b?']);
     expect(model.summary('s1')?.status).toBe('waiting');
   });
 });
@@ -322,7 +323,8 @@ describe('question queue within a chat', () => {
     expect(model.summary('s1')?.questionsId).not.toBe(first);
     // The cheap model's tags for that turn keep the earlier question first.
     const lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
-    model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Ska kåpan vara svart?', about: '', detail: '', brief: '', options: [] }], []);
+    // The tagger lists this turn's questions, the agent's own callout question included.
+    model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Fyra eller sex skruvar?', about: '', detail: '', brief: '', options: [] }, { kind: 'question', text: 'Ska kåpan vara svart?', about: '', detail: '', brief: '', options: [] }], []);
     expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['M3 eller M4?', 'Fyra eller sex skruvar?', 'Ska kåpan vara svart?']);
   });
 });
@@ -340,7 +342,7 @@ describe('a turn\'s end waits for its tags', () => {
     expect(answer).toMatchObject({ held: true });
     expect(model.summary('s1')).toMatchObject({ status: 'working', questions: [], currentTask: 'Läser igenom svaret…' });
     const lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
-    const changed = model.applyTurnTags('s1', lastUser.id, [], [{ entryId: answer.id, blocks: [{ text: 'Klart. M3 eller M4?', tag: 'question' }] }]);
+    const changed = model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'M3 eller M4?', about: '', detail: '', brief: '', options: [] }], [{ entryId: answer.id, blocks: [{ text: 'Klart. M3 eller M4?', tag: 'question' }] }]);
     expect(changed).toHaveLength(1);
     expect(changed[0]).toMatchObject({ blocks: [{ tag: 'question' }] });
     expect(changed[0]).not.toHaveProperty('held');

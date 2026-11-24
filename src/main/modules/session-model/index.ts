@@ -51,6 +51,8 @@ export interface SessionModel {
   setDrift(id: string, drift: ProjectDrift | null): void;
   /** The project's scheduled jobs as the side panel shows them. */
   setSchedule(id: string, jobs: ScheduledJobView[], problem: string): void;
+  /** What the tagger must not ask again: the questions still open from earlier turns, and the ones answered lately. */
+  askedQuestions(id: string): { open: string[]; answered: string[] };
   /** Puts back questions left unanswered before a restart. */
   setQuestions(id: string, saved: SavedQuestions): void;
   setMapping(id: string, mapping: boolean): void;
@@ -471,6 +473,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       const s = states.get(id);
       if (s) s.drift = drift;
     },
+    askedQuestions: (id) => {
+      const s = states.get(id);
+      return { open: (s?.earlierQuestions ?? []).map((q) => q.text), answered: (s?.answered ?? []).slice(-RECENT_ANSWERED) };
+    },
     setQuestions: (id, saved) => {
       const s = states.get(id);
       if (!s || s.questions.length) return;
@@ -493,7 +499,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       if (!s || s.turnActive) return [];
       const lastUser = [...s.transcript].reverse().find((e) => e.kind === 'user');
       if ((lastUser?.id ?? null) !== afterEntryId) return [];
-      const asked = mergeQuestions(s.earlierQuestions, [...s.taggedQuestions, ...questions], s.answered);
+      // The agent's own question callouts went to the tagger as well, which drops repeats; its list stands.
+      const asked = mergeQuestions(s.earlierQuestions, questions, s.answered);
       if (JSON.stringify(asked.map((q) => q.text)) !== JSON.stringify(s.questions.map((q) => q.text))) s.questionsId = `${now()}-${asked.length}`;
       s.questions = asked;
       const tagged = setBlocks(s, blocks);
@@ -543,6 +550,8 @@ function statusOf(s: SessionState): SessionStatus {
 
 const MAX_QUESTIONS = 20;
 const MAX_ANSWERED = 200;
+/** How many answered questions the tagger is shown, so it does not ask them again. */
+const RECENT_ANSWERED = 30;
 
 /** A question reduced to its words: lower case, no punctuation, no trailing note such as "(besvarad)". */
 export function normalizeQuestion(text: string): string {

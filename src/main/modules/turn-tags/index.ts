@@ -40,8 +40,9 @@ const SCHEMA = {
           about: { type: 'string' },
           brief: { type: 'string' },
           message: { type: 'integer' },
+          repeats: { type: 'boolean' },
         },
-        required: ['text', 'kind', 'about', 'options', 'brief', 'message'],
+        required: ['text', 'kind', 'about', 'options', 'brief', 'message', 'repeats'],
         additionalProperties: false,
       },
     },
@@ -89,8 +90,12 @@ export function messagesForTagging(texts: string[]): string[][] {
   return split;
 }
 
-/** `work`: the work schema's items in progress ("id title"), so a question can be tied to its step. */
-export function tagRequest(messages: string[][], cwd: string, work: string[] = []): StructuredRequest {
+/**
+ * `work`: the work schema's items in progress ("id title"), so a question can be tied to its step.
+ * `asked`: questions already waiting for the user and ones the user answered lately, so the same question
+ * is not asked again in other words.
+ */
+export function tagRequest(messages: string[][], cwd: string, work: string[] = [], asked: { open: string[]; answered: string[] } = { open: [], answered: [] }): StructuredRequest {
   const numbered = messages
     .map((blocks, m) => blocks.map((b, i) => `[${m + 1}.${i + 1}]\n${b.length > MAX_BLOCK_CHARS ? `${b.slice(0, MAX_BLOCK_CHARS)}…` : b}`).join('\n\n'))
     .join('\n\n');
@@ -112,7 +117,8 @@ export function tagRequest(messages: string[][], cwd: string, work: string[] = [
     '   background: förklaring, sammanhang, resonemang.',
     '   Ett block med blandat innehåll får taggen för det viktigaste det innehåller (fail före warning före result).',
     '2. questions: varje fråga eller val agenten uttryckligen ber användaren svara på eller ta ställning till, och varje antagande användaren ska bekräfta.',
-    '   Rutor märkta [!NOTE] är antaganden bara om agenten antagit något i användarens ställe som användaren kan rätta; information, osäkerheter agenten själv nämner och förklaringar är inga antaganden att bekräfta.',
+    '   Rutor märkta [!QUESTION] är frågor till användaren. Rutor märkta [!NOTE] är antaganden bara om agenten antagit något i användarens ställe som användaren kan rätta; information, osäkerheter agenten själv nämner, förklaringar och sådant som ska kontrolleras eller verifieras senare (av agenten, i test eller på hårdvaran) är inga antaganden att bekräfta.',
+    '   Varje ruta märkt [!QUESTION] ska alltid finnas med i listan. Är samma fråga ställd flera gånger i turen, ta med den en gång.',
     '   Lägesrapporter, resultat, listor över vad som gjorts eller ska göras, rubriker och förklaringar är aldrig frågor, inte heller i punktlistor eller efter ett kolon.',
     '   Ta inte med frågor som agenten själv besvarar i samma tur. Hellre en fråga för lite än en påhittad. För varje:',
     '   Användaren har många agenter och projekt igång och läser frågan utan resten av texten, så den måste gå att förstå fristående.',
@@ -120,10 +126,13 @@ export function tagRequest(messages: string[][], cwd: string, work: string[] = [
     '   about: vad frågan gäller, högst 80 tecken: modell, del, version eller delmoment med agentens namn på dem (t.ex. "Handtag v4, kåpan mot greppet"), och punktens id ur arbetsschemat först om det framgår vilken punkt det är (t.ex. "cad.2.1 Handtag v4: kåpan"); "" om det inte framgår;',
     '   options: svarsalternativen om agenten gav några (t.ex. ["1", "1b"] eller ["A", "B"]), annars [];',
     '   brief: en till två meningar, högst 200 tecken, med det användaren behöver veta för att svara direkt, bara från texten, och som nämner vad det gäller;',
-    '   message: numret på meddelandet där frågan står.',
+    '   message: numret på meddelandet där frågan står;',
+    '   repeats: true om frågan frågar samma sak som en fråga i listorna nedan (redan öppen eller nyss besvarad), även med andra ord, mer detaljer eller ett annat punkt-id; annars false. Är du osäker, false.',
     'Svara med JSON.',
     '',
     ...(work.length ? ['Pågående punkter i arbetsschemat:', ...work.map((w) => `- ${w}`), ''] : []),
+    ...(asked.open.length ? ['Frågor som redan väntar på svar (ställ dem inte igen):', ...asked.open.map((q) => `- ${q}`), ''] : []),
+    ...(asked.answered.length ? ['Frågor användaren nyss har svarat på (ställ dem inte igen):', ...asked.answered.map((q) => `- ${q}`), ''] : []),
     'Meddelandena:',
     numbered,
   ].join('\n');
@@ -150,7 +159,8 @@ export function readTags(reply: unknown, blockCounts: number[]): TurnTags | null
     if (typeof q !== 'object' || q === null) return [];
     const x = q as Record<string, unknown>;
     const text = typeof x['text'] === 'string' ? x['text'].trim() : '';
-    if (!text || !inRange(x['message'])) return [];
+    // A repeat of a question already open or answered lately is left out.
+    if (!text || !inRange(x['message']) || x['repeats'] === true) return [];
     const brief = typeof x['brief'] === 'string' ? x['brief'].trim() : '';
     const about = typeof x['about'] === 'string' ? x['about'].trim().slice(0, MAX_ABOUT_CHARS) : '';
     return [

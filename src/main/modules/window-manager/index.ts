@@ -69,6 +69,8 @@ const OVERLAY_DETAIL_WIDTH = 284;
 const OVERLAY_CHAT_HEIGHT = 440;
 const OVERLAY_CHAT_WIDTH = 430;
 const EDGE_MARGIN = 8;
+/** How often the dock and overlay are lifted back to the top. */
+const KEEP_ON_TOP_MS = 3000;
 /** Height of the app's top bar, where Windows draws the window buttons; matches .topbar in the stylesheet. */
 const TITLE_BAR_HEIGHT = 52;
 const TITLE_BAR: Record<ThemeChoice, { color: string; symbolColor: string }> = {
@@ -159,6 +161,18 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     });
     win.setAlwaysOnTop(true, 'screen-saver');
     win.setVisibleOnAllWorkspaces(true);
+    // Windows can drop "always on top" (after sleep, display changes) or put other topmost windows in
+    // front: set it again at once, and lift the window back to the top every few seconds while shown.
+    win.on('always-on-top-changed', (_event, onTop) => {
+      if (!onTop && !win.isDestroyed()) win.setAlwaysOnTop(true, 'screen-saver');
+    });
+    const lift = setInterval(() => {
+      if (win.isDestroyed()) return clearInterval(lift);
+      if (!win.isVisible()) return;
+      if (!win.isAlwaysOnTop()) win.setAlwaysOnTop(true, 'screen-saver');
+      win.moveTop();
+    }, KEEP_ON_TOP_MS);
+    win.on('closed', () => clearInterval(lift));
     return win;
   }
 

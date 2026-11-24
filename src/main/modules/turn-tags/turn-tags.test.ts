@@ -52,6 +52,7 @@ describe('turn tags', () => {
         questions: [
           { text: 'Ska greppet vara 1 eller 1b?', kind: 'question', about: 'cad.2 Handtag v4', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2 },
           { text: 'Fel nummer', kind: 'question', options: [], brief: '', message: 9 },
+          { text: 'Samma som förut?', kind: 'question', options: [], brief: '', message: 1, repeats: true },
         ],
       },
       [1, 2],

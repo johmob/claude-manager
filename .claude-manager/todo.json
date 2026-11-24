@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T10:19:44Z",
+  "updated": "2026-11-24T10:34:39Z",
   "tracks": [
     {
       "id": "eng",
@@ -233,6 +233,18 @@
               "id": "ui.2.2",
               "title": "Kommandon hopfällda som standard",
               "status": "done"
+            },
+            {
+              "id": "ui.2.3",
+              "title": "Statusruta i chattfönstret",
+              "status": "not_started",
+              "notes": "Användaren: en del i chattfönstret som löpande visar vad agenten håller på med, från meddelanden som är relevanta men inte nödvändiga (i dag dolda), utan att fylla chatten med egna meddelanden."
+            },
+            {
+              "id": "ui.2.4",
+              "title": "Tydligare Arbetar vid agentbollarna",
+              "status": "not_started",
+              "notes": "Användaren: bollarna i Fokus måste förtydligas; texten Arbetar vid bollarna, tydligare ikon/animation; nuvarande blinkande text är för diskret och pulserar för långsamt. Overlayen är bra."
             }
           ]
         },
@@ -328,6 +340,12 @@
               "title": "Dra overlayen fritt i den svarta bakgrunden",
               "status": "done",
               "notes": "Användaren: klicka på overlayens svarta bakgrund och dra runt den fritt; klick ska inte gå igenom till det som ligger under den. Klart: hela raden tar musen; dra bakgrunden för att flytta, platsen sparas, dubbelklick lägger tillbaka i mitten."
+            },
+            {
+              "id": "ui.4.9",
+              "title": "Dockan och overlayen alltid överst",
+              "status": "done",
+              "notes": "Användaren: dockan låg inte längre över andra program. Appen återställer överst-läget och lyfter fönstren var 3:e sekund. Klart."
             }
           ]
         },
@@ -461,6 +479,12 @@
               "title": "NOTE-rutor blir antaganden bara om Haiku bedömer det",
               "status": "done",
               "notes": "Användaren: en informativ NOTE visades som antagande i frågeflödet i helskärm. Nu avgör Haiku; provat: information blev ingen fråga, ett riktigt antagande blev det. Klart."
+            },
+            {
+              "id": "ui.6.18",
+              "title": "Skydd mot upprepade frågor",
+              "status": "done",
+              "notes": "Användaren: många frågor kom in som var samma. Haiku ser öppna och nyss besvarade frågor och markerar upprepningar; frågerutor går också via Haiku. Provat: omformulerad besvarad fråga föll bort, ny kom fram. Användaren: \"ska bekräftas på hårdvaran\" är inget antagande för användaren. Klart."
             }
           ]
         },
