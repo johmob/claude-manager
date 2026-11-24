@@ -44,7 +44,7 @@ export interface WindowManager {
   setOverlayInteractive(interactive: boolean): void;
   /** Moves the overlay with the mouse while its background is held; "end" keeps the place, "reset" goes back to the middle. */
   dragOverlay(phase: 'start' | 'end' | 'reset'): void;
-  /** Shows a session's work schema or questions in a transparent window over the primary screen, focused, without the main window. */
+  /** Shows a session's work schema or the quick chat in a transparent window over the primary screen, focused, without the main window. */
   openPopup(view: PopupView): void;
   closePopup(): void;
   /** What the popup shows, or null. */

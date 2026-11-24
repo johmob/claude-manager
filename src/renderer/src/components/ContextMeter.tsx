@@ -1,3 +1,5 @@
+import { FoldVertical } from 'lucide-react';
+import '../styles/compact-check.css';
 import { CONTEXT_WINDOW_CHOICES, type ContextWindowChoice, type SessionSummary } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { formatTokenTotal, formatTokens } from '../lib/format';
@@ -19,6 +21,8 @@ export function ContextMeter({ session }: { session: SessionSummary }) {
     const window: ContextWindowChoice = value === 'auto' ? 'auto' : Number(value);
     send('session:set-context-window', { id: session.id, window });
   };
+  const check = session.compactCheck;
+  const preparing = check?.state === 'preparing';
   return (
     <div className="context-meter" onClick={(e) => e.stopPropagation()}>
       <div className="context-top">
@@ -46,15 +50,23 @@ export function ContextMeter({ session }: { session: SessionSummary }) {
         <button
           type="button"
           className="mini-btn"
-          title="Komprimera samtalet nu (/compact)"
-          onClick={() => send('session:send', { id: session.id, text: '/compact' })}
+          disabled={preparing || session.status === 'working'}
+          title="Agenten får först spara det som måste överleva; när den är redo komprimeras samtalet (/compact)"
+          onClick={() => send('session:compact', { id: session.id, action: 'prepare' })}
         >
-          Komprimera
+          <FoldVertical size={13} aria-hidden /> {preparing ? 'Förbereder…' : 'Komprimera'}
         </button>
         <span className="context-tokens" title="Tokens som sessionen har förbrukat: in, ut och cache, alla turer">
           {formatTokenTotal(session.tokensUsed)} tokens
         </span>
       </div>
+      {check?.state === 'unclear' && (
+        <div className="compact-unclear">
+          <span>Oklart om agenten är redo: {check.reason}</span>
+          <button type="button" className="mini-btn" onClick={() => send('session:compact', { id: session.id, action: 'now' })}>Komprimera nu</button>
+          <button type="button" className="mini-btn" onClick={() => send('session:compact', { id: session.id, action: 'cancel' })}>Låt bli</button>
+        </div>
+      )}
     </div>
   );
 }

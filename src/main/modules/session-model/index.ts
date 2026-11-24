@@ -53,6 +53,8 @@ export interface SessionModel {
   endTagging(id: string, afterEntryId: string | null): TranscriptEntry[];
   /** Work done on the project outside the app (null: none, or dealt with). */
   setDrift(id: string, drift: ProjectDrift | null): void;
+  /** Compacting with preparation: preparing, unclear (the user decides), or null. */
+  setCompactCheck(id: string, check: { state: 'preparing' | 'unclear'; reason: string } | null): void;
   /** Short labels for the work schema's long titles, by id. */
   setTodoLabels(id: string, labels: Record<string, string>): void;
   /** The project's scheduled jobs as the side panel shows them. */
@@ -104,6 +106,7 @@ interface SessionState {
   turnStartedAt: number | null;
   startedAt: number | null;
   compacting: CompactProgress | null;
+  compactCheck: { state: 'preparing' | 'unclear'; reason: string } | null;
   lastActivity: string;
   lastError: string | null;
   /** Stopped by the usage limit: when it resets ('' when unknown); null when not limited. Kept until a new turn starts. */
@@ -168,6 +171,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       turnAgents: new Set(),
       turnStartedAt: null,
       compacting: null,
+      compactCheck: null,
       startedAt: null,
       lastActivity: '',
       lastError: null,
@@ -410,6 +414,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       case 'exited':
         s.running = false;
         s.compacting = null;
+        s.compactCheck = null;
         s.turnActive = false;
         s.turnStartedAt = null;
         s.pending = [];
@@ -472,6 +477,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       turnStartedAt: s.turnStartedAt,
       startedAt: s.startedAt,
       compacting: s.compacting,
+      compactCheck: s.compactCheck,
       lastError: s.lastError,
       limitResetsAt: s.limitResetsAt,
       icon: record.icon ?? null,
@@ -557,6 +563,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     setTodoLabels: (id, labels) => {
       const s = states.get(id);
       if (s) s.todoLabels = labels;
+    },
+    setCompactCheck: (id, check) => {
+      const s = states.get(id);
+      if (s) s.compactCheck = check;
     },
     setDrift: (id, drift) => {
       const s = states.get(id);

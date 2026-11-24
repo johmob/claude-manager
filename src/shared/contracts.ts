@@ -636,10 +636,10 @@ export interface UpdateStatus {
   message: string;
 }
 
-/** What the popup window over the screen shows: a session's work schema or its questions. */
+/** What the popup window over the screen shows: a session's work schema or the quick chat. */
 export interface PopupView {
   /** "quick": the quick chat, large, for reading long answers (its id is "quick"). */
-  kind: 'schema' | 'questions' | 'quick';
+  kind: 'schema' | 'quick';
   id: string;
 }
 
@@ -668,6 +668,8 @@ export interface SessionSummary {
   startedAt: number | null;
   /** The conversation is being compacted: since when, its size, and how long it is expected to take (an estimate; the stream gives no progress). */
   compacting: CompactProgress | null;
+  /** Compacting with preparation: the agent is preparing, or its answer did not clearly say it is ready (the user decides). */
+  compactCheck: { state: 'preparing' | 'unclear'; reason: string } | null;
   lastError: string | null;
   /** Callouts from the latest turn, most severe first, until dismissed or the next turn starts. */
   callouts: Callout[];
@@ -910,6 +912,7 @@ export interface IpcInvokeMap {
   'session:answer': { req: { id: string; requestId: string; answers: QuestionAnswers }; res: void };
   'session:permission': { req: { id: string; requestId: string; decision: PermissionDecision }; res: void };
   'session:interrupt': { req: { id: string }; res: void };
+  'session:compact': { req: { id: string; action: 'prepare' | 'now' | 'cancel' }; res: void };
   /** Stops what the agent is doing and has it work on this message instead (or on the one already waiting, without text). */
   'session:redirect': { req: { id: string; text?: string }; res: void };
   'session:set-model': { req: { id: string; model: ModelChoice }; res: void };

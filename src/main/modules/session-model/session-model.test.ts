@@ -51,6 +51,16 @@ describe('session-model', () => {
     expect(model.summary('s1')?.sessionCrons.map((j) => j.id)).toEqual(['j3']);
   });
 
+  it('keeps the compact check until the session exits', () => {
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    expect(model.summary('s1')?.compactCheck).toBeNull();
+    model.setCompactCheck('s1', { state: 'unclear', reason: 'Tvekar' });
+    expect(model.summary('s1')?.compactCheck).toEqual({ state: 'unclear', reason: 'Tvekar' });
+    apply({ type: 'exited' });
+    expect(model.summary('s1')?.compactCheck).toBeNull();
+  });
+
   it('shows compacting with an estimate from the context size, and its result when done', () => {
     const { model, apply } = setup();
     apply({ type: 'started' });

@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-24T20:09:37.307Z",
+  "updated": "2026-11-24T20:13:39.212Z",
   "tracks": [
     {
       "id": "design",
@@ -611,9 +611,8 @@
             {
               "id": "chat.4.4",
               "title": "Komprimera med förberedelse",
-              "status": "in_progress",
-              "notes": "Användaren: knappen Komprimera ska först skicka \"Förbered för komprimering\" till agenten. När agenten svarar bedömer appen (Haiku) om svaret är jakande; i så fall skickar appen /compact. Är svaret tvetydigt visas det för användaren i stället, som får avgöra. Användaren: knappen får en trevlig liten ikon för något som komprimeras, t.ex. lucide fold-vertical eller shrink (pilar mot mitten). Beslut: ikonen fold-vertical (pilar mot mitten).",
-              "progress": 0
+              "status": "done",
+              "notes": "Användaren: knappen Komprimera ska först skicka \"Förbered för komprimering\" till agenten. När agenten svarar bedömer appen (Haiku) om svaret är jakande; i så fall skickar appen /compact. Är svaret tvetydigt visas det för användaren i stället, som får avgöra. Användaren: knappen får en trevlig liten ikon för något som komprimeras, t.ex. lucide fold-vertical eller shrink (pilar mot mitten). Beslut: ikonen fold-vertical (pilar mot mitten). || Knappen skickar \"Förbered för komprimering\"; när svaret och taggarna är inne bedömer Haiku det, ja ger /compact, annars visas Oklart-raden med Komprimera nu / Låt bli. Ej provat i dold testinstans. Provat dolt: förberedelse, sedan /compact av sig själv."
             },
             {
               "id": "chat.4.5",

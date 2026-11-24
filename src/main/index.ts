@@ -70,6 +70,7 @@ import { addTokens, localDate, todayOf } from './modules/day-tokens';
 import { describeDrift, driftSince, markAt, markOf } from './modules/project-drift';
 import { SCHEDULE_PROTOCOL, createScheduler, describeCron, nextRunOf, readJobs, runCommand, writeJobs } from './modules/scheduler';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
+import { compactCheckRequest, readCompactCheck } from './modules/compact-check';
 import { readLocalImage, registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 import { createRemoteHost } from './modules/remote-host';
 import { copyToClipboard, mailWithAttachment, outlookPath, readSharedFile, saveCopyAs } from './modules/file-actions';
@@ -406,7 +407,10 @@ function boot(): void {
           break;
         }
         // The turn's end (questions, done) is announced once its tags are in.
-        if (completed) void tagTurn(event.sessionId, event.result);
+        // A turn that was the agent's preparation for compacting: judged once its tags are in, so the answer is not shown untagged.
+        const preparing = model.summary(event.sessionId)?.compactCheck?.state === 'preparing';
+        if (preparing && !completed) model.setCompactCheck(event.sessionId, null);
+        if (completed) void tagTurn(event.sessionId, event.result).then(() => (preparing ? checkCompact(event.sessionId, event.result) : undefined));
         if (awaitingRestart.delete(event.sessionId)) void restart(event.sessionId);
         if (mappingActive?.id === event.sessionId) void (mappingActive.restore ? endMapping(event.interrupted ? 'interrupted' : 'done') : sendMappingTurn());
         break;
@@ -479,6 +483,25 @@ function boot(): void {
       ...(schema ? [appContext('Påminnelse om arbetsschemat', SCHEMA_REMINDER)] : []),
     ];
     sendToSession(id, notes.length ? `${notes.join('\n\n')}\n\n${text}` : text);
+  }
+
+  /** Judges the agent's answer to "Förbered för komprimering": ready → /compact, otherwise the user decides. */
+  async function checkCompact(id: string, answer: string): Promise<void> {
+    if (model.summary(id)?.compactCheck?.state !== 'preparing') return;
+    let verdict = null;
+    try {
+      verdict = readCompactCheck(await structuredQuery(compactCheckRequest(answer, userData)));
+    } catch {
+      // Without a verdict the user decides.
+    }
+    if (model.summary(id)?.compactCheck?.state !== 'preparing') return;
+    if (verdict?.verdict === 'ready') {
+      model.setCompactCheck(id, null);
+      sendFromUser(id, '/compact');
+    } else {
+      model.setCompactCheck(id, { state: 'unclear', reason: verdict?.reason || 'Svaret gick inte att bedöma.' });
+    }
+    scheduleSync();
   }
 
   function sendToSession(id: string, text: string): void {
@@ -1218,7 +1241,26 @@ function boot(): void {
 
   handle('session:map-project', (req) => startMapping(req.id, req.guidance));
 
-  handle('session:send', (req) => sendFromUser(req.id, req.text));
+  handle('session:send', (req) => {
+    model.setCompactCheck(req.id, null);
+    sendFromUser(req.id, req.text);
+  });
+
+  handle('session:compact', (req) => {
+    const s = model.summary(req.id);
+    if (!s) return;
+    if (req.action === 'prepare') {
+      if (s.status === 'working' || s.compacting || s.compactCheck) return;
+      sendFromUser(req.id, `Förbered för komprimering
+
+${appContext('Appen komprimerar samtalet när du är redo', 'Spara det som måste överleva komprimeringen (till arbetsschemat eller anteckningar) och svara sedan kort, en eller två meningar, om du är redo.')}`);
+      model.setCompactCheck(req.id, { state: 'preparing', reason: '' });
+    } else {
+      model.setCompactCheck(req.id, null);
+      if (req.action === 'now') sendFromUser(req.id, '/compact');
+    }
+    scheduleSync();
+  });
 
   // Pasted images older than a month go, so the temp folder does not grow for ever (chats older than that show them as missing).
   pruneOld(join(tmpdir(), 'claude-manager-paste'), PASTE_KEEP_MS);
@@ -1275,7 +1317,10 @@ function boot(): void {
 
   handle('session:answer', (req) => engine.answerQuestion(req.id, req.requestId, req.answers));
   handle('session:permission', (req) => engine.resolvePermission(req.id, req.requestId, req.decision));
-  handle('session:interrupt', (req) => engine.interrupt(req.id));
+  handle('session:interrupt', (req) => {
+    model.setCompactCheck(req.id, null);
+    return engine.interrupt(req.id);
+  });
   handle('session:transcript', (req) => model.transcript(req.id));
 
   handle('session:set-model', async (req) => {

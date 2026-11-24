@@ -540,7 +540,7 @@ textarea.input { resize: vertical; }
 .btn.small.focus { border-color: rgba(251,191,36,.6); color: #fbbf24; }
 .btn.small.focus:hover { background: rgba(251,191,36,.12); }
 
-/* ---------- Questions: the button on cards and tiles, and the full-screen flow ---------- */
+/* ---------- Questions: the button on cards, tiles and the phone chat ---------- */
 .questions-btn { display: flex; align-items: center; gap: 10px; width: calc(100% - 24px); margin: 0 12px 8px; padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(250,204,21,.6); background: rgba(250,204,21,.1); color: #fde68a; font: inherit; text-align: left; cursor: pointer; animation: q-pulse 1.6s ease-in-out infinite; }
 .questions-btn:hover { background: rgba(250,204,21,.18); }
 .questions-btn-icon { width: 24px; height: 24px; flex: none; border-radius: 50%; display: grid; place-items: center; background: #facc15; color: #1a1405; font-weight: 900; }
@@ -550,37 +550,13 @@ textarea.input { resize: vertical; }
 .tile .questions-btn { width: auto; margin: 6px 10px; }
 @keyframes q-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(250,204,21,0); } 50% { box-shadow: 0 0 12px 2px rgba(250,204,21,.35); } }
 .qf { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 10px 0 24px; }
-.qf-steps { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .qf-step-dot { min-width: 30px; height: 30px; padding: 0 8px; border-radius: 15px; border: 1px solid var(--border); background: var(--bg-card); color: var(--muted); font: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
-.qf-step-dot[data-kind="assumption"] { border-style: dashed; }
-.qf-step-dot[data-answered] { background: rgba(62,207,142,.16); border-color: rgba(62,207,142,.6); color: var(--green); }
-.qf-step-dot[data-current] { border-color: #facc15; color: #fff; box-shadow: 0 0 0 2px rgba(250,204,21,.35); }
-.qf-step-review { padding: 0 12px; }
-.qf-card, .qf-review { width: min(780px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 26px 28px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border); border-top: 4px solid #facc15; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
-.qf-card[data-kind="assumption"] { border-top-color: #5b9cff; }
-.qf-kind { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.6875rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #facc15; }
-.qf-card[data-kind="assumption"] .qf-kind { color: #8fb8ff; }
-.qf-count { color: var(--muted); letter-spacing: 0; text-transform: none; font-weight: 600; font-size: 0.75rem; }
-.qf-context { font-size: 0.7813rem; color: var(--muted); }
+.qf-card { width: min(780px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 26px 28px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border); border-top: 4px solid #facc15; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
 .qf-question { font-size: 1.375rem; font-weight: 650; line-height: 1.4; color: #fff; white-space: pre-wrap; overflow-wrap: anywhere; }
-.qf-question[data-long="true"] { font-size: 1.125rem; }
-.qf-question[data-long="very"] { font-size: 1rem; font-weight: 600; }
 .qf-answer { font-size: 0.9375rem; line-height: 1.45; min-height: 110px; resize: vertical; }
 .qf-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .qf-spacer { flex: 1; }
 .qf-ok { border-color: rgba(62,207,142,.6); color: var(--green); }
-.qf-review-head { font-size: 0.875rem; color: var(--muted); }
-.qf-review-list { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 12px; max-height: 55vh; overflow: auto; }
-.qf-review-list li { cursor: pointer; }
-.qf-review-q { font-size: 0.9375rem; font-weight: 600; }
-.qf-review-a { margin-top: 3px; font-size: 0.8438rem; color: var(--green); white-space: pre-wrap; }
-.qf-review-a.qf-empty { color: var(--muted); font-style: italic; }
-.qf-tag { margin-right: 6px; padding: 1px 6px; border-radius: 999px; font-size: 0.625rem; font-weight: 800; text-transform: uppercase; color: #8fb8ff; border: 1px solid rgba(91,156,255,.5); vertical-align: 2px; }
-.qf-send { margin-left: auto; }
-/* The question flow fills the screen, with the question centred. */
-.modal.full:has(.qf) { height: 94vh; }
-.modal.full:has(.qf) .modal-body { flex: 1; display: flex; }
-.qf { flex: 1; justify-content: center; }
 
 /* ---------- Transcript text: larger, with headings, lists and emphasis that read at a glance ---------- */
 /* Body text is calm so headings, bold text, callouts and your own messages catch the eye. */
@@ -724,7 +700,6 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .qf-quick-btn { min-width: 72px; font-size: 0.95rem; font-weight: 650; padding: 8px 18px; }
 .qf-quick-btn:hover:not(:disabled) { border-color: var(--accent-ui); }
 .qf-quick-btn[data-picked] { border-color: var(--accent-ui); color: var(--accent-ui); }
-.qf-steps[hidden] { display: none; }
 
 /* A question answered straight from the overlay */
 .ov-q { display: flex; flex-direction: column; gap: 10px; }
@@ -857,13 +832,9 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .ov-letters.session-mark { color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
 .ov-letters.session-mark-letters { background: none; font-size: 0.8125rem; min-width: 0; height: auto; padding: 0; }
 
-/* Question queue: which chat asks, and who is next */
 .qf-from { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 750; color: var(--text); padding: 6px 16px 6px 12px; border-radius: 999px; background: color-mix(in srgb, var(--c) 16%, transparent); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); animation: qf-from-in .35s ease-out; }
 .qf-from .session-mark-letters { font-size: 0.75rem; }
 @keyframes qf-from-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
-.qf-queue { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; font-size: 0.8rem; margin-top: -10px; }
-.qf-queue-item { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
-.qf-queue-count { min-width: 1.4em; padding: 0 5px; border-radius: 999px; background: rgba(255,255,255,.08); color: var(--text); font-size: 0.7rem; font-weight: 700; text-align: center; }
 
 /* Chat detail: each chat's Minimal / Moderat / Detaljerat switch, and the level dots on every block */
 .detail-switch { display: inline-flex; gap: 1px; padding: 2px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid var(--border); }
@@ -977,11 +948,6 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .ws-package[data-todo="done"]:not([data-open]) { opacity: .7; }
 .ws-track-title { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 
-/* Compacting the conversation: a spinner, about how long it takes and the time so far (no estimated share) */
-.compact-badge { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px 3px 6px; border-radius: 999px; background: linear-gradient(90deg, rgba(122,162,255,.10), rgba(122,162,255,.22), rgba(122,162,255,.10)); background-size: 200% 100%; animation: t-latest-shimmer 2.4s ease-in-out infinite; border: 1px solid rgba(122,162,255,.5); color: #a9c1ff; font-size: 0.74rem; font-weight: 700; white-space: nowrap; cursor: default; }
-.compact-spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(122,162,255,.22); border-top-color: #a9c1ff; border-right-color: #a9c1ff; animation: spin .8s linear infinite; }
-.compact-about { font-weight: 500; }
-.compact-time { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* A scheduled job's state: active (green, pulsing) runs on its own; paused does not */
 .sp-state { display: flex; align-items: center; gap: 7px; padding: 4px 8px; border-radius: 6px; background: rgba(125,138,166,.12); color: var(--muted); font-size: 0.76rem; }
