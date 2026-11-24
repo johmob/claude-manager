@@ -619,6 +619,18 @@
               "title": "Komprimeringsstatus överallt",
               "status": "not_started",
               "notes": "Användaren: \"Komprimerar\" ska synas i blått som nu, men ersätta \"Arbetar\" i statusen i högra hörnet (inte visas bredvid). I overlayn ska en egen animation visas i stället för arbetsanimationen, t.ex. en animerad komprimeringsikon (samma fold-vertical som chat.4.4, pilarna som pulserar mot mitten)."
+            },
+            {
+              "id": "chat.4.6",
+              "title": "Ingen dubblett av svaret",
+              "status": "not_started",
+              "notes": "Användaren: rutan Under arbetet visar huvudagentens senaste meddelande även när samma text redan står som Svar under den. När turen är klar och rutans text i stort sett är svaret ska rutan inte visa den (eller döljas)."
+            },
+            {
+              "id": "chat.4.7",
+              "title": "Rymligare svarsruta",
+              "status": "not_started",
+              "notes": "Användaren: får ofta klicka \"Visa ett stycke till\" (TaggedText döljer stycken under vald detaljnivå). Svarets synliga del ska bli större, och Haiku-taggaren (turn-tags) ska få veta hur mycket som ryms i den så att den väljer stycken som fyller den i stället för att gömma för mycket."
             }
           ]
         },
