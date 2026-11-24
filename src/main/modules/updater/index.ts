@@ -77,7 +77,8 @@ export function createUpdater(opts: UpdaterOptions): Updater {
       else if (status.state !== 'downloading') check();
     },
     checkNow() {
-      if (status.state !== 'downloading' && status.state !== 'ready') check();
+      // Also when a version is ready: a newer release since then replaces it (it used to stick to the first one).
+      if (status.state !== 'downloading') check();
     },
     current: () => status,
     stop() {
