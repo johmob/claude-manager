@@ -1,6 +1,6 @@
 // session-model: pure state. Folds SessionEvents, records and todo trees into the
 // SessionSummary cards and TranscriptEntry lists the UI shows. No I/O, no timers.
-import { CALLOUT_KINDS } from '../../../shared/contracts';
+import { CALLOUT_KINDS, splitAppContext } from '../../../shared/contracts';
 import type {
   OpenQuestion,
   Callout,
@@ -236,7 +236,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.calloutsBefore = 0;
         // A new message before the last turn's tags arrived: that turn's text shows as it is.
         // Written while the agent was still busy: it reads it once its current turn is over.
-        return [...release(s), ...add({ kind: 'user', text: event.prompt, ...(busy ? { queued: true } : {}) })];
+        // What the app added for the agent only is left out; a message the app wrote alone shows as a note.
+        const { shown, notes } = splitAppContext(event.prompt);
+        if (!shown) return [...release(s), ...system(notes.join(' · '), 'info')];
+        return [...release(s), ...add({ kind: 'user', text: shown, ...(busy ? { queued: true } : {}) })];
       }
       case 'thinking':
         markActive('Tänker…');

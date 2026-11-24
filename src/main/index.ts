@@ -7,7 +7,7 @@ import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import iconPath from '../../resources/icon.png?asset';
-import { usageWeight, CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
+import { appContext, usageWeight, CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
 import type {
   AppSettings,
@@ -378,7 +378,7 @@ function boot(): void {
       model.setDrift(id, null);
       scheduleSync();
     }
-    sendToSession(id, drift ? `${describeDrift(drift)}\n\n---\n\n${text}` : text);
+    sendToSession(id, drift ? `${appContext('Ändringar gjorda utanför appen följde med', describeDrift(drift))}\n\n${text}` : text);
   }
 
   function sendToSession(id: string, text: string): void {
@@ -486,7 +486,7 @@ function boot(): void {
       const resets = s.limitResetsAt ? Date.parse(s.limitResetsAt) : NaN;
       if (Number.isFinite(resets) ? now < resets + RESUME_MARGIN_MS : !roomAgain) continue;
       notifier.alert({ sessionId: s.id, title: `${s.name} fortsätter`, body: 'Användningsgränsen har återställts.', urgent: false });
-      sendToSession(s.id, RESUME_MESSAGE);
+      sendToSession(s.id, appContext('Användningsgränsen har återställts; appen bad agenten fortsätta', RESUME_MESSAGE));
     }
   }
 
@@ -970,7 +970,7 @@ function boot(): void {
     const drift = model.summary(req.id)?.drift;
     if (!drift) return;
     model.setDrift(req.id, null);
-    if (req.action === 'update') sendToSession(req.id, `${describeDrift(drift)}\n\n${DRIFT_UPDATE_PROMPT}`);
+    if (req.action === 'update') sendToSession(req.id, appContext('Appen bad agenten uppdatera arbetsschemat efter ändringar utanför appen', `${describeDrift(drift)}\n\n${DRIFT_UPDATE_PROMPT}`));
     else if (req.action === 'remap') startMapping(req.id, '');
     else saveRecord({ ...requireRecord(req.id), mark: drift.mark });
     scheduleSync();

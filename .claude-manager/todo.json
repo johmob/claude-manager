@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T08:36:44Z",
+  "updated": "2026-11-24T08:38:28Z",
   "tracks": [
     {
       "id": "eng",
@@ -443,6 +443,12 @@
               "title": "Avbryt och jobba med senaste meddelandet",
               "status": "done",
               "notes": "Användaren: kommando för att stoppa agenten och ta senaste meddelandet. Ctrl+Enter i skrivrutan, och \"Avbryt och läs nu\" på köat meddelande. Provat dolt med en riktig tur. Klart."
+            },
+            {
+              "id": "ui.6.16",
+              "title": "Appens meddelanden till agenten syns inte i chatten",
+              "status": "done",
+              "notes": "Användaren: ändringslistan och uppmaningen som skrevs i chatten är bara för agenten. Märks som appens sammanhang; chatten visar bara användarens egen text, eller en kort grå rad. Klart."
             }
           ]
         },

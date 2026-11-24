@@ -338,6 +338,22 @@ export interface DayUsage {
   app: number;
 }
 
+/**
+ * Text the app adds to a message for the agent only (a change list, a request to resume …). The agent reads
+ * it as part of the message; the chat shows only what the user wrote, or the note when the app wrote it all.
+ */
+export function appContext(note: string, body: string): string {
+  return `<cm-context note="${note.replace(/"/g, "'")}">\n${body}\n</cm-context>`;
+}
+
+const APP_CONTEXT = /<cm-context note="([^"]*)">[\s\S]*?<\/cm-context>\s*/g;
+
+/** A message as the chat shows it: the user's own text, and the notes of any app context in it. */
+export function splitAppContext(text: string): { shown: string; notes: string[] } {
+  const notes = [...text.matchAll(APP_CONTEXT)].map((m) => m[1]!);
+  return { shown: notes.length ? text.replace(APP_CONTEXT, '').trim() : text, notes };
+}
+
 /** A call's tokens by kind, as the API reports them. */
 export interface TokenUsage {
   input: number;

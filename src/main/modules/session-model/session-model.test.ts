@@ -375,3 +375,16 @@ describe('a message sent while the agent is busy', () => {
     expect(model.transcript('s1').filter((e) => e.kind === 'user')[0]).not.toHaveProperty('queued');
   });
 });
+
+describe('text the app adds for the agent only', () => {
+  it('is left out of the chat; a message the app wrote alone shows as a note', async () => {
+    const { appContext } = await import('../../../shared/contracts');
+    const { model, apply } = setup();
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: `${appContext('Ändringar följde med', '2 nya commits')}\n\nFixa knappen` });
+    expect(model.transcript('s1').pop()).toMatchObject({ kind: 'user', text: 'Fixa knappen' });
+    apply({ type: 'turn_started', prompt: appContext('Appen bad agenten uppdatera schemat', 'Uppdatera arbetsschemat.') });
+    expect(model.transcript('s1').pop()).toMatchObject({ kind: 'system', text: 'Appen bad agenten uppdatera schemat', level: 'info' });
+    expect(model.summary('s1')?.status).toBe('working');
+  });
+});
