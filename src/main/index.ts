@@ -159,6 +159,8 @@ function boot(): void {
 
   // ---------- Modules ----------
   const model = createSessionModel();
+  // Cards whose icon is being chosen; declared before the schema watcher, which picks icons from its first read.
+  const pickingIcon = new Set<string>();
   // Every Claude process the app starts (sessions and one-shot calls) must use the same executable.
   const claudeExecutable = { pathToClaudeCodeExecutable: packagedClaudeBinary() };
   const engine = createSessionEngine(onSessionEvent, claudeExecutable);
@@ -591,7 +593,6 @@ function boot(): void {
     });
   }
 
-  const pickingIcon = new Set<string>();
   /** Gives a card without an icon one that suits its project, once it has a work schema to go by. */
   async function pickIcon(id: string, tree: TodoTree): Promise<void> {
     const record = findRecord(id);
