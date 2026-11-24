@@ -117,7 +117,7 @@ export function tagRequest(messages: string[][], cwd: string, work: string[] = [
     '- text: frågan, kort nog för en rubrik (helst under 90 tecken) och begriplig fristående. Lägg detaljer, värden och villkor i brief, inte i rubriken. Inga markeringar som [!QUESTION] och inga block-id.',
     '- kind: "question" eller "assumption". about: vad det gäller, högst 80 tecken, med arbetsschemats punkt-id först om det framgår (t.ex. "cad.2.1 Handtag v4: kåpan"), annars "".',
     '- options: svarsalternativen agenten gav, annars []. brief: en till två meningar, högst 200 tecken, med det användaren behöver veta för att svara; skriv aldrig block-id eller "se block" där.',
-    '- message: meddelandets nummer. context: id på de block användaren behöver se för att svara (bilder, länkar, tabeller, alternativ, mätvärden), även från tidigare meddelanden; inte blocket som bara upprepar frågan själv; [] om frågan räcker.',
+    '- message: meddelandets nummer. context: id på de block användaren behöver se för att svara (bilder, länkar, tabeller, alternativ, mätvärden), även från tidigare meddelanden. Bilder och länkar som frågan gäller ska alltid med, också när blocket i övrigt är bakgrund. Inte blocket som bara upprepar frågan själv; [] om frågan räcker.',
     '- repeats: true om den frågar samma sak som en fråga i listorna nedan, även med andra ord; annars false.',
     'Svara med JSON.',
     '',

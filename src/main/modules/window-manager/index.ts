@@ -210,15 +210,18 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
       overlay.setIgnoreMouseEvents(true, { forward: true });
     }
     overlayCount = count;
-    // Centred at the top, or where the user dragged it (on the screen that point is on).
-    const area = overlayAnchor ? screen.getDisplayNearestPoint({ x: Math.round(overlayAnchor.centerX), y: Math.round(overlayAnchor.top) }).workArea : screen.getPrimaryDisplay().workArea;
+    // Centred at the top, or where the user dragged it (on the screen that point is on). While it is being
+    // dragged it stays where it is now; placing it at the old anchor would flash it there for a frame.
+    const now = overlay.getBounds();
+    const anchor = dragTimer ? { centerX: now.x + now.width / 2, top: now.y } : overlayAnchor;
+    const area = anchor ? screen.getDisplayNearestPoint({ x: Math.round(anchor.centerX), y: Math.round(anchor.top) }).workArea : screen.getPrimaryDisplay().workArea;
     const row = OVERLAY_USAGE_WIDTH + count * OVERLAY_CELL + 16;
     const detailWidth = overlayWide ? OVERLAY_CHAT_WIDTH : OVERLAY_DETAIL_WIDTH;
     const width = Math.min(overlayDetail ? Math.max(row, detailWidth) : row, area.width);
     const height = OVERLAY_HEIGHT + (overlayDetail ? (overlayWide ? OVERLAY_CHAT_HEIGHT : OVERLAY_DETAIL_HEIGHT) : 0);
-    const centerX = overlayAnchor?.centerX ?? area.x + area.width / 2;
+    const centerX = anchor?.centerX ?? area.x + area.width / 2;
     const x = Math.min(Math.max(Math.round(centerX - width / 2), area.x), area.x + area.width - width);
-    const y = Math.min(Math.max(Math.round(overlayAnchor?.top ?? area.y + 2), area.y), area.y + area.height - OVERLAY_HEIGHT);
+    const y = Math.min(Math.max(Math.round(anchor?.top ?? area.y + 2), area.y), area.y + area.height - OVERLAY_HEIGHT);
     place(overlay, { x, y, width, height });
   }
 

@@ -786,9 +786,29 @@ export interface AppSettings {
   /** Install new versions from GitHub on their own once no session is busy. */
   autoUpdate: boolean;
   theme: ThemeChoice;
+  /** Lets the user's phone use the app over the home network (off by default; see the remote-host module). */
+  remoteAccess: { enabled: boolean; port: number };
   defaultModel: ModelChoice;
   defaultEffort: EffortChoice;
   defaultPermissionMode: PermissionChoice;
+}
+
+/** The remote host's state, for the settings menu. */
+export interface RemoteStatus {
+  running: boolean;
+  /** Why it could not start (port in use, ...), or null. */
+  error: string | null;
+  port: number;
+  /** Addresses to open on the phone, from this computer's private addresses. */
+  urls: string[];
+  /** The URL (with the pairing key) the QR code holds; null when not running. */
+  pairingUrl: string | null;
+  /** The QR code of pairingUrl as a data URL. */
+  qr: string | null;
+  /** Connected phones. */
+  clients: number;
+  /** The Windows Firewall rule to add (run once as administrator). */
+  firewallCommand: string;
 }
 
 // ---------- IPC ----------
@@ -832,6 +852,10 @@ export interface IpcInvokeMap {
   'settings:choose-projects-root': { req: void; res: AppSettings | null };
   /** Installs the newer version now (fetching it first if needed); the app restarts. */
   'update:install': { req: void; res: void };
+  /** The remote access state (local windows only; never callable remotely). */
+  'remote:status': { req: void; res: RemoteStatus };
+  /** Makes a new pairing key: phones paired earlier must pair again. */
+  'remote:new-key': { req: void; res: RemoteStatus };
   /** Opens the folder with the app's logs. */
   'log:open-folder': { req: void; res: void };
   /** Looks for a new version now. */

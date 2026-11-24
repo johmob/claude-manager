@@ -708,6 +708,13 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .settings-btn { padding: 4px 10px; font-size: 0.9rem; line-height: 1; }
 .settings-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 230px; display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.55); }
 .settings-pop .toggle { justify-content: flex-start; }
+.remote-box { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--border); max-width: 300px; }
+.remote-port { width: 5.5em; }
+.remote-urls { font-size: 0.7188rem; color: var(--muted); word-break: break-all; user-select: text; }
+.remote-qr { width: 160px; height: 160px; align-self: center; border-radius: 6px; background: #fff; }
+.remote-note { font-size: 0.6875rem; color: var(--muted); }
+.remote-error { font-size: 0.75rem; color: #f0a0a0; }
+.remote-cmd { display: block; margin-top: 4px; padding: 4px 6px; font-size: 0.625rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: copy; word-break: break-all; user-select: all; }
 .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.8125rem; }
 .settings-version { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding-top: 6px; border-top: 1px solid var(--border); font-size: 0.7188rem; color: var(--muted); }
 .settings-version .link-btn { padding: 0; font-size: 0.75rem; }

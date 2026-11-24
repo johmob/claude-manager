@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { AppSettings, DockEdge, UpdateStatus } from '../../../shared/contracts';
+import type { AppSettings, DockEdge, RemoteStatus, UpdateStatus } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { ChatIcon, ExistingProjectIcon, NewProjectIcon, NoSleepIcon, RulesIcon } from './Icons';
 import type { DialogKind } from './StartDialogs';
@@ -53,6 +53,69 @@ function Toggle(props: { label: string; on: boolean; onChange: (on: boolean) => 
   );
 }
 
+/** Phone access: off by default; the URLs, the pairing QR code and the firewall rule to add. Not shown in a browser on the phone itself. */
+function RemoteAccess({ settings }: { settings: AppSettings }) {
+  const { enabled, port } = settings.remoteAccess;
+  const [status, setStatus] = useState<RemoteStatus | null>(null);
+  const [portText, setPortText] = useState(String(port));
+  const [copied, setCopied] = useState(false);
+  useEffect(() => setPortText(String(port)), [port]);
+  useEffect(() => {
+    let alive = true;
+    const load = (): void => {
+      window.cm.invoke('remote:status', undefined).then((s) => alive && setStatus(s), () => undefined);
+    };
+    load();
+    const timer = setInterval(load, 2500);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [enabled, port]);
+  if (!status) return null;
+  const update = (changes: Partial<AppSettings['remoteAccess']>): void => send('settings:update', { remoteAccess: { enabled, port, ...changes } });
+  const commitPort = (): void => {
+    const n = Number(portText);
+    if (Number.isInteger(n) && n >= 1024 && n <= 65535) {
+      if (n !== port) update({ port: n });
+    } else setPortText(String(port));
+  };
+  return (
+    <div className="remote-box">
+      <Toggle
+        label="Fjärråtkomst (mobil)"
+        title="Datorn serverar appen över HTTPS till telefonen på hemnätet (eller via VPN). Bara privata adresser släpps in och telefonen måste paras med en nyckel."
+        on={enabled}
+        onChange={(on) => update({ enabled: on })}
+      />
+      <label className="settings-row">
+        <span>Port</span>
+        <input className="input compact remote-port" inputMode="numeric" value={portText} onChange={(e) => setPortText(e.target.value)} onBlur={commitPort} onKeyDown={(e) => e.key === 'Enter' && commitPort()} />
+      </label>
+      {enabled && status.error && <div className="remote-error">{status.error}</div>}
+      {enabled && status.running && (
+        <>
+          <div className="remote-urls">{status.urls.length ? status.urls.map((u) => <div key={u}>{u}</div>) : 'Ingen privat nätverksadress hittades.'}</div>
+          {status.qr && <img className="remote-qr" src={status.qr} alt="QR-kod för parning" title={status.pairingUrl ?? ''} />}
+          <div className="remote-note">Skanna QR-koden med telefonen. Första gången: öppna adressen /ca.crt och installera certifikatet som CA-certifikat. {status.clients ? `${status.clients} ansluten.` : ''}</div>
+          <button type="button" className="link-btn settings-link" onClick={() => void window.cm.invoke('remote:new-key', undefined).then(setStatus)}>Ny nyckel (kopplar bort parade telefoner)</button>
+        </>
+      )}
+      <div className="remote-note">
+        Windows-brandväggen måste släppa in porten (kör som administratör):
+        <code
+          className="remote-cmd"
+          title="Klicka för att kopiera"
+          onClick={() => void navigator.clipboard.writeText(status.firewallCommand).then(() => setCopied(true))}
+        >
+          {status.firewallCommand}
+        </code>
+        {copied && <span> Kopierat.</span>}
+      </div>
+    </div>
+  );
+}
+
 /** Settings changed now and then: look, updates and where the dock sits. Closes on a click outside. */
 function SettingsMenu({ settings, update }: { settings: AppSettings; update: UpdateStatus }) {
   const [open, setOpen] = useState(false);
@@ -97,6 +160,7 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
             on={settings.autoResume}
             onChange={(autoResume) => send('settings:update', { autoResume })}
           />
+          <RemoteAccess settings={settings} />
           <label className="settings-row">
             <span>Dockan</span>
             <select className="input compact" value={settings.dockEdge} onChange={(e) => send('settings:update', { dockEdge: e.target.value as DockEdge })}>

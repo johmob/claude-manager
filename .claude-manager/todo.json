@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T14:53:22.705Z",
+  "updated": "2026-11-24T16:01:28.805Z",
   "tracks": [
     {
       "id": "eng",
@@ -657,6 +657,12 @@
           "title": "Nedräkning till återställning i overlayn",
           "status": "done",
           "notes": "När 5 tim eller vecka är förbrukad visar overlayn en nedräkning i timmar och minuter till återställningen. Inte provad med en riktig nådd gräns."
+        },
+        {
+          "id": "ui.12",
+          "title": "Overlayn flimrar inte när den dras",
+          "status": "done",
+          "notes": "När appen uppdaterade overlayn under en dragning placerades den en bildruta på den gamla platsen (mitt upptill), som en spökbild. Nu stannar den där den är så länge den dras."
         }
       ]
     },
@@ -928,22 +934,48 @@
       "id": "mob",
       "title": "Mobil – fjärrstyrning",
       "owner": "main",
-      "notes": "Användaren: om några dagar en app för att styra från mobilen. Den ska visa och styra alla projekt från flera datorer samtidigt, t.ex. jobbdatorn och den privata datorn med var sitt Claude-konto.",
+      "notes": "En mobilapp som bara visar och styr de privata projekten på hemdatorn, med det privata kontot. Jobbdatorn och jobbkontot ingår inte: jobbet stannar på jobbet.",
       "items": [
         {
           "id": "mob.1",
           "title": "Utred och planera",
           "status": "not_started",
-          "notes": "Styra alla projekt från mobilen, från två datorer med var sitt Claude-konto. Förslag: (A) Rekommenderat: en liten relätjänst i molnet (t.ex. Cloudflare Worker med websockets, gratisnivån räcker). Båda apparna ansluter utgående, vilket brukar gå igenom företagsproxy, och mobilen är en webbapp (PWA) som visar projekten från båda datorerna. Innehållet krypteras från ände till ände med en nyckel som paras via QR-kod, så relät ser ingenting. (B) Tunnel till varje dator (Tailscale eller liknande) och appen serverar sitt gränssnitt direkt: enklast att bygga men kräver att VPN-klienten är tillåten på jobbdatorn. (C) Claude Codes egen fjärrstyrning i Claude-appen: kolla om den kan nå sessioner som startats via SDK:n; i så fall behövs ingen egen mobilapp för grundfunktionen, men frågeflödet och översikten följer inte med. Att avgöra först: vad jobbdatorns IT-policy tillåter (utgående websocket eller VPN)."
+          "notes": "Bara hemdatorn och det privata kontot; inga jobbprojekt i mobilen och ingen koppling mellan datorerna. Koncept: appen på hemdatorn får ett litet API (websocket med parnyckel) som bara lyssnar på VPN-gränssnittet, och mobilen är en webbapp som telefonen öppnar över VPN. Den visar översikt, frågor och chatt och kan skicka meddelanden; allt körs på hemdatorn. Användaren: mobilen kör redan VPN och når hemnätverket, så ingen relätjänst eller tunnel behöver byggas; appen behöver bara lyssna på hemnätverket (med parnyckel) och servera webbappen. VPN slutar i hemmaroutern, så mobilen kommer in som en klient på hemnätverket: appen lyssnar på hemdatorns LAN-adress, släpper bara in hemnätets och VPN-nätets adresser, och kräver parnyckeln. Ingenting öppnas mot internet. Brandväggsregel i Windows för porten behövs. Beslut: installerbar webbapp (PWA) som hemdatorn serverar, inget app-skal till att börja med. Telefonen kör GrapheneOS (Android utan Google-tjänster): eget certifikat installeras som användar-CA; notiser via ntfy (fungerar utan Googles push), inte Web Push."
         },
         {
           "id": "mob.2",
-          "title": "Flera datorer och konton i samma vy",
-          "status": "not_started",
+          "title": "Värd-API och parning på hemdatorn",
+          "status": "done",
+          "notes": "Modulen remote-host serverar appens eget fönster över HTTPS med eget CA-certifikat, en websocket med tillåtelselista för kanaler och parning med nyckel i cookie (QR i ⚙-menyn, Ny nyckel); bara privata adresser släpps in, avstängt som standard. Verifierat i en dold testinstans (curl, ws-klient, skärmbild). Kvar till mob.3: mobil layout (gränssnittet är än så länge skrivbordsvyn), lokala bilder via cm-img visas inte på distans, och brandväggsregeln läggs in av användaren.",
           "dependsOn": [
             "mob.1"
+          ]
+        },
+        {
+          "id": "mob.3",
+          "title": "Mobilvyer: översikt, frågor, chatt, schema",
+          "status": "not_started",
+          "notes": "Översikt: projektkort med ikon, status, vad agenten gör nu och antal frågor, användning överst med nedräkning. Frågor: samma frågeflöde, en i taget, stora svarsknappar. Chatt: nivå Minimal som standard, rutan Under arbetet, skicka, avbryt och gör detta, bilder från kameran; tal via telefonens egen diktering. Schema: trädet som en hopfällbar lista i stället för organisationsschema.",
+          "dependsOn": [
+            "mob.2"
+          ]
+        },
+        {
+          "id": "mob.4",
+          "title": "Notiser till telefonen",
+          "notes": "Push är ett måste. Ingen Chrome och ingen ntfy. Användaren tror att Web Push fungerar i Brave (sandlådade Play-tjänster finns); annars en egen riktig Android-app med egen bakgrundsanslutning över VPN. Mikroappen i mob.4.1 avgör.",
+          "dependsOn": [
+            "mob.3"
           ],
-          "notes": "Projekt från båda datorerna visas tillsammans, märkta med dator och konto, och användningen visas per konto."
+          "items": [
+            {
+              "id": "mob.4.1",
+              "title": "Mikroapp: pushtest i Brave",
+              "status": "in_progress",
+              "progress": 80,
+              "notes": "Byggd i tools/push-test (egen package.json, inga ändringar i appen): HTTPS med eget CA-certifikat, installerbar sida, service worker och testnotiser nu, om 30 s och om 5 min. Kvar: köra den på hemdatorn och prova på telefonen; committat i tools/push-test."
+            }
+          ]
         }
       ]
     }
