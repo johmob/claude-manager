@@ -1,3 +1,13 @@
 {
-  "jobs": []
+  "jobs": [
+    {
+      "id": "resume-voice-2026-11-24",
+      "name": "Bygg röststyrningen när gränsen återställts",
+      "description": "Engångsjobb: när 5-timmarsgränsen återställts bygger agenten mikrofonknappen med lokal Whisper enligt kön i .claude-manager/resume.md.",
+      "cron": "47 20 24 11 *",
+      "kind": "agent",
+      "prompt": "Användningsgränsen har återställts. Läs .claude-manager/resume.md och arbeta igenom kön där, uppifrån, enligt reglerna i filen. Stäng sedan av det här jobbet (enabled: false i .claude-manager/schedule.json).",
+      "enabled": true
+    }
+  ]
 }
