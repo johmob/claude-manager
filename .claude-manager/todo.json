@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-24T17:20:36.482Z",
+  "updated": "2026-11-24T17:21:11.375Z",
   "tracks": [
     {
       "id": "design",
@@ -620,12 +620,12 @@
           "items": [
             {
               "id": "voice.2.1",
-              "title": "Mikrofonknapp i chattrutan",
+              "title": "Mikrofonknapp som slutar lyssna själv",
               "status": "not_started",
               "dependsOn": [
                 "voice.1.2"
               ],
-              "notes": "Håll in knappen (eller ett kortkommando) för att prata; ljudet spelas in i renderaren och skickas till main."
+              "notes": "Användaren: ett klick startar inspelningen, inget hållande. Appen känner av när användaren tystnat och skickar då; tystnadens längd ska kunna ställas (förslag 1–5 s, standard 2 s, i ⚙). Ett klick till avbryter. Valfritt läge: lägg texten i rutan i stället för att skicka direkt."
             },
             {
               "id": "voice.2.2",
