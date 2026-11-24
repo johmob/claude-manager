@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T06:26:30Z",
+  "updated": "2026-11-24T06:31:11Z",
   "tracks": [
     {
       "id": "eng",
@@ -316,6 +316,13 @@
               "id": "ui.4.6",
               "title": "Knappar i hovringspanelen i stället för högerklick",
               "notes": "Svara, Öppna och Arbetsschema i overlayens hovringspanel; högerklicksmenyn är borttagen. Klart, inte släppt än."
+            },
+            {
+              "id": "ui.4.7",
+              "title": "Andel av dagens tokens som appens egna hjälpanrop förbrukat",
+              "status": "in_progress",
+              "progress": 0,
+              "notes": "Användaren: i rutan vid Användning i overlay, en liten procentsiffra för hur stor del av dagens tokens som gått åt att driva agenterna som kör programmet."
             }
           ]
         },
@@ -395,6 +402,12 @@
               "title": "Frågekö inom och mellan chattar",
               "status": "done",
               "notes": "Användaren: nya frågor från samma chatt ska läggas i kön, frågor från andra chattar klumpas per projekt och visas med rätt färg och ikon. Provat i testinstans. Klart, inte släppt än."
+            },
+            {
+              "id": "ui.6.10",
+              "title": "Lägena Minimal, Moderat och Detaljerat i toppraden",
+              "status": "done",
+              "notes": "Användaren: tre lägen som filtrerar chatten efter taggarna. Minimal: answer, question, assumption, fail, risk, warning. Moderat lägger till result, pass, decision, next. Detaljerat allt. Provat dolt. Klart, inte släppt än."
             }
           ]
         },

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { AppSettings, DockEdge, UpdateStatus } from '../../../shared/contracts';
+import type { AppSettings, ChatDetail, DockEdge, UpdateStatus } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { ChatIcon, ExistingProjectIcon, NewProjectIcon, NoSleepIcon, RulesIcon } from './Icons';
 import type { DialogKind } from './StartDialogs';
@@ -110,15 +110,34 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
   );
 }
 
+const DETAILS: { value: ChatDetail; label: string; title: string }[] = [
+  { value: 'minimal', label: 'Minimal', title: 'Bara svar, frågor, antaganden, fel, risker och varningar' },
+  { value: 'moderate', label: 'Moderat', title: 'Även resultat, godkända kontroller, beslut och förslag' },
+  { value: 'detailed', label: 'Detaljerat', title: 'Allt agenterna skriver, även planer, lägesrapporter och bakgrund' },
+];
+
+/** How much of the agents' text the chats show; filters by the turn tags. */
+function DetailSwitch({ value }: { value: ChatDetail }) {
+  return (
+    <div className="detail-switch" role="radiogroup" aria-label="Detaljnivå i chatten">
+      {DETAILS.map((d) => (
+        <button key={d.value} type="button" role="radio" aria-checked={value === d.value} title={d.title} onClick={() => send('settings:update', { chatDetail: d.value })}>
+          {d.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function TopBar({ settings, update, view, onView, onDialog }: TopBarProps) {
   return (
     <header className="topbar">
       <nav className="start-menu" aria-label="Starta">
-        <button type="button" onClick={() => onDialog('chat')}><ChatIcon />Ny chatt</button>
-        <button type="button" onClick={() => onDialog('project')}><NewProjectIcon />Nytt projekt</button>
-        <button type="button" onClick={() => onDialog('existing')}><ExistingProjectIcon />Befintligt projekt</button>
+        <button type="button" title="Ny chatt" onClick={() => onDialog('chat')}><ChatIcon /><span className="start-label">Ny chatt</span></button>
+        <button type="button" title="Nytt projekt" onClick={() => onDialog('project')}><NewProjectIcon /><span className="start-label">Nytt projekt</span></button>
+        <button type="button" title="Befintligt projekt" onClick={() => onDialog('existing')}><ExistingProjectIcon /><span className="start-label">Befintligt projekt</span></button>
         <span className="start-menu-sep" />
-        <button type="button" onClick={() => onDialog('rules')}><RulesIcon />Grundregler</button>
+        <button type="button" title="Grundregler" onClick={() => onDialog('rules')}><RulesIcon /><span className="start-label">Grundregler</span></button>
       </nav>
       <div className="view-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={view === 'overview'} onClick={() => onView('overview')}>Översikt</button>
@@ -126,6 +145,8 @@ export function TopBar({ settings, update, view, onView, onDialog }: TopBarProps
       </div>
       <div className="topbar-group topbar-settings">
         <UpdatePill update={update} />
+        <DetailSwitch value={settings.chatDetail} />
+        <span className="topbar-sep" />
         <button
           type="button"
           className={settings.keepAwake ? 'toggle on icon-toggle' : 'toggle icon-toggle'}

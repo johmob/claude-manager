@@ -1,4 +1,6 @@
-import { QUIET_BLOCK_TAGS, type BlockTag, type TaggedBlock } from '../../../shared/contracts';
+import { useContext, useState } from 'react';
+import { QUIET_BLOCK_TAGS, tagShows, type BlockTag, type ChatDetail, type TaggedBlock } from '../../../shared/contracts';
+import { ChatDetailContext } from '../state/chatDetail';
 import { MarkdownText } from './MarkdownText';
 
 /** The label each tag shows; answers and quiet blocks (plan, progress, background) show none. */
@@ -18,23 +20,30 @@ const LABELS: Record<BlockTag, string> = {
   background: '',
 };
 
-/** Whether a message holds anything besides narration, so it should not fold away. */
-export function hasWeight(blocks: TaggedBlock[] | undefined): boolean {
-  return !!blocks?.some((b) => b.tag !== null && !QUIET_BLOCK_TAGS.includes(b.tag));
+/** Whether a message holds anything worth showing at this detail, so it should not fold away. */
+export function hasWeight(blocks: TaggedBlock[] | undefined, detail: ChatDetail): boolean {
+  if (detail === 'detailed') return true;
+  return !!blocks?.some((b) => b.tag !== null && !QUIET_BLOCK_TAGS.includes(b.tag) && tagShows(b.tag, detail));
 }
 
 /**
  * The agent's text, block by block as the turn's tags read it: each block marked by what it is (result,
  * passed check, failure, question …), with the label once per run of the same tag; narration is dimmed.
- * Untagged text (before the tags arrive) shows as plain markdown.
+ * Blocks below the chat's detail are hidden behind "Visa N stycken till". Untagged text (before the tags
+ * arrive) shows as plain markdown.
  */
 export function TaggedText({ text, blocks }: { text: string; blocks?: TaggedBlock[] }) {
+  const detail = useContext(ChatDetailContext);
+  const [all, setAll] = useState(false);
   if (!blocks?.length) return <MarkdownText text={text} />;
+  const visible = blocks.filter((b) => b.tag === null || tagShows(b.tag, detail));
+  const hidden = blocks.length - visible.length;
+  const shown = all ? blocks : visible;
   return (
     <div className="tagged">
-      {blocks.map((b, i) => {
+      {shown.map((b, i) => {
         const label = b.tag ? LABELS[b.tag] : '';
-        const repeat = i > 0 && blocks[i - 1]!.tag === b.tag;
+        const repeat = i > 0 && shown[i - 1]!.tag === b.tag;
         return (
           <div key={i} className="tb" data-tag={b.tag ?? undefined} data-quiet={b.tag && QUIET_BLOCK_TAGS.includes(b.tag) ? 'true' : undefined}>
             {label && !repeat && <div className="tb-label">{label}</div>}
@@ -42,6 +51,11 @@ export function TaggedText({ text, blocks }: { text: string; blocks?: TaggedBloc
           </div>
         );
       })}
+      {hidden > 0 && (
+        <button type="button" className="link-btn tb-more" onClick={() => setAll(!all)}>
+          {all ? 'Visa mindre' : `Visa ${hidden} ${hidden === 1 ? 'stycke' : 'stycken'} till`}
+        </button>
+      )}
     </div>
   );
 }

@@ -855,3 +855,17 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .qf-queue { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; font-size: 0.8rem; margin-top: -10px; }
 .qf-queue-item { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
 .qf-queue-count { min-width: 1.4em; padding: 0 5px; border-radius: 999px; background: rgba(255,255,255,.08); color: var(--text); font-size: 0.7rem; font-weight: 700; text-align: center; }
+
+/* Chat detail: Minimal / Moderat / Detaljerat */
+.detail-switch { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid var(--border); }
+.detail-switch button { border: 0; background: none; color: var(--muted); font: inherit; font-size: 0.74rem; font-weight: 600; padding: 4px 9px; border-radius: 999px; cursor: pointer; }
+.detail-switch button:hover { color: var(--text); }
+.detail-switch button[aria-checked="true"] { background: var(--accent-ui); color: #05060b; }
+.topbar-sep { width: 1px; align-self: stretch; margin: 6px 4px; background: var(--border); }
+.tb-more { align-self: flex-start; font-size: 0.78rem; }
+/* The settings side takes the room it needs; the start menu gives way (its labels wrap). */
+.topbar { grid-template-columns: minmax(0, 1fr) auto auto; }
+.topbar-settings { flex-wrap: nowrap; }
+@media (max-width: 1180px) { .topbar { grid-template-columns: 1fr; } }
+/* A narrow window: the start menu shows its icons only (names as tooltips), so the bar keeps one row. */
+@media (max-width: 1500px) { .start-label { display: none; } .start-menu button { padding: 6px 9px; } }

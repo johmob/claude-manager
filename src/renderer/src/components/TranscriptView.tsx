@@ -1,4 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useContext, useLayoutEffect, useRef, useState } from 'react';
+import type { ChatDetail } from '../../../shared/contracts';
+import { ChatDetailContext } from '../state/chatDetail';
 import type { TranscriptEntry } from '../../../shared/contracts';
 import { Spinner } from './Atoms';
 import { CalloutBox } from './CalloutBox';
@@ -89,14 +91,14 @@ function finalAnswers(entries: TranscriptEntry[]): Set<string> {
 const SHOWS_MEDIA = /\]\(|https?:\/\/|file:\/\/|[a-zA-Z]:[\\/][^\s]*\.(?:png|jpe?g|gif|webp|bmp|svg|mp4|webm|mov|pdf)/i;
 
 /** What always shows: your messages, each turn's answer, text tagged as more than narration, links and images, callouts, questions and problems. */
-function standsOut(entry: TranscriptEntry, finals: Set<string>): boolean {
+function standsOut(entry: TranscriptEntry, finals: Set<string>, detail: ChatDetail): boolean {
   switch (entry.kind) {
     case 'user':
     case 'callout':
     case 'question':
       return true;
     case 'assistant':
-      return finals.has(entry.id) || hasWeight(entry.blocks) || SHOWS_MEDIA.test(entry.text);
+      return finals.has(entry.id) || hasWeight(entry.blocks, detail) || SHOWS_MEDIA.test(entry.text);
     case 'system':
       return entry.level !== 'info';
     case 'tool':
@@ -112,10 +114,10 @@ function timeOf(entry: TranscriptEntry): string {
 }
 
 /** Everything that does not stand out is gathered into work logs between the entries that do. */
-function arrange(entries: TranscriptEntry[], finals: Set<string>): Shown[] {
+function arrange(entries: TranscriptEntry[], finals: Set<string>, detail: ChatDetail): Shown[] {
   const shown: Shown[] = [];
   for (const entry of entries) {
-    if (standsOut(entry, finals) && entry.kind !== 'tool') {
+    if (standsOut(entry, finals, detail) && entry.kind !== 'tool') {
       shown.push({ kind: 'entry', entry });
       continue;
     }
@@ -224,9 +226,10 @@ export function TranscriptView({ entries, sessionId }: { entries: TranscriptEntr
   };
 
   const finals = finalAnswers(entries);
+  const detail = useContext(ChatDetailContext);
   return (
     <div className="transcript" ref={ref} onScroll={onScroll}>
-      {rounds(arrange(entries, finals)).map((round) => (
+      {rounds(arrange(entries, finals, detail)).map((round) => (
         <section key={round[0]!.kind === 'log' ? round[0]!.entries[0]!.id : round[0]!.entry.id} className="t-round">
           {round.map((item) =>
             item.kind === 'log' ? (

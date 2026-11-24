@@ -527,8 +527,31 @@ export const BLOCK_TAGS = [
   'background', // explanation, context, reasoning
 ] as const;
 export type BlockTag = (typeof BLOCK_TAGS)[number];
-/** Tags that are only narration: a message holding nothing else folds into "Under arbetet". */
+/**
+ * From which chat detail a tag shows. Minimal: what needs the user, plus direct answers. Moderate adds
+ * outcomes and the agent's own choices. Detailed adds the narration (plans, progress, background).
+ */
+export const TAG_LEVEL: Record<BlockTag, ChatDetail> = {
+  answer: 'minimal',
+  question: 'minimal',
+  assumption: 'minimal',
+  fail: 'minimal',
+  risk: 'minimal',
+  warning: 'minimal',
+  result: 'moderate',
+  pass: 'moderate',
+  decision: 'moderate',
+  next: 'moderate',
+  plan: 'detailed',
+  progress: 'detailed',
+  background: 'detailed',
+};
+/** Tags that are only narration: dimmed, and a message holding nothing else folds into "Under arbetet". */
 export const QUIET_BLOCK_TAGS: readonly BlockTag[] = ['plan', 'progress', 'background'];
+/** Whether a tag shows at a chat detail. */
+export function tagShows(tag: BlockTag, detail: ChatDetail): boolean {
+  return CHAT_DETAILS.indexOf(TAG_LEVEL[tag]) <= CHAT_DETAILS.indexOf(detail);
+}
 
 export interface TaggedBlock {
   text: string;
@@ -550,6 +573,9 @@ export type DockEdge = 'right' | 'bottom' | 'center';
 export const DOCK_EDGES: readonly DockEdge[] = ['right', 'bottom', 'center'];
 
 /** "night": black, high-contrast, monospace; "standard": the softer dark look. */
+export const CHAT_DETAILS = ['minimal', 'moderate', 'detailed'] as const;
+export type ChatDetail = (typeof CHAT_DETAILS)[number];
+
 export const THEME_CHOICES = ['night', 'standard'] as const;
 export type ThemeChoice = (typeof THEME_CHOICES)[number];
 
@@ -572,6 +598,8 @@ export interface AppSettings {
   /** Install new versions from GitHub on their own once no session is busy. */
   autoUpdate: boolean;
   theme: ThemeChoice;
+  /** How much of the agents' text the chat shows, by block tag (see TAG_LEVEL). */
+  chatDetail: ChatDetail;
   defaultModel: ModelChoice;
   defaultEffort: EffortChoice;
   defaultPermissionMode: PermissionChoice;
