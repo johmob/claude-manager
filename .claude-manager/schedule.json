@@ -1,13 +1,3 @@
 {
-  "jobs": [
-    {
-      "id": "resume-voice-2026-11-24",
-      "name": "Fortsätt kön när gränsen återställts",
-      "description": "Engångsjobb: när 5-timmarsgränsen återställts arbetar agenten igenom kön i .claude-manager/resume.md: först frågor i chatten, bildknappar, trädets bredd och småfel, sist rösten. Pushar och släpper men installerar inget.",
-      "cron": "47 20 24 11 *",
-      "kind": "agent",
-      "prompt": "Användningsgränsen har återställts. Läs .claude-manager/resume.md och arbeta igenom kön där, uppifrån, enligt reglerna i filen. Stäng sedan av det här jobbet (enabled: false i .claude-manager/schedule.json).",
-      "enabled": true
-    }
-  ]
+  "jobs": []
 }

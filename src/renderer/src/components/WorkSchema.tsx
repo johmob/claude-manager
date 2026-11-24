@@ -6,7 +6,7 @@ import { useNow } from '../lib/useNow';
 import { Spinner, StatusChip, TodoIcon } from './Atoms';
 import { useAccount } from '../state/account';
 import { Modal } from './Modal';
-import { arrangeLevel, leavesOf, withoutDone, workStateOf } from '../lib/todoTree';
+import { arrangeLevel, leavesOf, orderTracks, withoutDone, workStateOf } from '../lib/todoTree';
 
 const STATUS_TEXT: Record<TodoNode['status'], string> = { done: 'Klar', in_progress: 'Pågår', not_started: 'Ej påbörjad' };
 
@@ -198,6 +198,19 @@ function Track({ track, ctx }: { track: TodoNode; ctx: ChartContext }) {
       </div>
       {track.children.length > 0 && <Level parent={track} track={track} trackOwner={track.owner} depth={0} ctx={ctx} root />}
     </div>
+  );
+}
+
+/** A finished track as one slim line; a click expands it to the full track. */
+function DoneTrack({ track, ctx }: { track: TodoNode; ctx: ChartContext }) {
+  const [open, setOpen] = useState(false);
+  if (open) return <Track track={track} ctx={ctx} />;
+  const parts = leavesOf(track);
+  return (
+    <button type="button" className="ws-done-track" title="Klicka för att fälla ut" onClick={() => setOpen(true)}>
+      <span className="ws-done-track-title">✓ {shownTitle(track, ctx)}</span>
+      <span className="muted">{parts.filter((l) => l.status === 'done').length}/{parts.length}</span>
+    </button>
   );
 }
 
@@ -401,38 +414,15 @@ function useHideDone(): [boolean, (on: boolean) => void] {
   return [on, set];
 }
 
-/** Width a track column needs to read comfortably, the gap between columns, and the modal's own margins. */
-const TRACK_WIDTH = 340;
 const TRACK_GAP = 16;
-const MODAL_CHROME = 90;
-
-/**
- * While the schema is open, maximises the window if the tracks would not fit side by side, and
- * restores it on close (only if it was this view that maximised it).
- */
-function useRoomForTracks(trackCount: number): void {
-  useEffect(() => {
-    if (trackCount < 2) return;
-    let open = true;
-    let maximised = false;
-    const width = trackCount * TRACK_WIDTH + (trackCount - 1) * TRACK_GAP + MODAL_CHROME;
-    void window.cm.invoke('window:ensure-width', { width }).then((did) => {
-      maximised = did;
-      if (did && !open) void window.cm.invoke('window:snap', { mode: 'restore' });
-    });
-    return () => {
-      open = false;
-      if (maximised) void window.cm.invoke('window:snap', { mode: 'restore' });
-    };
-  }, [trackCount]);
-}
 
 /**
  * The session's work schema as an org chart: project on top, parallel tracks below, items under each
  * track. Clicking a track or an item opens its details, where the user can comment on exactly that part.
  */
-export function WorkSchema({ session, onClose, standalone }: { session: SessionSummary; onClose: () => void; standalone?: boolean }) {
-  const now = useNow(session.startedAt !== null);
+export function WorkSchema({ session, onClose }: { session: SessionSummary; onClose: () => void; standalone?: boolean }) {
+  const now = useNow(session.turnStartedAt !== null);
+  const working = session.status === 'working' || session.activeAgents > 0;
   const [openId, setOpenId] = useState<string | null>(null);
   const [sent, setSent] = useState<Entry | null>(null);
   const [remapping, setRemapping] = useState(false);
@@ -440,7 +430,6 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
   const { todo } = session;
   // In its own window (from the overlay) the schema already has the whole screen; only the main window is widened.
   const tracks = !todo ? [] : hideDone ? todo.tracks.flatMap((t) => withoutDone(t) ?? []) : todo.tracks;
-  useRoomForTracks(standalone ? 0 : tracks.length);
   const index = todo ? indexSchema(todo) : new Map<string, Entry>();
   const open = openId ? index.get(openId) : undefined;
   const ctx: ChartContext = { nodes: new Map([...index].map(([id, e]) => [id, e.node])), active: session.activeAgents > 0 || session.status === 'working', labels: session.todoLabels, selectedId: openId, onPick: setOpenId };
@@ -450,8 +439,8 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
     <Modal title={`Arbetsschema – ${session.name}`} onClose={onClose} size="full">
       <div className="ws-session">
         <StatusChip status={session.status} />
-        {session.startedAt !== null && <span className="muted">Tid sedan start {formatElapsed(now - session.startedAt)}</span>}
-        {session.currentTask && <span className="ws-session-task" title={session.currentTask}>Just nu: {session.currentTask}</span>}
+        {working && session.turnStartedAt !== null && <span className="muted">Turen har pågått {formatElapsed(now - session.turnStartedAt)}</span>}
+        {working && session.currentTask && <span className="ws-session-task" title={session.currentTask}>Just nu: {session.currentTask}</span>}
         {todo && (
           <label className="ws-toggle" title="Visa bara det som återstår">
             <input type="checkbox" checked={hideDone} onChange={(e) => setHideDone(e.target.checked)} />
@@ -490,7 +479,7 @@ export function WorkSchema({ session, onClose, standalone }: { session: SessionS
             data-single={tracks.length === 1 ? 'true' : undefined}
             style={{ '--tracks': tracks.length, '--track-gap': `${TRACK_GAP}px` } as CSSProperties}
           >
-            {tracks.map((t) => <Track key={t.id} track={t} ctx={ctx} />)}
+            {orderTracks(tracks, ctx.active).map((t) => (t.status === 'done' ? <DoneTrack key={t.id} track={t} ctx={ctx} /> : <Track key={t.id} track={t} ctx={ctx} />))}
             {!tracks.length && <div className="ws-all-done">Allt är klart. Avklarade punkter är dolda.</div>}
           </div>
           <div className="ws-legend">

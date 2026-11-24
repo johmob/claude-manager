@@ -10,7 +10,7 @@ import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
 import { SessionMark } from './SessionMark';
 import { DriftBar } from './DriftBar';
-import { QuestionsButton } from './QuestionFlow';
+import { QuestionsButton } from './QuestionBox';
 import { SchemaButton } from './SchemaButton';
 
 interface SessionCardProps {
@@ -74,7 +74,7 @@ function limitNote(session: SessionSummary): string {
 
 /** What the latest turn tagged (suggestions stay in the transcript), until dismissed. */
 function CardCallouts({ session }: { session: SessionSummary }) {
-  // Questions and assumptions are answered in the question flow (the button above), so they are not repeated here.
+  // Questions and assumptions are answered in the chat (the button above opens it at the questions), so they are not repeated here.
   const shown = session.callouts.filter((c) => c.kind !== 'tip' && !(session.questions.length && (c.kind === 'question' || c.kind === 'note')));
   if (!shown.length) return null;
   return (

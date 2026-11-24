@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import type { PopupView } from '../../../shared/contracts';
-import { AskQuestionsContext, QuestionQueue } from '../components/QuestionFlow';
 import { QuickChat } from '../components/QuickChat';
 import { WorkSchema } from '../components/WorkSchema';
 import { send } from '../lib/api';
@@ -11,7 +10,7 @@ import { ImageViewer } from '../components/ImageViewer';
 import { useTextScale } from '../lib/textScale';
 
 /**
- * A session's work schema or its questions on their own, opened from the overlay without bringing the
+ * A session's work schema or the quick chat on their own, opened from the overlay without bringing the
  * main window forward. The window covers the screen transparently, so they show as a modal over
  * whatever is open; it follows the session's live state like every other window.
  */
@@ -39,17 +38,10 @@ export function PopupWindow() {
       <ImageViewer />
     </>
   );
-  if (!state || !view) return null;
-  if (view.kind === 'schema' && !session) return null;
+  if (!state || !view || view.kind !== 'schema' || !session) return null;
   return (
     <AccountContext.Provider value={state.account}>
-      <AskQuestionsContext.Provider value={(id) => setView({ kind: 'questions', id })}>
-        {view.kind === 'schema' ? (
-          session && <WorkSchema session={session} onClose={close} standalone />
-        ) : (
-          <QuestionQueue key={view.id} sessions={state.sessions} firstId={view.id} onClose={close} />
-        )}
-      </AskQuestionsContext.Provider>
+      <WorkSchema session={session} onClose={close} standalone />
       <ImageViewer />
     </AccountContext.Provider>
   );

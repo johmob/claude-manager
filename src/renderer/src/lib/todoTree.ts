@@ -47,3 +47,9 @@ export function withoutDone(node: TodoNode): TodoNode | null {
   if (node.status === 'done') return null;
   return { ...node, children: node.children.flatMap((c) => withoutDone(c) ?? []) };
 }
+
+/** Tracks in display order (stable): focus first, then work in progress, then the rest, finished last. */
+export function orderTracks(tracks: TodoNode[], active: boolean): TodoNode[] {
+  const rank = (t: TodoNode): number => (t.focus ? 0 : workStateOf(t, active) ? 1 : t.status === 'done' ? 3 : 2);
+  return tracks.map((t, i) => ({ t, i })).sort((a, b) => rank(a.t) - rank(b.t) || a.i - b.i).map((x) => x.t);
+}

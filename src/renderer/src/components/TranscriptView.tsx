@@ -1,14 +1,13 @@
-import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChatDetail } from '../../../shared/contracts';
 import { ChatDetailContext } from '../state/chatDetail';
 import type { TranscriptEntry } from '../../../shared/contracts';
-import { splitImageRefs } from '../../../shared/pastedImages';
-import { imageSrc, localImageUrl } from '../lib/localImage';
 import { send } from '../lib/api';
 import { Spinner } from './Atoms';
 import { CalloutBox } from './CalloutBox';
 import { TaggedText, hasWeight } from './TaggedText';
 import { MarkdownText } from './MarkdownText';
+import { UserText } from './UserText';
 
 function Thinking({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -223,23 +222,6 @@ function WorkLog({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId
   );
 }
 
-/** The user's words, with pasted images shown as thumbnails instead of their file paths. */
-function UserText({ text }: { text: string }) {
-  const { text: words, images } = splitImageRefs(text);
-  return (
-    <>
-      {words}
-      {images.length > 0 && (
-        <div className="user-images">
-          {images.map((path) => (
-            <img key={path} src={imageSrc(localImageUrl(path) ?? '')} alt="Inklistrad bild" title={path} />
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
-
 function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, ToolEntry>; sessionId: string; final: boolean }) {
   const time = timeOf(entry);
   switch (entry.kind) {
@@ -288,14 +270,14 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
  * with only the runs of commands folded).
  * Sticks to the bottom unless the user scrolled up.
  */
-export function TranscriptView({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId: string }) {
+export function TranscriptView({ entries, sessionId, footer, footerKey }: { entries: TranscriptEntry[]; sessionId: string; footer?: ReactNode; footerKey?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
 
   useLayoutEffect(() => {
     const el = ref.current;
     if (el && stick.current) el.scrollTop = el.scrollHeight;
-  }, [entries]);
+  }, [entries, footerKey]);
 
   const onScroll = (): void => {
     const el = ref.current;
@@ -319,6 +301,7 @@ export function TranscriptView({ entries, sessionId }: { entries: TranscriptEntr
           )}
         </section>
       ))}
+      {footer}
     </div>
   );
 }

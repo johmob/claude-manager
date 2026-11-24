@@ -1,6 +1,6 @@
 // Composition root: the only place that knows every module. It wires modules together with
 // callbacks and data, owns persistence of records/settings, and serves the renderer's IPC.
-import { app, dialog, ipcMain, nativeImage, shell } from 'electron';
+import { BrowserWindow, app, dialog, ipcMain, nativeImage, shell } from 'electron';
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync, type Dirent } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { homedir, tmpdir } from 'node:os';
@@ -72,6 +72,7 @@ import { SCHEDULE_PROTOCOL, createScheduler, describeCron, nextRunOf, readJobs, 
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 import { readLocalImage, registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 import { createRemoteHost } from './modules/remote-host';
+import { copyToClipboard, mailWithAttachment, outlookPath, readSharedFile, saveCopyAs } from './modules/file-actions';
 
 const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: '',
@@ -1015,6 +1016,7 @@ function boot(): void {
           rendererRoot: join(__dirname, '../renderer'),
           invoke: (channel, req) => callRemote(channel, req),
           readImage: readLocalImage,
+          readFile: (path) => readSharedFile(path, [...activeRecords().map((r) => r.cwd), join(tmpdir(), 'claude-manager-paste')]),
           log: (what, data) => appLog.write(what, data),
         });
         await remote.start(port);
@@ -1152,6 +1154,16 @@ function boot(): void {
     const failed = await shell.openPath(path);
     if (failed) throw new Error(failed);
   });
+  handle('file:act', async (req) => {
+    const path = localPath(req.target.trim().replace(/^<|>$/g, ''));
+    if (!path || !existsSync(path)) throw new Error(`Hittar inte ${path ?? req.target}`);
+    if (req.action === 'show') return shell.showItemInFolder(path);
+    if (req.action === 'copy') return copyToClipboard(path);
+    if (!statSync(path).isFile()) throw new Error('Det är en mapp, inte en fil.');
+    if (req.action === 'save-as') return saveCopyAs(path, BrowserWindow.getFocusedWindow());
+    return mailWithAttachment(path);
+  });
+  handle('file:outlook', async () => (await outlookPath()) !== null);
   handle('quick:summaries', () => Object.fromEntries(quickSummaries));
 
   handle('session:new-project', (req) => {

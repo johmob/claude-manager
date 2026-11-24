@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from
 import type { DayUsage, SessionSummary, UsageSnapshot, UsageWindow } from '../../../shared/contracts';
 import { AgentsIcon, ChatIcon } from '../components/Icons';
 import { QuickChatBody, useQuickChat } from '../components/QuickChat';
-import { QuickQuestion, questionsKey } from '../components/QuestionFlow';
+import { QuickQuestion, questionsKey } from '../components/QuestionBox';
 import { InfoBar, InfoRow, SessionInfo } from '../components/SessionInfo';
 import { send } from '../lib/api';
 import { countdown, formatReset } from '../lib/format';
@@ -121,7 +121,7 @@ function AgentCount({ session }: { session: SessionSummary }) {
 /**
  * Click-through strip at the top of the screen: usage first, then one icon per session with its
  * status, and how many of its agents are working. Hovering shows details below. Icons take clicks while hovered
- * (click answers its questions if it has any, otherwise opens the session; the hover panel has buttons for answering, opening and the work schema);
+ * (click opens the session, at its questions if it has any; the hover panel has buttons for answering, opening and the work schema);
  * everything else stays click-through.
  */
 export function OverlayWindow() {
@@ -226,7 +226,7 @@ export function OverlayWindow() {
             data-status={s.status}
             style={{ '--accent': s.color } as CSSProperties}
             onMouseEnter={() => setHovered(s.id)}
-            onClick={() => (s.questions.length ? send('popup:open', { kind: 'questions', id: s.id }) : send('window:show-session', { id: s.id }))}
+            onClick={() => send('window:show-session', { id: s.id })}
           >
             <span className="ov-icon">
               <span className="ov-ring" />
@@ -247,14 +247,14 @@ export function OverlayWindow() {
           {hovered === 'usage' ? (
             <UsageDetail usage={state.usage} />
           ) : session?.questions.length ? (
-            <QuickQuestion key={questionsKey(session)} session={session} onOpen={() => send('popup:open', { kind: 'questions', id: session.id })} />
+            <QuickQuestion key={questionsKey(session)} session={session} onOpen={() => send('window:show-session', { id: session.id })} />
           ) : (
             session && <SessionInfo session={session} account={state.account} />
           )}
           {hovered !== 'usage' && session && (
             <div className="ov-actions">
               {session.questions.length > 0 && (
-                <button type="button" className="btn small primary" onClick={() => send('popup:open', { kind: 'questions', id: session.id })}>Svara</button>
+                <button type="button" className="btn small primary" onClick={() => send('window:show-session', { id: session.id })}>Svara</button>
               )}
               <button type="button" className="btn small" onClick={() => send('window:show-session', { id: session.id })}>Öppna</button>
               <button type="button" className="btn small" onClick={() => send('popup:open', { kind: 'schema', id: session.id })}>Arbetsschema</button>

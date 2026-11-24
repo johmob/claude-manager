@@ -485,7 +485,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       sessionCrons: s.sessionCrons,
       scheduleProblem: s.scheduleProblem,
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
-      questions: s.tagging ? [] : s.questions,
+      questions: s.tagging ? s.earlierQuestions : s.questions,
       questionsId: s.questionsId,
       questionsAnswer: s.questionsAnswer,
       tokensUsed: record.tokensUsed,

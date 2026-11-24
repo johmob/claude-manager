@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { imageSrc, isLocalPath, localImageUrl, wrapLocalImageLinks } from './localImage';
+import { filePathOf, imagePathOf, imageSrc, isLocalPath, localImageUrl, remoteFileUrl, wrapLocalImageLinks } from './localImage';
 
 describe('localImageUrl', () => {
   it('turns a Windows path or file URL to an image into an app address', () => {
@@ -37,5 +37,17 @@ describe('imageSrc', () => {
     expect(imageSrc(url, false)).toBe(url);
     expect(imageSrc(url, true)).toBe(`/img?path=${encodeURIComponent(file)}`);
     expect(imageSrc('data:image/png;base64,AAAA', true)).toBe('data:image/png;base64,AAAA');
+  });
+});
+
+describe('imagePathOf and remoteFileUrl', () => {
+  it('reverses the app image address', () => {
+    expect(imagePathOf(localImageUrl('C:\\Mina bilder\\a b.png') ?? '')).toBe('C:\\Mina bilder\\a b.png');
+    expect(imagePathOf('https://x/a.png')).toBeNull();
+  });
+  it('builds the download address', () => expect(remoteFileUrl('C:/proj/a b.csv')).toBe('/file?path=C%3A%2Fproj%2Fa%20b.csv'));
+  it('finds the path of a link target', () => {
+    expect(filePathOf('C:%5Cproj%5Cdemo.csv')).toBe('C:\\proj\\demo.csv');
+    expect(filePathOf('https://example.com/a.csv')).toBeNull();
   });
 });

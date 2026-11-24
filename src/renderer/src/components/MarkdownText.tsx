@@ -1,8 +1,9 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import Markdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { imagePathOf, isLocalPath, localImageUrl, wrapLocalImageLinks } from '../lib/localImage';
 import { send } from '../lib/api';
-import { isLocalPath, localImageUrl, wrapLocalImageLinks } from '../lib/localImage';
+import { FileLink } from './FileLink';
 import { LocalImage, showImage } from './ImageViewer';
 
 /** The text of a node's children, when it is plain text. */
@@ -11,27 +12,31 @@ function plainText(children: ReactNode): string {
 }
 
 const components = {
-  // Links open nothing: render them as plain text, with a preview when they point at a local image.
   // Links open outside the app (web links in the browser, files and folders in Windows); local images
   // also get a preview and open in the app's image viewer.
   a: ({ children, href }: { children?: ReactNode; href?: string }) => {
     const image = href?.startsWith('cm-img:') ? href : null;
+    // Local files (and images) get the file actions: right-click on the computer, a download sheet on the phone.
+    if (image)
+      return (
+        <>
+          <FileLink href={image} path={imagePathOf(image)} onOpen={() => showImage(image, plainText(children))}>{children}</FileLink>
+          <LocalImage src={image} alt={plainText(children)} />
+        </>
+      );
+    if (href && isLocalPath(href)) return <FileLink href={href}>{children}</FileLink>;
     return (
-      <>
-        <a
-          className="md-link"
-          href={href}
-          title={href && !image ? decodeLink(href) : undefined}
-          onClick={(e) => {
-            e.preventDefault();
-            if (image) showImage(image, plainText(children));
-            else if (href) send('shell:open', { target: href });
-          }}
-        >
-          {children}
-        </a>
-        {image && <LocalImage src={image} alt={plainText(children)} />}
-      </>
+      <a
+        className="md-link"
+        href={href}
+        title={href ? decodeLink(href) : undefined}
+        onClick={(e) => {
+          e.preventDefault();
+          if (href) send('shell:open', { target: href });
+        }}
+      >
+        {children}
+      </a>
     );
   },
   img: ({ src, alt }: { src?: string | Blob; alt?: string }) => (typeof src === 'string' && src ? <LocalImage src={src} alt={alt ?? ''} /> : null),

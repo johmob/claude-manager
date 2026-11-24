@@ -63,7 +63,7 @@ export function SessionInfo({ session, account }: { session: SessionSummary; acc
         </div>
       )}
       <div className="si-grid">
-        {session.currentTask && <InfoRow label="Just nu"><span className="si-task">{session.currentTask}</span></InfoRow>}
+        {(session.status === 'working' || session.activeAgents > 0) && session.currentTask && <InfoRow label="Just nu"><span className="si-task">{session.currentTask}</span></InfoRow>}
         <InfoRow label="Agenter">
           {session.agentCount ? (
             <>

@@ -889,6 +889,10 @@ export interface IpcInvokeMap {
   'quick:current': { req: void; res: SessionSummary | null };
   /** Opens a link from agent text: web links in the browser, local files and folders in Windows. */
   'shell:open': { req: { target: string }; res: void };
+  /** Acts on a local file or image from agent text: save a copy, copy to the clipboard, mail it in Outlook, show it in its folder. Not remote. */
+  'file:act': { req: { target: string; action: 'save-as' | 'copy' | 'mail' | 'show' }; res: void };
+  /** Whether classic Outlook is installed (the mail action is only offered then). Not remote. */
+  'file:outlook': { req: void; res: boolean };
   /** Short versions of the quick chat's long answers, by transcript entry id. */
   'quick:summaries': { req: void; res: Record<string, string> };
   'session:new-project': { req: NewSessionOptions & { name: string; createGitRepo: boolean }; res: string };

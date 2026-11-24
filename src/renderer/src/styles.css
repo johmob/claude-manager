@@ -345,7 +345,6 @@ textarea.input { resize: vertical; }
 .ws-session-task { flex: 1 1 160px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--orange); font-size: 0.7813rem; }
 .ws-chart { --line: #3a414e; display: flex; flex-direction: column; }
 .ws-root { position: relative; display: flex; justify-content: center; padding-bottom: 22px; }
-.ws-root::after { content: ''; position: absolute; bottom: 0; left: calc(50% - 1px); width: 2px; height: 22px; background: var(--line); }
 .ws-root-card { min-width: 300px; max-width: 560px; padding: 12px 18px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--accent); text-align: center; }
 .ws-root-title { font-weight: 700; font-size: 1rem; margin-bottom: 8px; }
 .ws-root-count { font-size: 0.75rem; margin-top: 6px; }
@@ -353,14 +352,9 @@ textarea.input { resize: vertical; }
 .ws-sent { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 7px 10px; border-radius: 8px; background: rgba(62,207,142,.1); border: 1px solid rgba(62,207,142,.4); font-size: 0.7813rem; }
 .ws-sent .icon-btn { margin-left: auto; width: 22px; height: 22px; }
 /* Tracks share the width equally; below 320 px per column the row scrolls sideways instead of squeezing further. */
-.ws-tracks { display: grid; grid-template-columns: repeat(var(--tracks), minmax(320px, 1fr)); gap: var(--track-gap); align-items: start; overflow-x: auto; padding: 22px 2px 4px; }
+.ws-tracks { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); grid-auto-flow: row dense; gap: var(--track-gap); align-items: start; overflow-x: hidden; padding: 22px 2px 4px; }
 .ws-tracks[data-single] { grid-template-columns: minmax(270px, 640px); justify-content: center; }
-.ws-track { position: relative; }
-.ws-track::before { content: ''; position: absolute; top: -22px; left: calc(50% - 1px); width: 2px; height: 22px; background: var(--line); }
-.ws-track::after { content: ''; position: absolute; top: -22px; left: calc(var(--track-gap) / -2); right: calc(var(--track-gap) / -2); height: 2px; background: var(--line); }
-.ws-track:first-child::after { left: 50%; }
-.ws-track:last-child::after { right: 50%; }
-.ws-track:only-child::after { display: none; }
+.ws-track { position: relative; min-width: 0; }
 .ws-track-card { padding: 10px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--muted); }
 .ws-track[data-todo="in_progress"] .ws-track-card { border-top-color: var(--orange); }
 .ws-track[data-todo="done"] .ws-track-card { border-top-color: var(--green); }
@@ -542,7 +536,6 @@ textarea.input { resize: vertical; }
 .ws-focus-badge { flex: none; margin-left: auto; padding: 1px 7px; border-radius: 999px; font-size: 0.625rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #1a1405; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,.6); }
 .ws-track[data-focus] .ws-track-card { border-color: rgba(251,191,36,.8); border-top-color: #fbbf24; animation: ws-focus-glow 2.4s ease-in-out infinite; }
 .ws-track[data-focus] > .ws-items { border-left-color: rgba(251,191,36,.55); }
-.ws-track[data-focus]::before { background: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,.7); }
 @keyframes ws-focus-glow { 0%, 100% { box-shadow: 0 0 0 1px rgba(251,191,36,.35), 0 0 10px rgba(251,191,36,.22); } 50% { box-shadow: 0 0 0 1px rgba(251,191,36,.75), 0 0 24px rgba(251,191,36,.5); } }
 .btn.small.focus { border-color: rgba(251,191,36,.6); color: #fbbf24; }
 .btn.small.focus:hover { background: rgba(251,191,36,.12); }
@@ -1028,3 +1021,6 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 /* Jobs the agent scheduled with Claude Code's CronCreate */
 .sp-kind[data-kind="session"] { background: rgba(125,138,166,.18); color: var(--blue-grey); }
 .sp-cron { border-style: dashed; }
+
+.ws-done-track { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 6px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--green); color: var(--text); font-size: 0.8125rem; text-align: left; cursor: pointer; }
+.ws-done-track-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
