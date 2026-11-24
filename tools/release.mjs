@@ -45,4 +45,5 @@ if (missing.length) throw new Error(`Releasen ${tag} saknar: ${missing.join(', '
 const installed = join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Claude Manager', 'Claude Manager.exe');
 const running = read('tasklist /FI "IMAGENAME eq Claude Manager.exe" /NH').includes('Claude Manager.exe');
 if (running && existsSync(installed)) spawn(installed, ['--check-update'], { detached: true, stdio: 'ignore' }).unref();
-console.log(`\nReleasen ${tag} är publicerad. Appen här ${running ? 'letar efter den nu och ' : ''}installerar den när den är ledig.`);
+console.log(`
+Releasen ${tag} är publicerad. Appen här ${running ? 'letar efter den nu, hämtar den och ' : 'hämtar den vid nästa kontroll och '}frågar om den ska installeras nu eller vid nästa omstart.`);
