@@ -607,6 +607,12 @@
               "title": "Komprimera med förberedelse",
               "status": "not_started",
               "notes": "Användaren: knappen Komprimera ska först skicka \"Förbered för komprimering\" till agenten. När agenten svarar bedömer appen (Haiku) om svaret är jakande; i så fall skickar appen /compact. Är svaret tvetydigt visas det för användaren i stället, som får avgöra. Användaren: knappen får en trevlig liten ikon för något som komprimeras, t.ex. lucide fold-vertical eller shrink (pilar mot mitten). Beslut: ikonen fold-vertical (pilar mot mitten)."
+            },
+            {
+              "id": "chat.4.5",
+              "title": "Komprimeringsstatus överallt",
+              "status": "not_started",
+              "notes": "Användaren: \"Komprimerar\" ska synas i blått som nu, men ersätta \"Arbetar\" i statusen i högra hörnet (inte visas bredvid). I overlayn ska en egen animation visas i stället för arbetsanimationen, t.ex. en animerad komprimeringsikon (samma fold-vertical som chat.4.4, pilarna som pulserar mot mitten)."
             }
           ]
         },
