@@ -98,6 +98,8 @@ function standsOut(entry: TranscriptEntry, finals: Set<string>, detail: ChatDeta
     case 'question':
       return true;
     case 'assistant':
+      // Text whose turn still waits for its tags stays with the work, so the turn's end shows all at once.
+      if (entry.held) return false;
       return finals.has(entry.id) || hasWeight(entry.blocks, detail) || SHOWS_MEDIA.test(entry.text);
     case 'system':
       return entry.level !== 'info';

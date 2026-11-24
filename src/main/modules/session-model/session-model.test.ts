@@ -26,7 +26,12 @@ function setup() {
   const model = createSessionModel(() => 1000);
   model.upsertRecord(record);
   const apply = (event: EventBody) => model.apply({ ...event, sessionId: 's1' } as SessionEvent);
-  return { model, apply };
+  /** The turn's tags did not come (or came without anything to add): its end shows as it is. */
+  const untagged = (): void => {
+    const lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop();
+    model.endTagging('s1', lastUser?.id ?? null);
+  };
+  return { model, apply, untagged };
 }
 
 describe('session-model', () => {
@@ -174,27 +179,30 @@ describe('questions left for the user', () => {
   const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
 
   it('never reads plain text as questions by rules: a report with headings and lists does not wait', () => {
-    const { model, apply } = setup();
+    const { model, apply, untagged } = setup();
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'kör' });
     apply({ type: 'text', text: ['Slutkörningen gav 26 av 30 OK. E rättar de fyra som återstår och bygger om:', '', '- Räfflorna slutar nu före huset.', '- Nätfelen är rättade i formen.', '', 'Ska jag fortsätta?'].join('\n') });
     apply(finish);
+    untagged();
     expect(model.summary('s1')).toMatchObject({ status: 'done', questions: [], callouts: [] });
   });
 
 
   it('counts tagged questions and assumption notes, ignores subagent text; dismissing ends the wait', () => {
-    const { model, apply } = setup();
+    const { model, apply, untagged } = setup();
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'kör' });
     apply({ type: 'text', text: 'Vad gör funktionen?', agentId: 'sub' });
     apply({ type: 'text', text: 'Klart.' });
     apply(finish);
+    untagged();
     expect(model.summary('s1')?.status).toBe('done');
     apply({ type: 'turn_started', prompt: 'nästa' });
     apply({ type: 'callout', callout: { kind: 'question', title: 'Rev', text: 'B eller C?' } });
     apply({ type: 'callout', callout: { kind: 'note', title: '', text: 'Displayen är urkopplad.' } });
     apply(finish);
+    untagged();
     expect(model.summary('s1')?.questions).toEqual([
       { kind: 'question', text: 'Rev: B eller C?', about: '', detail: '', brief: '', options: [] },
       { kind: 'assumption', text: 'Displayen är urkopplad.', about: '', detail: '', brief: '', options: [] },
@@ -230,7 +238,7 @@ describe('usage limit', () => {
 
 describe('open questions across turns', () => {
   it('keeps them through a later turn without questions that the user did not start', () => {
-    const { model, apply } = setup();
+    const { model, apply, untagged } = setup();
     const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'kör' });
@@ -239,6 +247,7 @@ describe('open questions across turns', () => {
     // A subagent finishes and the agent writes again on its own.
     apply({ type: 'text', text: 'Subagenten är klar.' });
     apply(finish);
+    untagged();
     expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Ska jag fortsätta?']);
     expect(model.summary('s1')?.status).toBe('waiting');
   });
@@ -283,7 +292,7 @@ describe('turn tags from a cheap model', () => {
     const lastUser = transcript.filter((e) => e.kind === 'user').pop()!;
     const choice = transcript.find((e) => e.kind === 'assistant' && e.text.startsWith('E väntar'))!;
     const changed = model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Greppet: 1 eller 1b?', about: '', detail: '', brief: 'Två varianter.', options: ['1', '1b'] }], [{ entryId: choice.id, blocks: [{ text: 'E väntar på ditt val mellan 1 och 1b.', tag: 'question' }] }]);
-    expect(changed.map((e) => e.id)).toEqual([choice.id]);
+    expect(changed.map((e) => e.id)).toContain(choice.id);
     expect(model.transcript('s1').find((e) => e.id === choice.id)).toMatchObject({ blocks: [{ tag: 'question' }] });
     expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Får jag beställa kortet?', 'Greppet: 1 eller 1b?']);
     expect(model.summary('s1')?.status).toBe('waiting');
@@ -317,5 +326,37 @@ describe('question queue within a chat', () => {
     const lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
     model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Ska kåpan vara svart?', about: '', detail: '', brief: '', options: [] }], []);
     expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['M3 eller M4?', 'Fyra eller sex skruvar?', 'Ska kåpan vara svart?']);
+  });
+});
+
+describe('a turn\'s end waits for its tags', () => {
+  it('holds the text, the questions and the done status until the tags are in, then shows them at once', () => {
+    const { model, apply } = setup();
+    const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'text', text: 'Klart. M3 eller M4?' });
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'M3 eller M4?' } });
+    apply(finish);
+    const answer = model.transcript('s1').find((e) => e.kind === 'assistant')!;
+    expect(answer).toMatchObject({ held: true });
+    expect(model.summary('s1')).toMatchObject({ status: 'working', questions: [], currentTask: 'Läser igenom svaret…' });
+    const lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
+    const changed = model.applyTurnTags('s1', lastUser.id, [], [{ entryId: answer.id, blocks: [{ text: 'Klart. M3 eller M4?', tag: 'question' }] }]);
+    expect(changed).toHaveLength(1);
+    expect(changed[0]).toMatchObject({ blocks: [{ tag: 'question' }] });
+    expect(changed[0]).not.toHaveProperty('held');
+    expect(model.summary('s1')).toMatchObject({ status: 'waiting', questions: [{ text: 'M3 eller M4?' }] });
+  });
+
+  it('shows the held text as it is when a new message comes first', () => {
+    const { model, apply } = setup();
+    const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'text', text: 'Klart.' });
+    apply(finish);
+    apply({ type: 'turn_started', prompt: 'mer' });
+    expect(model.transcript('s1').find((e) => e.kind === 'assistant')).not.toHaveProperty('held');
   });
 });

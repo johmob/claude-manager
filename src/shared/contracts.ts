@@ -597,8 +597,11 @@ export interface TaggedBlock {
 
 export type TranscriptEntry =
   | { id: string; kind: 'user'; text: string; at: number }
-  /** `blocks`: the text split into blocks with their tags, once the turn has been tagged. */
-  | { id: string; kind: 'assistant'; text: string; thinking: string; agentId?: string; blocks?: TaggedBlock[]; at: number }
+  /**
+   * `blocks`: the text split into blocks with their tags, once the turn has been tagged. `held`: written in
+   * a turn whose tags have not arrived yet; it stays folded with the work until the turn's end shows at once.
+   */
+  | { id: string; kind: 'assistant'; text: string; thinking: string; agentId?: string; blocks?: TaggedBlock[]; held?: boolean; at: number }
   | { id: string; kind: 'tool'; name: string; summary: string; status: 'running' | 'ok' | 'error'; thinking: string; agentId?: string; at: number }
   | { id: string; kind: 'question'; text: string; answer: string | null; at: number }
   | { id: string; kind: 'callout'; callout: Callout; at: number }

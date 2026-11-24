@@ -118,6 +118,8 @@ interface MappingJob {
  * A test instance (CLAUDE_MANAGER_TEST=1, with its own CLAUDE_MANAGER_DATA_DIR): windows render off screen
  * without focus or taskbar entries, no notifications, no tray icon. Driven over remote debugging.
  */
+/** How long a turn's end waits for its tags before it shows without them. */
+const TAG_TIMEOUT_MS = 90_000;
 const TEST_INSTANCE = process.env['CLAUDE_MANAGER_TEST'] === '1';
 app.setPath('userData', process.env['CLAUDE_MANAGER_DATA_DIR'] || join(app.getPath('appData'), 'claude-manager'));
 
@@ -300,19 +302,12 @@ function boot(): void {
         if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
         if (event.usage) countUsage('sessions', event.usage, record?.model ?? 'default');
         const completed = !event.isError && !event.interrupted;
-        const asks = model.summary(event.sessionId);
         if (event.sessionId === QUICK_ID) {
           if (completed) void summarizeQuickAnswer();
           break;
         }
-        if (completed) void tagTurn(event.sessionId);
-        if (completed && asks?.status === 'waiting' && !asks.pendingCount) {
-          // The turn ended with questions: as urgent as a question asked with the tool.
-          const body = asks.questions.slice(0, 3).map((q) => q.text).join('\n');
-          notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} har ${asks.questions.length} frågor till dig`, body, urgent: true });
-        } else if (settings.alertOnDone && completed) {
-          notifier.alert({ sessionId: event.sessionId, title: `${record?.name ?? 'Session'} är klar`, body: event.result, urgent: false });
-        }
+        // The turn's end (questions, done) is announced once its tags are in.
+        if (completed) void tagTurn(event.sessionId, event.result);
         if (awaitingRestart.delete(event.sessionId)) void restart(event.sessionId);
         if (mappingActive?.id === event.sessionId) void (mappingActive.restore ? endMapping(event.interrupted ? 'interrupted' : 'done') : sendMappingTurn());
         break;
@@ -500,37 +495,55 @@ function boot(): void {
 
   /**
    * Has a cheap model tag the main agent's messages of the turn just finished: the questions and choices
-   * put to the user (with options and a short background) and what each block of text is (result, passed check,
-   * failure, background …), which the transcript styles and folds by. The text is
-   * never rewritten. Apart from what the agent tagged itself ([!QUESTION], [!NOTE]), these are the only questions:
-   * plain text is never read as questions by rules.
+   * put to the user (with options and a short background) and what each block of text is (result, passed
+   * check, failure, background …), which the transcript styles and folds by. The text is never rewritten.
+   * Apart from what the agent tagged itself ([!QUESTION], [!NOTE]), these are the only questions: plain text
+   * is never read as questions by rules. The turn's end (its text, questions, status and notification) is
+   * held until the tags are in, so it all shows at once; without tags in time it shows as it is.
    */
-  async function tagTurn(id: string): Promise<void> {
+  async function tagTurn(id: string, result: string): Promise<void> {
     const transcript = model.transcript(id);
     const lastUser = [...transcript].reverse().find((e) => e.kind === 'user');
+    const after = lastUser?.id ?? null;
     const from = lastUser ? transcript.indexOf(lastUser) + 1 : 0;
     const all = transcript.slice(from).filter((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim());
     const messages = messagesForTagging(all.map((e) => e.text));
     const entries = all.slice(-messages.length);
-    if (!entries.length) return;
-    const before = model.summary(id);
+    const show = (changed: TranscriptEntry[]): void => {
+      for (const entry of changed) windows.send('session:transcript-upsert', { id, entry });
+    };
     try {
-      const tags = readTags(await structuredQuery(tagRequest(messages, userData, workInProgress(model.summary(id)?.todo ?? null))), messages.map((m) => m.length));
+      if (!entries.length) return;
+      const reply = await Promise.race([
+        structuredQuery(tagRequest(messages, userData, workInProgress(model.summary(id)?.todo ?? null))),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), TAG_TIMEOUT_MS)),
+      ]);
+      const tags = readTags(reply, messages.map((m) => m.length));
       if (!tags) return;
       tagMemory.remember(id, entries.map((e, i) => ({ text: e.text, tags: tags.tags[i]! })));
       const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, about: q.about, detail: entries[q.message - 1]?.text ?? '', brief: q.brief, options: q.options }));
       const blocks = entries.map((e, i) => ({ entryId: e.id, blocks: taggedBlocks(messages[i]!, tags.tags[i]!) }));
-      for (const entry of model.applyTurnTags(id, lastUser?.id ?? null, questions, blocks)) windows.send('session:transcript-upsert', { id, entry });
-      const after = model.summary(id);
-      // New questions get the user's attention.
-      if (after && after.questions.length && after.questionsId !== before?.questionsId && !after.pendingCount) {
-        notifier.alert({ sessionId: id, title: `${after.name} har ${after.questions.length} frågor till dig`, body: after.questions.slice(0, 3).map((q) => q.text).join('\n'), urgent: true });
-      }
-      scheduleSync();
+      show(model.applyTurnTags(id, after, questions, blocks));
     } catch {
-      // Without tags only the questions the agent tagged itself stand.
+      // Without tags the turn shows as it is, with only the questions the agent tagged itself.
+    } finally {
+      show(model.endTagging(id, after));
+      announceTurnEnd(id, result);
+      scheduleSync();
     }
   }
+
+  /** Tells the user a turn has ended: urgently when it left questions, otherwise only if they asked to hear. */
+  function announceTurnEnd(id: string, result: string): void {
+    const s = model.summary(id);
+    if (!s || s.status === 'working' || s.pendingCount) return;
+    if (s.status === 'waiting' && s.questions.length) {
+      notifier.alert({ sessionId: id, title: `${s.name} har ${s.questions.length} frågor till dig`, body: s.questions.slice(0, 3).map((q) => q.text).join('\n'), urgent: true });
+    } else if (settings.alertOnDone) {
+      notifier.alert({ sessionId: id, title: `${s.name} är klar`, body: result, urgent: false });
+    }
+  }
+
 
   /**
    * The usage readout at 100 % means requests are refused, also for subagents whose refusal never reaches

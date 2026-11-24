@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T06:42:59Z",
+  "updated": "2026-11-24T07:01:03Z",
   "tracks": [
     {
       "id": "eng",
@@ -407,6 +407,19 @@
               "title": "Lägena Minimal, Moderat och Detaljerat i toppraden",
               "status": "done",
               "notes": "Användaren: tre lägen som filtrerar chatten efter taggarna. Minimal: answer, question, assumption, fail, risk, warning. Moderat lägger till result, pass, decision, next. Detaljerat allt. Provat dolt. Klart, inte släppt än."
+            },
+            {
+              "id": "ui.6.11",
+              "title": "Turens slut visas samtidigt när taggarna är klara",
+              "status": "done",
+              "notes": "Användaren: allt ska komma samtidigt även om det kommer senare. Text, frågor, status och notis hålls tills taggarna kommit (högst 90 s). Klart, inte släppt."
+            },
+            {
+              "id": "ui.6.12",
+              "title": "Nivåmarkering per stycke och lägesväljare i varje chatt",
+              "status": "in_progress",
+              "progress": 0,
+              "notes": "Användaren: varje meddelande ska visa vilken nivå det hör till, så man ser vad som försvinner i Minimal; kanske flytta Minimal/Moderat/Detaljerat till varje chattfönster."
             }
           ]
         },

@@ -40,6 +40,11 @@ export interface SessionModel {
   applyTurnTags(id: string, afterEntryId: string | null, questions: OpenQuestion[], blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[];
   /** Puts tagged blocks on assistant entries (e.g. saved tags after a restart). Returns the entries that changed. */
   setBlocks(id: string, blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[];
+  /**
+   * Ends the wait for a turn's tags without them (the call failed or took too long): the turn's text and
+   * questions show as they are. Ignored if a new turn has started since. Returns the entries that changed.
+   */
+  endTagging(id: string, afterEntryId: string | null): TranscriptEntry[];
   /** Puts back questions left unanswered before a restart. */
   setQuestions(id: string, saved: SavedQuestions): void;
   setMapping(id: string, mapping: boolean): void;
@@ -80,6 +85,11 @@ interface SessionState {
   taggedQuestions: OpenQuestion[];
   /** Questions still open from earlier turns the user has not replied to; new ones queue up after them. */
   earlierQuestions: OpenQuestion[];
+  /**
+   * A finished turn waits for its tags: until they arrive the session still counts as working, and its
+   * text and questions are held back, so the turn's end shows all at once.
+   */
+  tagging: boolean;
   /** Questions the user has already replied to in this session (normalised), so a repeat is not asked again. */
   answered: string[];
   mapping: boolean;
@@ -123,6 +133,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       calloutsBefore: 0,
       taggedQuestions: [],
       earlierQuestions: [],
+      tagging: false,
       answered: [],
       mapping: false,
       context: null,
@@ -217,7 +228,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.questionsAnswer = '';
         s.earlierQuestions = [];
         s.calloutsBefore = 0;
-        return add({ kind: 'user', text: event.prompt });
+        // A new message before the last turn's tags arrived: that turn's text shows as it is.
+        return [...release(s), ...add({ kind: 'user', text: event.prompt })];
       case 'thinking':
         markActive('Tänker…');
         s.pendingThinking = s.pendingThinking ? `${s.pendingThinking}\n\n${event.text}` : event.text;
@@ -225,7 +237,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       case 'text':
         markActive('Skriver svar…');
         if (!event.agentId) s.turnText = event.text;
-        return add({ kind: 'assistant', text: event.text, thinking: takeThinking(), agentId: event.agentId });
+        // The main agent's text waits for the turn's tags (the quick chat is never tagged).
+        return add({ kind: 'assistant', text: event.text, thinking: takeThinking(), agentId: event.agentId, ...(!event.agentId && s.record.kind !== 'quick' ? { held: true } : {}) });
       case 'tool_use':
         markActive(event.summary ? `${event.name}: ${event.summary}` : event.name);
         if (event.name === 'AskUserQuestion') return [];
@@ -284,9 +297,12 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.lastError = s.limitResetsAt !== null ? LIMIT_MESSAGE : event.isError ? event.result : null;
         const thinking = takeThinking();
         const leftover = thinking ? add({ kind: 'assistant', text: '', thinking }) : [];
-        if (event.interrupted) return [...leftover, ...system('Avbruten.', 'info')];
-        if (event.isError) return [...leftover, ...system(event.result, 'error')];
-        return [...leftover, ...collectQuestions()];
+        if (event.interrupted) return [...leftover, ...release(s), ...system('Avbruten.', 'info')];
+        if (event.isError) return [...leftover, ...release(s), ...system(event.result, 'error')];
+        // A turn with text of its own waits for its tags before its end shows; one without has nothing to tag.
+        s.tagging = s.record.kind !== 'quick' && s.transcript.some((e) => e.kind === 'assistant' && e.held);
+        if (s.tagging) s.lastActivity = 'Läser igenom svaret…';
+        return [...leftover, ...collectQuestions(), ...(s.tagging ? [] : release(s))];
       }
       case 'callout':
         s.callouts.push(event.callout);
@@ -307,9 +323,23 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.subagents.clear();
         s.turnAgents.clear();
         s.pendingThinking = '';
+        s.tagging = false;
         // The card's status already says it stopped; a restart (e.g. a new context window) should not look like a halt.
         return [];
     }
+  }
+
+  /** Shows the text a turn held back while it waited for its tags. Returns the entries that changed. */
+  function release(s: SessionState): TranscriptEntry[] {
+    s.tagging = false;
+    const changed: TranscriptEntry[] = [];
+    s.transcript = s.transcript.map((e) => {
+      if (e.kind !== 'assistant' || !e.held) return e;
+      const { held: _held, ...shown } = e;
+      changed.push(shown);
+      return shown;
+    });
+    return changed;
   }
 
   function summarize(s: SessionState): SessionSummary {
@@ -324,7 +354,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       effort: record.effort,
       permissionMode: record.permissionMode,
       status: statusOf(s),
-      currentTask: currentTask(s.todo) ?? s.lastActivity,
+      currentTask: (s.tagging ? s.lastActivity : null) ?? currentTask(s.todo) ?? s.lastActivity,
       activeAgents: (s.turnActive ? 1 : 0) + s.subagents.size,
       agentCount: s.running ? 1 + s.turnAgents.size : 0,
       pending: s.pending[0] ?? null,
@@ -335,7 +365,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       limitResetsAt: s.limitResetsAt,
       icon: record.icon ?? null,
       callouts: [...s.callouts].sort((a, b) => CALLOUT_KINDS.indexOf(a.kind) - CALLOUT_KINDS.indexOf(b.kind)),
-      questions: s.questions,
+      questions: s.tagging ? [] : s.questions,
       questionsId: s.questionsId,
       questionsAnswer: s.questionsAnswer,
       tokensUsed: record.tokensUsed,
@@ -369,7 +399,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     const replay = createSessionModel(now);
     replay.upsertRecord(s.record);
     for (const event of events) replay.apply(event);
-    const saved = replay.transcript(id).map((entry) => ({ ...entry, id: `history:${entry.id}` }));
+    // Saved history is never waiting for tags.
+    const saved = replay.transcript(id).map(({ held: _held, ...entry }: TranscriptEntry & { held?: boolean }) => ({ ...entry, id: `history:${entry.id}` }) as TranscriptEntry);
     s.transcript = [...saved, ...s.transcript].slice(-MAX_TRANSCRIPT);
     return [...s.transcript];
   }
@@ -404,6 +435,12 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       s.questionsId = saved.id;
       s.questionsAnswer = saved.answer;
     },
+    endTagging: (id, afterEntryId) => {
+      const s = states.get(id);
+      if (!s || s.turnActive) return [];
+      const lastUser = [...s.transcript].reverse().find((e) => e.kind === 'user');
+      return (lastUser?.id ?? null) === afterEntryId ? release(s) : [];
+    },
     setMapping: (id, mapping) => {
       const s = states.get(id);
       if (s) s.mapping = mapping;
@@ -416,7 +453,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       const asked = mergeQuestions(s.earlierQuestions, [...s.taggedQuestions, ...questions], s.answered);
       if (JSON.stringify(asked.map((q) => q.text)) !== JSON.stringify(s.questions.map((q) => q.text))) s.questionsId = `${now()}-${asked.length}`;
       s.questions = asked;
-      return setBlocks(s, blocks);
+      const tagged = setBlocks(s, blocks);
+      const shown = release(s);
+      const byId = new Map([...tagged, ...shown].map((e) => [e.id, e]));
+      return [...byId.keys()].map((entryId) => s.transcript.find((e) => e.id === entryId)!);
     },
     dismissCallouts: (id) => {
       const s = states.get(id);
@@ -443,6 +483,8 @@ const LIMIT_MESSAGE = 'Användningsgränsen är nådd.';
 const USAGE_LIMIT_TEXT = /usage limit|hit your (?:usage )?limit|rate limit reached|limit reached\|/i;
 
 function statusOf(s: SessionState): SessionStatus {
+  // Still reading through a finished turn: its end shows (done, questions) once that is over.
+  if (s.tagging && !s.pending.length) return 'working';
   if (s.limitResetsAt !== null && !s.turnActive && !s.pending.length) return 'limited';
   if (!s.running) return s.lastError ? 'error' : s.questions.length ? 'waiting' : 'stopped';
   if (s.pending.length) return 'waiting';

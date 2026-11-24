@@ -24,7 +24,7 @@ interface SessionCardProps {
 /** The main agent's latest answer, for a card with room to show it. */
 function LatestAnswer({ sessionId }: { sessionId: string }) {
   const entries = useTranscript(sessionId);
-  const latest = [...entries].reverse().find((e) => e.kind === 'assistant' && !e.agentId && e.text.trim());
+  const latest = [...entries].reverse().find((e) => e.kind === 'assistant' && !e.agentId && !e.held && e.text.trim());
   if (!latest || latest.kind !== 'assistant') return <div className="card-latest card-latest-empty">Inget svar ännu.</div>;
   return (
     <div className="card-latest">
