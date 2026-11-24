@@ -388,3 +388,21 @@ describe('text the app adds for the agent only', () => {
     expect(model.summary('s1')?.status).toBe('working');
   });
 });
+
+describe('questions all skipped', () => {
+  it('close without a message, and the same question is not asked again', () => {
+    const { model, apply, untagged } = setup();
+    const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'Ska jag starta om appen åt dig?' } });
+    apply(finish);
+    untagged();
+    expect(model.summary('s1')?.questions).toHaveLength(1);
+    model.dismissCallouts('s1');
+    expect(model.summary('s1')?.questions).toEqual([]);
+    const lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
+    model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Ska jag starta om appen åt dig?', about: '', detail: '', brief: '', options: [] }], []);
+    expect(model.summary('s1')?.questions).toEqual([]);
+  });
+});

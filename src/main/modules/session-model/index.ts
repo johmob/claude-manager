@@ -511,6 +511,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     dismissCallouts: (id) => {
       const s = states.get(id);
       if (s) {
+        // Put aside questions count as dealt with: the same question is not asked again.
+        s.answered = [...s.answered, ...s.questions.map((q) => normalizeQuestion(q.text))].slice(-MAX_ANSWERED);
         s.callouts = [];
         s.questions = [];
         s.questionsId = '';

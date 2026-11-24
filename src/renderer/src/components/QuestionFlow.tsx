@@ -133,7 +133,9 @@ function QuestionFlow({ session, queue, onClose, onSent }: { session: SessionSum
   };
   const single = questions.length === 1;
   const submit = (current: string[] = answers): void => {
-    send('session:send', { id: session.id, text: composeAnswers(questions, current) });
+    // All skipped: nothing goes to the agent (it would only offer again and ask anew); the questions close.
+    if (current.every((a) => !a.trim())) send('session:dismiss-callouts', { id: session.id });
+    else send('session:send', { id: session.id, text: composeAnswers(questions, current) });
     drafts.delete(session.id);
     onSent();
   };

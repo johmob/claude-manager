@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T11:14:35Z",
+  "updated": "2026-11-24T11:27:34Z",
   "tracks": [
     {
       "id": "eng",
@@ -491,6 +491,12 @@
               "title": "Rubrik och text i rutor klipps rätt",
               "status": "done",
               "notes": "Användaren: rubriken klipptes mitt i meningen (brödtexten började med \", och\"). Fetstil som löper in i meningen blir inte rubrik, och protokollet kräver kort rubrik med kolon och hel mening. Gjort (ej committat)."
+            },
+            {
+              "id": "ui.6.20",
+              "title": "Alla överhoppade: inget skickas till agenten",
+              "status": "done",
+              "notes": "Användaren: hoppar man över alla frågor ska inget skickas, annars blir det en loop av erbjudanden och nya frågor. Frågorna stängs och räknas som avklarade så samma fråga inte kommer tillbaka. Gjort, ej committat."
             }
           ]
         },
