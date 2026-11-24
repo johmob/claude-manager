@@ -543,19 +543,22 @@ function boot(): void {
     const all = transcript.slice(from).filter((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim());
     const messages = messagesForTagging(all.map((e) => e.text));
     const entries = all.slice(-messages.length);
+    // The agent's [!NOTE] callouts go along last: the tagger decides whether each is an assumption to confirm.
+    const notes = transcript.slice(from).flatMap((e) => (e.kind === 'callout' && e.callout.kind === 'note' ? [`> [!NOTE] ${e.callout.title ? `**${e.callout.title}:** ` : ''}${e.callout.text}`] : []));
+    const toTag = notes.length ? [...messages, splitBlocks(notes.join('\n\n'))] : messages;
     const show = (changed: TranscriptEntry[]): void => {
       for (const entry of changed) windows.send('session:transcript-upsert', { id, entry });
     };
     try {
-      if (!entries.length) return;
+      if (!entries.length && !notes.length) return;
       const reply = await Promise.race([
-        structuredQuery(tagRequest(messages, userData, workInProgress(model.summary(id)?.todo ?? null))),
+        structuredQuery(tagRequest(toTag, userData, workInProgress(model.summary(id)?.todo ?? null))),
         new Promise<null>((resolve) => setTimeout(() => resolve(null), TAG_TIMEOUT_MS)),
       ]);
-      const tags = readTags(reply, messages.map((m) => m.length));
+      const tags = readTags(reply, toTag.map((m) => m.length));
       if (!tags) return;
       tagMemory.remember(id, entries.map((e, i) => ({ text: e.text, tags: tags.tags[i]! })));
-      const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, about: q.about, detail: entries[q.message - 1]?.text ?? '', brief: q.brief, options: q.options }));
+      const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, about: q.about, detail: entries[q.message - 1]?.text ?? notes.join('\n\n'), brief: q.brief, options: q.options }));
       const blocks = entries.map((e, i) => ({ entryId: e.id, blocks: taggedBlocks(messages[i]!, tags.tags[i]!) }));
       show(model.applyTurnTags(id, after, questions, blocks));
     } catch {

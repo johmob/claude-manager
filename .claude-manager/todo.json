@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T09:44:00Z",
+  "updated": "2026-11-24T10:19:44Z",
   "tracks": [
     {
       "id": "eng",
@@ -455,6 +455,12 @@
               "title": "Appens meddelanden till agenten syns inte i chatten",
               "status": "done",
               "notes": "Användaren: ändringslistan och uppmaningen som skrevs i chatten är bara för agenten. Märks som appens sammanhang; chatten visar bara användarens egen text, eller en kort grå rad. Klart."
+            },
+            {
+              "id": "ui.6.17",
+              "title": "NOTE-rutor blir antaganden bara om Haiku bedömer det",
+              "status": "done",
+              "notes": "Användaren: en informativ NOTE visades som antagande i frågeflödet i helskärm. Nu avgör Haiku; provat: information blev ingen fråga, ett riktigt antagande blev det. Klart."
             }
           ]
         },

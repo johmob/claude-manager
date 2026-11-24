@@ -190,8 +190,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     };
     const system = (text: string, level: 'info' | 'warning' | 'error'): TranscriptEntry[] => add({ kind: 'system', text, level });
     /**
-     * A finished turn whose agent tagged questions ([!QUESTION]) or assumptions to confirm ([!NOTE]) waits
-     * for an answer. Plain text is never read as questions by rules: a cheap model tags the turn afterwards
+     * A finished turn whose agent tagged questions ([!QUESTION]) waits for an answer. Plain text is never read as questions by rules: a cheap model tags the turn afterwards
      * (applyTurnTags), since only reading the text with understanding tells a question from a report.
      */
     const collectQuestions = (): TranscriptEntry[] => {
@@ -199,9 +198,9 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       if (s.record.kind === 'quick') return [];
       const fresh = s.callouts.slice(s.calloutsBefore);
       s.calloutsBefore = s.callouts.length;
-      const tagged = fresh.flatMap((c): OpenQuestion[] =>
-        c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), about: '', detail: '', brief: '', options: [] }] : [],
-      );
+      // A [!QUESTION] is a question as it stands. A [!NOTE] may be an assumption to confirm or just
+      // information; the cheap model that tags the turn decides (see applyTurnTags).
+      const tagged = fresh.flatMap((c): OpenQuestion[] => (c.kind === 'question' ? [{ kind: 'question', text: calloutText(c), about: '', detail: '', brief: '', options: [] }] : []));
       s.taggedQuestions = tagged;
       // A turn the user did not start (e.g. after a subagent finished) keeps the open questions: they are
       // still unanswered, and its own questions queue up after them.

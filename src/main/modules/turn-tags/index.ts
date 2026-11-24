@@ -112,6 +112,7 @@ export function tagRequest(messages: string[][], cwd: string, work: string[] = [
     '   background: förklaring, sammanhang, resonemang.',
     '   Ett block med blandat innehåll får taggen för det viktigaste det innehåller (fail före warning före result).',
     '2. questions: varje fråga eller val agenten uttryckligen ber användaren svara på eller ta ställning till, och varje antagande användaren ska bekräfta.',
+    '   Rutor märkta [!NOTE] är antaganden bara om agenten antagit något i användarens ställe som användaren kan rätta; information, osäkerheter agenten själv nämner och förklaringar är inga antaganden att bekräfta.',
     '   Lägesrapporter, resultat, listor över vad som gjorts eller ska göras, rubriker och förklaringar är aldrig frågor, inte heller i punktlistor eller efter ett kolon.',
     '   Ta inte med frågor som agenten själv besvarar i samma tur. Hellre en fråga för lite än en påhittad. För varje:',
     '   Användaren har många agenter och projekt igång och läser frågan utan resten av texten, så den måste gå att förstå fristående.',

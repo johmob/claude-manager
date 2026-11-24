@@ -189,7 +189,7 @@ describe('questions left for the user', () => {
   });
 
 
-  it('counts tagged questions and assumption notes, ignores subagent text; dismissing ends the wait', () => {
+  it('counts tagged questions, leaves notes to the tagger, ignores subagent text; dismissing ends the wait', () => {
     const { model, apply, untagged } = setup();
     apply({ type: 'started' });
     apply({ type: 'turn_started', prompt: 'kör' });
@@ -203,10 +203,8 @@ describe('questions left for the user', () => {
     apply({ type: 'callout', callout: { kind: 'note', title: '', text: 'Displayen är urkopplad.' } });
     apply(finish);
     untagged();
-    expect(model.summary('s1')?.questions).toEqual([
-      { kind: 'question', text: 'Rev: B eller C?', about: '', detail: '', brief: '', options: [] },
-      { kind: 'assumption', text: 'Displayen är urkopplad.', about: '', detail: '', brief: '', options: [] },
-    ]);
+    // A [!NOTE] is not a question by itself: only the tagger can make it an assumption to confirm.
+    expect(model.summary('s1')?.questions).toEqual([{ kind: 'question', text: 'Rev: B eller C?', about: '', detail: '', brief: '', options: [] }]);
     expect(model.summary('s1')?.status).toBe('waiting');
     model.dismissCallouts('s1');
     expect(model.summary('s1')?.status).toBe('done');
