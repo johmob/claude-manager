@@ -17,6 +17,7 @@ import type {
   UsageWindows,
 } from '../../../shared/contracts';
 import { asRecord } from '../../../shared/guards';
+import { usageTokens } from '../../../shared/contracts';
 
 export interface SessionEngine {
   start(spec: SessionStartSpec): void;
@@ -515,8 +516,7 @@ function toWindow(fraction: number, resetsAtSeconds: unknown): UsageWindow {
 
 /** All tokens a turn processed: input, output, and cache reads and writes. */
 function turnTokens(m: Extract<SDKMessage, { type: 'result' }>): number {
-  const u = m.usage;
-  return u.input_tokens + u.output_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens;
+  return usageTokens(m.usage);
 }
 
 /** Readable error text for a failed turn; Claude Code's internal "[ede_diagnostic] …" lines are left out. */

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
-import type { SessionSummary, UsageSnapshot, UsageWindow } from '../../../shared/contracts';
+import type { DayTokens, SessionSummary, UsageSnapshot, UsageWindow } from '../../../shared/contracts';
 import { AgentsIcon, ChatIcon } from '../components/Icons';
 import { QuickChatBody, useQuickChat } from '../components/QuickChat';
 import { QuickQuestion, questionsKey } from '../components/QuestionFlow';
@@ -33,6 +33,24 @@ function UsageRow({ label, window: w }: { label: string; window: UsageWindow | n
 
 const LEVEL_COLOR = { ok: '#3fb950', notice: '#facc15', warn: '#ff8a1f', crit: '#ff3b30' } as const;
 
+/** What share of today's tokens went to the app's own helper calls (tagging, icons, summaries). */
+function AppShare() {
+  const [day, setDay] = useState<DayTokens | null>(null);
+  useEffect(() => {
+    void window.cm.invoke('usage:day-tokens', undefined).then(setDay);
+  }, []);
+  const total = day ? day.sessions + day.app : 0;
+  if (!day || !total) return null;
+  const share = (day.app / total) * 100;
+  return (
+    <InfoRow label="Appen">
+      <span title={`Appens egna anrop (taggning, ikoner, sammanfattningar): ${day.app.toLocaleString('sv-SE')} av ${total.toLocaleString('sv-SE')} tokens i dag`}>
+        {share < 0.1 ? '<0,1' : share.toLocaleString('sv-SE', { maximumFractionDigits: share < 10 ? 1 : 0 })} % <span className="si-dim">av dagens tokens</span>
+      </span>
+    </InfoRow>
+  );
+}
+
 function UsageDetail({ usage }: { usage: UsageSnapshot }) {
   const row = (label: string, w: UsageWindow | null, weekday: boolean) => {
     const used = w ? Math.round(w.utilization) : null;
@@ -55,6 +73,7 @@ function UsageDetail({ usage }: { usage: UsageSnapshot }) {
       <div className="si-grid">
         {row('5 tim', usage.fiveHour, false)}
         {row('Vecka', usage.sevenDay, true)}
+        <AppShare />
       </div>
     </div>
   );

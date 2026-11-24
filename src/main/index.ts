@@ -27,6 +27,7 @@ import type {
   SavedQuestions,
   SessionRecord,
   SessionSummary,
+  DayTokens,
   TaggedBlock,
   TodoNode,
   TodoTree,
@@ -51,6 +52,7 @@ import { createKeepAwake } from './modules/keep-awake';
 import { messagesForTagging, readTags, splitBlocks, tagRequest, taggedBlocks } from './modules/turn-tags';
 import { createTagMemory } from './modules/tag-memory';
 import { iconRequest, readIcon } from './modules/icon-picker';
+import { addTokens, localDate, todayOf } from './modules/day-tokens';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 
@@ -159,7 +161,14 @@ function boot(): void {
   // Every Claude process the app starts (sessions and one-shot calls) must use the same executable.
   const claudeExecutable = { pathToClaudeCodeExecutable: packagedClaudeBinary() };
   const engine = createSessionEngine(onSessionEvent, claudeExecutable);
-  const structuredQuery = createStructuredQuery(claudeExecutable);
+  // Tokens processed today, split into the user's sessions and the app's own helper calls.
+  const dayTokensStore = createJsonStore<DayTokens>(join(userData, 'day-tokens.json'), { date: '', sessions: 0, app: 0 });
+  let dayTokens = dayTokensStore.read();
+  const countTokens = (kind: 'sessions' | 'app', tokens: number): void => {
+    dayTokens = addTokens(dayTokens, localDate(new Date()), kind, tokens);
+    dayTokensStore.write(dayTokens);
+  };
+  const structuredQuery = createStructuredQuery({ ...claudeExecutable, onTokens: (tokens) => countTokens('app', tokens) });
   const todo = createTodoWatcher((id, tree) => {
     model.setTodo(id, tree);
     // The map is done once the agent has written it, even if its turn goes on: the card and schema stop
@@ -286,6 +295,7 @@ function boot(): void {
         break;
       case 'turn_finished': {
         if (record) saveRecord({ ...record, lastActiveAt: new Date().toISOString(), tokensUsed: record.tokensUsed + event.tokens });
+        countTokens('sessions', event.tokens);
         const completed = !event.isError && !event.interrupted;
         const asks = model.summary(event.sessionId);
         if (event.sessionId === QUICK_ID) {
@@ -966,6 +976,7 @@ function boot(): void {
   });
 
   handle('usage:refresh', () => usage.refreshNow());
+  handle('usage:day-tokens', () => todayOf(dayTokens, localDate(new Date())));
   handle('window:snap', (req) => windows.snap(req.mode));
   handle('window:ensure-width', (req) => windows.ensureWidth(req.width));
   handle('window:show-session', (req) => showSession(req.id));

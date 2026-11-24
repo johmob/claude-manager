@@ -305,6 +305,18 @@ export interface UsageSnapshot extends UsageWindows {
   error?: string;
 }
 
+/** Tokens processed today (local date): by the user's sessions, and by the app's own helper calls. */
+export interface DayTokens {
+  date: string;
+  sessions: number;
+  app: number;
+}
+
+/** All tokens a call processed: input, output, and cache reads and writes. */
+export function usageTokens(u: { input_tokens: number; output_tokens: number; cache_read_input_tokens: number; cache_creation_input_tokens: number }): number {
+  return u.input_tokens + u.output_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens;
+}
+
 /** Percent used at which a usage bar turns yellow / orange / red. */
 export const USAGE_NOTICE_PCT = 50;
 export const USAGE_WARN_PCT = 70;
@@ -639,6 +651,8 @@ export interface ImportCandidate {
 
 /** Renderer -> main requests. `req` is the argument, `res` the resolved value. */
 export interface IpcInvokeMap {
+  /** Today's tokens, for the usage details. */
+  'usage:day-tokens': { req: void; res: DayTokens };
   'app:get-state': { req: void; res: { sessions: SessionSummary[]; usage: UsageSnapshot; settings: AppSettings; account: AccountSnapshot; update: UpdateStatus } };
   /** Lets the user pick the projects folder; the updated settings, or null when cancelled. */
   'settings:choose-projects-root': { req: void; res: AppSettings | null };

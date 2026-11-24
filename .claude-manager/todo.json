@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T06:31:11Z",
+  "updated": "2026-11-24T06:33:14Z",
   "tracks": [
     {
       "id": "eng",
@@ -320,9 +320,8 @@
             {
               "id": "ui.4.7",
               "title": "Andel av dagens tokens som appens egna hjälpanrop förbrukat",
-              "status": "in_progress",
-              "progress": 0,
-              "notes": "Användaren: i rutan vid Användning i overlay, en liten procentsiffra för hur stor del av dagens tokens som gått åt att driva agenterna som kör programmet."
+              "status": "done",
+              "notes": "Användaren: procentsiffra i rutan vid Användning i overlay. Visar appens egna hjälpanrop (taggning, ikoner, sammanfattningar) som andel av dagens tokens; räknas per lokalt datum och sparas. Provat dolt. Klart, inte släppt än."
             }
           ]
         },
