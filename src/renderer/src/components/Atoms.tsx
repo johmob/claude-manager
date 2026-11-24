@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { EffortChoice, ModelChoice, SessionStatus, SessionSummary, TodoStatus } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { EFFORT_LABEL, STATUS_LABEL } from '../lib/format';
@@ -43,14 +43,22 @@ export function ModelEffortPicker({ session }: { session: SessionSummary }) {
 }
 
 /** One dot per active agent, filled in the session colour. */
+/**
+ * Agents at work, readable at a glance: a spinning ring, "Arbetar", and one dot per agent in a quick wave
+ * (the count in words when there are several).
+ */
 export function AgentDots({ count, color }: { count: number; color: string }) {
   if (count <= 0) return null;
   const dots = Array.from({ length: Math.min(count, 10) }, (_, i) => i);
   return (
-    <span className="agent-dots" title={`${count} aktiva agenter`}>
-      {dots.map((i) => (
-        <span key={i} className="agent-dot" style={{ background: color }} />
-      ))}
+    <span className="agent-work" title={`${count} ${count === 1 ? 'agent arbetar' : 'agenter arbetar'}`} style={{ '--c': color } as CSSProperties}>
+      <span className="agent-spin" aria-hidden />
+      <span className="agent-work-text">Arbetar{count > 1 ? ` · ${count}` : ''}</span>
+      <span className="agent-dots" aria-hidden>
+        {dots.map((i) => (
+          <span key={i} className="agent-dot" style={{ animationDelay: `${i * 0.12}s` }} />
+        ))}
+      </span>
     </span>
   );
 }

@@ -63,15 +63,19 @@ textarea.input { resize: vertical; }
 .toggle.on .toggle-dot { background: var(--accent-ui); box-shadow: 0 0 6px var(--accent-ui); }
 
 .chip { display: inline-block; font-size: 0.6875rem; line-height: 1; padding: 4px 8px; border-radius: 999px; white-space: nowrap; background: rgba(125,138,166,.16); color: var(--blue-grey); }
-.chip[data-status="working"] { background: rgba(245,165,36,.16); color: var(--orange); animation: pulse 1.6s ease-in-out infinite; }
+.chip[data-status="working"] { background: rgba(245,165,36,.22); color: var(--orange); font-weight: 700; animation: working-glow .9s ease-in-out infinite; }
 .chip[data-status="waiting"] { background: rgba(240,82,79,.18); color: var(--red); }
 .chip[data-status="done"] { background: rgba(62,207,142,.16); color: var(--green); }
 .chip[data-status="starting"] { background: rgba(139,147,163,.14); color: var(--muted); }
 .chip[data-status="error"] { background: rgba(120,20,25,.55); color: #ff8f8c; }
 .chip[data-status="stopped"] { background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px var(--border); }
 .badge { font-size: 0.6875rem; color: var(--muted); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; }
+.agent-work { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 6px; border-radius: 999px; background: rgba(245,165,36,.16); border: 1px solid rgba(245,165,36,.45); color: var(--orange); font-size: 0.74rem; font-weight: 700; white-space: nowrap; }
+.agent-spin { width: 11px; height: 11px; border-radius: 50%; border: 2px solid rgba(245,165,36,.25); border-top-color: var(--orange); animation: spin .7s linear infinite; }
 .agent-dots { display: inline-flex; gap: 3px; align-items: center; }
-.agent-dot { width: 7px; height: 7px; border-radius: 50%; }
+.agent-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c); animation: agent-wave .9s ease-in-out infinite; }
+@keyframes agent-wave { 0%, 100% { transform: translateY(0); opacity: .55; } 40% { transform: translateY(-4px); opacity: 1; } }
+@keyframes working-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,165,36,0); opacity: 1; } 50% { box-shadow: 0 0 10px 2px rgba(245,165,36,.55); opacity: .75; } }
 .todo-icon[data-todo="not_started"] { color: var(--muted); }
 .todo-icon[data-todo="in_progress"] { color: var(--orange); }
 .todo-icon[data-todo="done"] { color: var(--green); }
@@ -923,3 +927,12 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .ov-row { cursor: grab; }
 .ov-row:active { cursor: grabbing; }
 .ov-row .ov-cell { cursor: default; }
+
+/* Status line above a chat: what the agent is doing, from messages the chat folds away */
+.status-line { flex: none; margin: 6px 12px 0; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,.035); border: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
+.status-line-head { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; font: inherit; }
+.status-line-label { font-size: 0.66rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.status-line-text { margin-top: 2px; }
+.status-line:not([data-open]) .status-line-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.status-line:not([data-open]) .status-line-text .md > * { margin: 0; }
+.status-line[data-open] .status-line-text { max-height: 40vh; overflow-y: auto; }

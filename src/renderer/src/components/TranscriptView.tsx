@@ -6,6 +6,7 @@ import { send } from '../lib/api';
 import { Spinner } from './Atoms';
 import { CalloutBox } from './CalloutBox';
 import { TaggedText, hasWeight } from './TaggedText';
+import { MarkdownText } from './MarkdownText';
 
 function Thinking({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -233,6 +234,36 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
  * with only the runs of commands folded).
  * Sticks to the bottom unless the user scrolled up.
  */
+/**
+ * The status line above a chat: the main agent's latest message in the current round that the chat does
+ * not show at its detail (narration folded into "Under arbetet", or text waiting for its tags), so what it
+ * is doing can be followed without filling the chat. Detaljerat shows everything, so it has none.
+ */
+export function StatusLine({ entries }: { entries: TranscriptEntry[] }) {
+  const detail = useContext(ChatDetailContext);
+  const [open, setOpen] = useState(false);
+  if (detail === 'detailed') return null;
+  const finals = finalAnswers(entries);
+  const lastUser = entries.map((e) => e.kind).lastIndexOf('user');
+  const latest = entries
+    .slice(lastUser + 1)
+    .reverse()
+    .find((e): e is Extract<TranscriptEntry, { kind: 'assistant' }> => e.kind === 'assistant' && !e.agentId && !!e.text.trim() && !standsOut(e, finals, detail));
+  if (!latest) return null;
+  const time = timeOf(latest);
+  return (
+    <div className="status-line" data-open={open ? 'true' : undefined}>
+      <button type="button" className="status-line-head" aria-expanded={open} onClick={() => setOpen(!open)} title={open ? 'Fäll ihop' : 'Visa hela'}>
+        <span className="status-line-label">Status{time && ` · ${time}`}</span>
+        <span className="t-tools-caret">{open ? '▾' : '▸'}</span>
+      </button>
+      <div className="status-line-text">
+        <MarkdownText text={latest.text} />
+      </div>
+    </div>
+  );
+}
+
 export function TranscriptView({ entries, sessionId }: { entries: TranscriptEntry[]; sessionId: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const stick = useRef(true);

@@ -7,7 +7,7 @@ import { ContextMeter } from './ContextMeter';
 import { PendingPanel } from './PendingPanel';
 import { QuestionsButton } from './QuestionFlow';
 import { SchemaButton } from './SchemaButton';
-import { TranscriptView } from './TranscriptView';
+import { StatusLine, TranscriptView } from './TranscriptView';
 import { WorkSchema } from './WorkSchema';
 import { SessionMark } from './SessionMark';
 import { DetailSwitch } from './DetailLevel';
@@ -39,6 +39,7 @@ export function SessionTile({ session }: { session: SessionSummary }) {
       </div>
       <DriftBar session={session} />
       <ChatDetailContext.Provider value={detail}>
+        <StatusLine entries={entries} />
         <TranscriptView entries={entries} sessionId={session.id} />
       </ChatDetailContext.Provider>
       <QuestionsButton session={session} />
