@@ -918,3 +918,8 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .sp-job-meta [data-failed] { color: var(--c-caution); }
 .sp-actions { display: inline-flex; gap: 12px; white-space: nowrap; }
 .sp-actions .link-btn { font-size: 0.74rem; }
+
+/* The overlay row is moved by dragging its background */
+.ov-row { cursor: grab; }
+.ov-row:active { cursor: grabbing; }
+.ov-row .ov-cell { cursor: default; }

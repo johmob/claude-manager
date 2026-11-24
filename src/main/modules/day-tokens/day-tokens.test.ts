@@ -23,3 +23,14 @@ describe('usage weight', () => {
     expect(opusTurn).toBe(5 * (2000 + 6250 + 20000 + 7500));
   });
 });
+
+describe('when text', () => {
+  it('says the time today, "i morgon" tomorrow, and the day further away', async () => {
+    const { whenText } = await import('../../../shared/contracts');
+    const now = new Date(2026, 10, 24, 10, 0);
+    expect(whenText(new Date(2026, 10, 24, 14, 20).toISOString(), now)).toBe('kl 14:20');
+    expect(whenText(new Date(2026, 10, 25, 9, 0).toISOString(), now)).toBe('i morgon kl 09:00');
+    expect(whenText(new Date(2026, 10, 28, 9, 0).toISOString(), now)).toMatch(/28 nov\.? kl 09:00$/);
+    expect(whenText('', now)).toBe('');
+  });
+});

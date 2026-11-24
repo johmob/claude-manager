@@ -1,6 +1,6 @@
 // session-model: pure state. Folds SessionEvents, records and todo trees into the
 // SessionSummary cards and TranscriptEntry lists the UI shows. No I/O, no timers.
-import { CALLOUT_KINDS, splitAppContext } from '../../../shared/contracts';
+import { CALLOUT_KINDS, splitAppContext, whenText } from '../../../shared/contracts';
 import type {
   OpenQuestion,
   Callout,
@@ -313,7 +313,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         // A turn that ran into the usage limit ends like any other; it stays marked as limited, not done.
         if (s.limitResetsAt === null && USAGE_LIMIT_TEXT.test(event.result)) s.limitResetsAt = '';
         s.unseenDone = s.unseenDone && s.limitResetsAt === null;
-        s.lastError = s.limitResetsAt !== null ? LIMIT_MESSAGE : event.isError ? event.result : null;
+        s.lastError = s.limitResetsAt !== null ? limitMessage(s.limitResetsAt, new Date(at)) : event.isError ? event.result : null;
         const thinking = takeThinking();
         const leftover = thinking ? add({ kind: 'assistant', text: '', thinking }) : [];
         if (event.interrupted) return [...read, ...leftover, ...release(s), ...system('Avbruten.', 'info')];
@@ -329,7 +329,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       case 'rate_limit':
         if (!event.rejected) return [];
         s.limitResetsAt = event.resetsAt ?? s.limitResetsAt ?? '';
-        s.lastError = LIMIT_MESSAGE;
+        s.lastError = limitMessage(s.limitResetsAt, new Date(at));
         return system(s.lastError, 'warning');
       case 'error':
         s.lastError = event.message;
@@ -456,7 +456,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       const s = states.get(id);
       if (!s) return;
       s.limitResetsAt = resetsAt;
-      s.lastError = LIMIT_MESSAGE;
+      s.lastError = limitMessage(resetsAt, new Date(now()));
     },
     setBlocks: (id, blocks) => {
       const s = states.get(id);
@@ -522,7 +522,11 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
   };
 }
 
-const LIMIT_MESSAGE = 'Användningsgränsen är nådd.';
+/** "Användningsgränsen är nådd. Den återställs kl 14:20." (the day too when it is not today). */
+function limitMessage(resetsAt: string, at: Date): string {
+  const when = resetsAt ? whenText(resetsAt, at) : '';
+  return when ? `Användningsgränsen är nådd. Den återställs ${when}.` : 'Användningsgränsen är nådd.';
+}
 /** How Claude Code words a turn refused by the usage limit. */
 const USAGE_LIMIT_TEXT = /usage limit|hit your (?:usage )?limit|rate limit reached|limit reached\|/i;
 

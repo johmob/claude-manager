@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T08:50:22Z",
+  "updated": "2026-11-24T09:44:00Z",
   "tracks": [
     {
       "id": "eng",
@@ -326,8 +326,8 @@
             {
               "id": "ui.4.8",
               "title": "Dra overlayen fritt i den svarta bakgrunden",
-              "status": "not_started",
-              "notes": "Användaren: klicka på overlayens svarta bakgrund och dra runt den fritt; klick ska inte gå igenom till det som ligger under den."
+              "status": "done",
+              "notes": "Användaren: klicka på overlayens svarta bakgrund och dra runt den fritt; klick ska inte gå igenom till det som ligger under den. Klart: hela raden tar musen; dra bakgrunden för att flytta, platsen sparas, dubbelklick lägger tillbaka i mitten."
             }
           ]
         },
@@ -541,6 +541,12 @@
               "id": "life.2.4",
               "title": "Gränsen: rätt status och fortsätt bara avbrutet arbete",
               "notes": "Sessioner som arbetar när användningen når 100 % märks som stoppade av gränsen (sparas över omstart). Efter återställning fortsätter bara avbrutet arbete; väntande sessioner väcks inte. Klart, inte släppt än."
+            },
+            {
+              "id": "life.2.5",
+              "title": "Gränsmeddelandet säger när gränsen återställs",
+              "status": "done",
+              "notes": "Användaren: när gränsen nås ska det stå att det fortsätter kl xx, eller vilken dag om det inte är i dag. Klart i chattens notis och på kortet."
             }
           ]
         },

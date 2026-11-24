@@ -48,6 +48,12 @@ export interface SessionRecord {
   mark?: ProjectMark;
 }
 
+/** The middle of the overlay's top edge, in screen coordinates. */
+export interface OverlayAnchor {
+  centerX: number;
+  top: number;
+}
+
 /** A job the app runs on a schedule (from the project's .claude-manager/schedule.json). */
 export interface ScheduledJob {
   id: string;
@@ -386,6 +392,18 @@ export function splitAppContext(text: string): { shown: string; notes: string[] 
   return { shown: notes.length ? text.replace(APP_CONTEXT, '').trim() : text, notes };
 }
 
+/** When something happens, as the app says it: "kl 14:20" today, "i morgon kl 09:00", or "fre 28 nov kl 09:00". */
+export function whenText(iso: string, now: Date = new Date()): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return '';
+  const time = `kl ${at.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}`;
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  if (at.toDateString() === now.toDateString()) return time;
+  if (at.toDateString() === tomorrow.toDateString()) return `i morgon ${time}`;
+  return `${at.toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' })} ${time}`;
+}
+
 /** A call's tokens by kind, as the API reports them. */
 export interface TokenUsage {
   input: number;
@@ -704,6 +722,8 @@ export interface AppSettings {
   dockVisible: boolean;
   dockEdge: DockEdge;
   overlayVisible: boolean;
+  /** Where the user dragged the overlay: the middle of its top edge on screen; null keeps it centred at the top. */
+  overlayAnchor: OverlayAnchor | null;
   /** Start with Windows, in the system tray (installed app only). */
   launchAtLogin: boolean;
   /** Sessions stopped by the usage limit continue on their own once it resets. */
@@ -818,6 +838,8 @@ export interface IpcInvokeMap {
   'overlay:set-detail': { req: { open: boolean; wide?: boolean }; res: void };
   /** Lets the overlay take keyboard focus while its quick chat is open (normally it never takes focus). */
   'overlay:set-focus': { req: { focus: boolean }; res: void };
+  /** The user presses (start) and releases (end) the overlay's background to drag it; reset puts it back in the middle. */
+  'overlay:drag': { req: { phase: 'start' | 'end' | 'reset' }; res: void };
   /** Shows a session's work schema or questions in the popup window over the screen, without the main window. */
   'popup:open': { req: PopupView; res: void };
   'popup:close': { req: void; res: void };

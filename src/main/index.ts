@@ -68,6 +68,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   dockVisible: false,
   dockEdge: 'right',
   overlayVisible: true,
+  overlayAnchor: null,
   launchAtLogin: true,
   textScale: 1.1,
   autoUpdate: true,
@@ -211,6 +212,11 @@ function boot(): void {
     onMainClose: confirmClose,
     startHidden: process.argv.includes(AUTOSTART_ARG),
     offscreen: TEST_INSTANCE,
+    overlayAnchor: settings.overlayAnchor,
+    onOverlayMoved: (overlayAnchor) => {
+      settings = { ...settings, overlayAnchor };
+      settingsStore.write(settings);
+    },
   });
   const notifier = createNotifier({ onClick: showSession, flash: (on) => windows.flash(on), muted: TEST_INSTANCE });
   // A test instance has no tray icon: it must not be mistaken for the user's app.
@@ -1141,6 +1147,7 @@ function boot(): void {
   handle('overlay:set-interactive', (req) => windows.setOverlayInteractive(req.interactive));
   handle('overlay:set-detail', (req) => windows.setOverlayDetail(req.open, req.wide));
   handle('overlay:set-focus', (req) => windows.setOverlayFocus(req.focus));
+  handle('overlay:drag', (req) => windows.dragOverlay(req.phase));
   handle('popup:open', (req) => windows.openPopup(req));
   handle('popup:close', () => windows.closePopup());
   handle('popup:current', () => windows.popupView());
@@ -1196,6 +1203,7 @@ function validSettings(r: unknown): AppSettings | null {
     dockVisible: bool(r['dockVisible'], d.dockVisible),
     dockEdge: pick(r['dockEdge'], DOCK_EDGES, d.dockEdge),
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),
+    overlayAnchor: isRecord(r['overlayAnchor']) && typeof r['overlayAnchor']['centerX'] === 'number' && typeof r['overlayAnchor']['top'] === 'number' ? { centerX: r['overlayAnchor']['centerX'], top: r['overlayAnchor']['top'] } : null,
     launchAtLogin: bool(r['launchAtLogin'], d.launchAtLogin),
     autoUpdate: bool(r['autoUpdate'], d.autoUpdate),
     autoResume: bool(r['autoResume'], d.autoResume),

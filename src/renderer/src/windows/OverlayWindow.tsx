@@ -136,14 +136,33 @@ export function OverlayWindow() {
   return (
     <div
       className="overlay"
-      onMouseMove={(e: MouseEvent) => chatOpen || setInteractive(e.ctrlKey || (e.target instanceof Element && !!e.target.closest('.ov-cell, .ov-detail')))}
+      // The whole dark row takes the mouse (nothing under it is clicked); the rest of the window lets clicks through.
+      onMouseMove={(e: MouseEvent) => chatOpen || setInteractive(e.ctrlKey || (e.target instanceof Element && !!e.target.closest('.ov-row, .ov-detail')))}
       onMouseLeave={() => {
         if (chatOpen) return;
         setInteractive(false);
         setHovered(null);
       }}
     >
-      <div className="ov-row">
+      <div
+        className="ov-row"
+        title="Dra för att flytta · Dubbelklicka för att lägga tillbaka i mitten"
+        onPointerDown={(e) => {
+          // The background (and the usage figures) drag the overlay; the icons keep their clicks.
+          if (e.button !== 0 || (e.target instanceof Element && e.target.closest('.ov-cell'))) return;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          send('overlay:drag', { phase: 'start' });
+        }}
+        onPointerUp={(e) => {
+          if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+          e.currentTarget.releasePointerCapture(e.pointerId);
+          send('overlay:drag', { phase: 'end' });
+        }}
+        onDoubleClick={(e) => {
+          if (e.target instanceof Element && e.target.closest('.ov-cell')) return;
+          send('overlay:drag', { phase: 'reset' });
+        }}
+      >
         <div className="ov-usage" onMouseEnter={() => setHovered('usage')}>
           <UsageRow label="5h" window={state.usage.fiveHour} />
           <UsageRow label="V" window={state.usage.sevenDay} />

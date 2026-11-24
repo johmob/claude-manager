@@ -2,7 +2,7 @@
 // Knows nothing about sessions beyond how many cards the dock and overlay must fit.
 import { BrowserWindow, Menu, screen } from 'electron';
 import type { NativeImage, Rectangle } from 'electron';
-import type { DockEdge, IpcEventChannel, IpcEventMap, IpcInvokeMap, PopupView, ThemeChoice } from '../../../shared/contracts';
+import type { DockEdge, IpcEventChannel, IpcEventMap, IpcInvokeMap, OverlayAnchor, PopupView, ThemeChoice } from '../../../shared/contracts';
 
 type SnapMode = IpcInvokeMap['window:snap']['req']['mode'];
 
@@ -22,6 +22,10 @@ export interface WindowManagerOptions {
    * focus and stays out of the taskbar, so it never gets in the user's way.
    */
   offscreen?: boolean;
+  /** Where the user last dragged the overlay; null or absent: centred at the top. */
+  overlayAnchor?: OverlayAnchor | null;
+  /** The user dragged the overlay to a new place (null: back to the default). */
+  onOverlayMoved?: (anchor: OverlayAnchor | null) => void;
 }
 
 export interface WindowManager {
@@ -38,6 +42,8 @@ export interface WindowManager {
   /** Lets the overlay take keyboard focus (for its quick chat), or gives it back. */
   setOverlayFocus(focus: boolean): void;
   setOverlayInteractive(interactive: boolean): void;
+  /** Moves the overlay with the mouse while its background is held; "end" keeps the place, "reset" goes back to the middle. */
+  dragOverlay(phase: 'start' | 'end' | 'reset'): void;
   /** Shows a session's work schema or questions in a transparent window over the primary screen, focused, without the main window. */
   openPopup(view: PopupView): void;
   closePopup(): void;
@@ -118,6 +124,8 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   let overlayDetail = false;
   let overlayWide = false;
   let overlayCount = 0;
+  let overlayAnchor: OverlayAnchor | null = opts.overlayAnchor ?? null;
+  let dragTimer: NodeJS.Timeout | null = null;
   let popup: BrowserWindow | null = null;
   let popupShows: PopupView | null = null;
 
@@ -188,12 +196,16 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
       overlay.setIgnoreMouseEvents(true, { forward: true });
     }
     overlayCount = count;
-    const area = screen.getPrimaryDisplay().workArea;
+    // Centred at the top, or where the user dragged it (on the screen that point is on).
+    const area = overlayAnchor ? screen.getDisplayNearestPoint({ x: Math.round(overlayAnchor.centerX), y: Math.round(overlayAnchor.top) }).workArea : screen.getPrimaryDisplay().workArea;
     const row = OVERLAY_USAGE_WIDTH + count * OVERLAY_CELL + 16;
     const detailWidth = overlayWide ? OVERLAY_CHAT_WIDTH : OVERLAY_DETAIL_WIDTH;
     const width = Math.min(overlayDetail ? Math.max(row, detailWidth) : row, area.width);
     const height = OVERLAY_HEIGHT + (overlayDetail ? (overlayWide ? OVERLAY_CHAT_HEIGHT : OVERLAY_DETAIL_HEIGHT) : 0);
-    place(overlay, { x: area.x + Math.round((area.width - width) / 2), y: area.y + 2, width, height });
+    const centerX = overlayAnchor?.centerX ?? area.x + area.width / 2;
+    const x = Math.min(Math.max(Math.round(centerX - width / 2), area.x), area.x + area.width - width);
+    const y = Math.min(Math.max(Math.round(overlayAnchor?.top ?? area.y + 2), area.y), area.y + area.height - OVERLAY_HEIGHT);
+    place(overlay, { x, y, width, height });
   }
 
   function setOverlayDetail(open: boolean, wide = false): void {
@@ -214,6 +226,33 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
       overlayInteractive = false;
       overlay.setIgnoreMouseEvents(true, { forward: true });
     }
+  }
+
+  function dragOverlay(phase: 'start' | 'end' | 'reset'): void {
+    if (!overlay || overlay.isDestroyed()) return;
+    if (dragTimer) clearInterval(dragTimer);
+    dragTimer = null;
+    if (phase === 'reset') {
+      overlayAnchor = null;
+      opts.onOverlayMoved?.(null);
+      setOverlay(true, overlayCount);
+      return;
+    }
+    const bounds = overlay.getBounds();
+    if (phase === 'end') {
+      overlayAnchor = { centerX: bounds.x + bounds.width / 2, top: bounds.y };
+      opts.onOverlayMoved?.(hidden ? null : overlayAnchor);
+      return;
+    }
+    // Follows the cursor until released (a safety stop after a minute, in case the release is missed).
+    const start = screen.getCursorScreenPoint();
+    const from = { x: bounds.x, y: bounds.y };
+    const began = Date.now();
+    dragTimer = setInterval(() => {
+      if (!overlay || overlay.isDestroyed() || Date.now() - began > 60_000) return dragOverlay('end');
+      const at = screen.getCursorScreenPoint();
+      overlay.setPosition(from.x + at.x - start.x, from.y + at.y - start.y);
+    }, 16);
   }
 
   function setOverlayInteractive(interactive: boolean): void {
@@ -291,6 +330,7 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     setDock,
     setOverlay,
     setOverlayInteractive,
+    dragOverlay,
     setOverlayDetail,
     setOverlayFocus,
     setTheme: (theme) => main.setTitleBarOverlay({ ...TITLE_BAR[theme], height: TITLE_BAR_HEIGHT }),

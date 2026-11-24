@@ -222,7 +222,7 @@ describe('usage limit', () => {
     apply({ type: 'turn_started', prompt: 'kör' });
     apply({ type: 'rate_limit', windows: { fiveHour: null, sevenDay: null }, rejected: true, resetsAt: '2026-11-23T17:30:00.000Z' });
     apply(finish());
-    expect(model.summary('s1')).toMatchObject({ status: 'limited', limitResetsAt: '2026-11-23T17:30:00.000Z', lastError: 'Användningsgränsen är nådd.' });
+    expect(model.summary('s1')).toMatchObject({ status: 'limited', limitResetsAt: '2026-11-23T17:30:00.000Z', lastError: expect.stringMatching(/^Användningsgränsen är nådd\. Den återställs .*kl \d\d:30\.$/) });
     apply({ type: 'turn_started', prompt: 'fortsätt' });
     expect(model.summary('s1')).toMatchObject({ status: 'working', limitResetsAt: null });
   });

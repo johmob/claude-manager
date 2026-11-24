@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type KeyboardEvent } from 'react';
-import type { SessionSummary } from '../../../shared/contracts';
+import { whenText, type SessionSummary } from '../../../shared/contracts';
 import { formatElapsed } from '../lib/format';
 import { send } from '../lib/api';
 import { useNow } from '../lib/useNow';
@@ -84,11 +84,11 @@ function CardActions({ session, onRename }: { session: SessionSummary; onRename:
   );
 }
 
-/** " Fortsätter 18:30." for a session stopped by the usage limit. */
+/** " Fortsätter kl 18:30." (or "fre 28 nov kl 09:00" when not today) for a session stopped by the usage limit. */
 function limitNote(session: SessionSummary): string {
   if (session.status !== 'limited') return '';
-  const at = session.limitResetsAt ? new Date(session.limitResetsAt) : null;
-  return at ? ` Fortsätter ${at.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}.` : ' Fortsätter när gränsen har återställts.';
+  const when = session.limitResetsAt ? whenText(session.limitResetsAt) : '';
+  return when ? ` Fortsätter ${when}.` : ' Fortsätter när gränsen har återställts.';
 }
 
 /** What the latest turn tagged (suggestions stay in the transcript), until dismissed. */
