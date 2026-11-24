@@ -24,6 +24,9 @@ import type {
   SessionEvent,
   SessionKind,
   SessionRecord,
+  TaggedBlock,
+  TodoNode,
+  TodoTree,
 } from '../shared/contracts';
 import { CALLOUT_PROTOCOL, createSessionEngine, loadHistory } from './modules/session-engine';
 import { createSessionModel } from './modules/session-model';
@@ -42,7 +45,8 @@ import { probeAccount, UNVERIFIED_ACCOUNT } from './modules/account';
 import { bringIntoFocus, expireFocus } from './modules/focus-rules';
 import { createUpdater } from './modules/updater';
 import { createKeepAwake } from './modules/keep-awake';
-import { messagesForTagging, readTags, tagRequest, taggedBlocks } from './modules/turn-tags';
+import { messagesForTagging, readTags, splitBlocks, tagRequest, taggedBlocks } from './modules/turn-tags';
+import { createTagMemory } from './modules/tag-memory';
 import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer-summary';
 import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 
@@ -130,6 +134,7 @@ function boot(): void {
   let quitting = false;
 
   // ---------- Persistence ----------
+  const tagMemory = createTagMemory(join(userData, 'tags'));
   const settingsStore = createJsonStore(join(userData, 'settings.json'), DEFAULT_SETTINGS, validSettings);
   const recordStore = createJsonStore<SessionRecord[]>(join(userData, 'sessions.json'), [], validRecords);
   let settings = settingsStore.read();
@@ -481,9 +486,10 @@ function boot(): void {
     if (!entries.length) return;
     const before = model.summary(id);
     try {
-      const tags = readTags(await structuredQuery(tagRequest(messages, userData)), messages.map((m) => m.length));
+      const tags = readTags(await structuredQuery(tagRequest(messages, userData, workInProgress(model.summary(id)?.todo ?? null))), messages.map((m) => m.length));
       if (!tags) return;
-      const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, context: '', detail: entries[q.message - 1]?.text ?? '', brief: q.brief, options: q.options }));
+      tagMemory.remember(id, entries.map((e, i) => ({ text: e.text, tags: tags.tags[i]! })));
+      const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, about: q.about, detail: entries[q.message - 1]?.text ?? '', brief: q.brief, options: q.options }));
       const blocks = entries.map((e, i) => ({ entryId: e.id, blocks: taggedBlocks(messages[i]!, tags.tags[i]!) }));
       for (const entry of model.applyTurnTags(id, lastUser?.id ?? null, questions, blocks)) windows.send('session:transcript-upsert', { id, entry });
       const after = model.summary(id);
@@ -536,11 +542,31 @@ function boot(): void {
     return [groundRules.read().trim(), TODO_PROTOCOL, CALLOUT_PROTOCOL].join('\n\n');
   }
 
+  /** The tags saved for the card's messages, for those whose text still splits into as many blocks. */
+  function savedBlocks(id: string): Array<{ entryId: string; blocks: TaggedBlock[] }> {
+    return model.transcript(id).flatMap((e) => {
+      if (e.kind !== 'assistant' || e.agentId || e.blocks || !e.text.trim()) return [];
+      const tags = tagMemory.recall(id, e.text);
+      const blocks = tags && splitBlocks(e.text);
+      return blocks && blocks.length === tags.length ? [{ entryId: e.id, blocks: taggedBlocks(blocks, tags) }] : [];
+    });
+  }
+
+  /** The work schema's items in progress ("cad.2.1 Kåpan"), so the tagger can tie a question to its step. */
+  function workInProgress(tree: TodoTree | null): string[] {
+    const leaves = (n: TodoNode): TodoNode[] => (n.children.length ? n.children.flatMap(leaves) : n.status === 'in_progress' ? [n] : []);
+    return (tree?.tracks ?? []).flatMap(leaves).slice(0, 12).map((n) => `${n.id} ${n.title}`);
+  }
+
   /** Puts a saved conversation in front of the card's transcript (no tokens; local files). */
   function loadSavedHistory(record: SessionRecord): void {
     if (!record.claudeSessionId) return;
     loadHistory(record.id, record.claudeSessionId, record.cwd)
-      .then((events) => windows.send('session:transcript-reset', { id: record.id, entries: model.loadHistory(record.id, events) }))
+      .then((events) => {
+        model.loadHistory(record.id, events);
+        model.setBlocks(record.id, savedBlocks(record.id));
+        windows.send('session:transcript-reset', { id: record.id, entries: model.transcript(record.id) });
+      })
       .catch(() => undefined); // No saved transcript (deleted or never written): the card simply starts empty.
   }
 
@@ -839,6 +865,7 @@ function boot(): void {
     void engine.stop(req.id);
     todo.unwatch(req.id);
     notifier.clear(req.id);
+    tagMemory.forget(req.id);
     model.remove(req.id);
     records = records.filter((r) => r.id !== req.id);
     recordStore.write(records);

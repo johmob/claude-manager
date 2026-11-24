@@ -253,8 +253,8 @@ export type OpenQuestionKind = 'question' | 'assumption';
 export interface OpenQuestion {
   kind: OpenQuestionKind;
   text: string;
-  /** The heading it was listed under, e.g. "Antaganden, rätta om fel"; empty when none. */
-  context: string;
+  /** What it concerns, so it can be answered on its own: the model, part or work step, e.g. "Handtag v4, kåpan"; empty when unknown. */
+  about: string;
   /** The text around it in the answer (its section), e.g. what options A and B are; empty when it stands alone. */
   detail: string;
   /** A short background written by a cheap model after the turn ('' until it arrives). */

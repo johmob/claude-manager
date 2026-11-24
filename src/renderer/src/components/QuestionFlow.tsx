@@ -125,7 +125,7 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
                 {KIND_LABEL[q.kind]}
                 <span className="qf-count">{index + 1} av {questions.length}</span>
               </div>
-              {q.context && <div className="qf-context">{q.context}</div>}
+              <QuestionSource session={session} about={q.about} />
               {q.brief && <div className="qf-brief">{q.brief}</div>}
               <div className="qf-question">{q.text}</div>
               {q.detail && (
@@ -191,6 +191,20 @@ export function QuestionFlow({ session, onClose, onSent }: { session: SessionSum
   );
 }
 
+/**
+ * Which chat asks and what about: the session's name in its colour, then the part or work step the
+ * question concerns (from the turn's tags), or else what the session is working on.
+ */
+function QuestionSource({ session, about }: { session: SessionSummary; about: string }) {
+  const where = about || session.currentTask;
+  return (
+    <div className="q-source" style={{ '--c': session.color } as CSSProperties}>
+      <span className="q-source-name">{session.name}</span>
+      {where && <span className="q-source-about">{where}</span>}
+    </div>
+  );
+}
+
 /** Prominent "Svara på 8 frågor" on a card or tile; opens the question flow. */
 export function QuestionsButton({ session }: { session: SessionSummary }) {
   const ask = useContext(AskQuestionsContext);
@@ -244,8 +258,8 @@ export function QuickQuestion({ session, onOpen }: { session: SessionSummary; on
     <div className="ov-q">
       <div className="ov-q-head">
         <span>{q.kind === 'assumption' ? 'Antagande' : 'Fråga'}{questions.length > 1 ? ` ${index + 1} av ${questions.length}` : ''}</span>
-        <span className="muted">{session.name}</span>
       </div>
+      <QuestionSource session={session} about={q.about} />
       {q.brief && <div className="ov-q-brief">{q.brief}</div>}
       <div className="ov-q-text">{q.text}</div>
       <div className="ov-q-actions">

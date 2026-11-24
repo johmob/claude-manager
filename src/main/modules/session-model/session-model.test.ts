@@ -196,8 +196,8 @@ describe('questions left for the user', () => {
     apply({ type: 'callout', callout: { kind: 'note', title: '', text: 'Displayen är urkopplad.' } });
     apply(finish);
     expect(model.summary('s1')?.questions).toEqual([
-      { kind: 'question', text: 'Rev: B eller C?', context: '', detail: '', brief: '', options: [] },
-      { kind: 'assumption', text: 'Displayen är urkopplad.', context: '', detail: '', brief: '', options: [] },
+      { kind: 'question', text: 'Rev: B eller C?', about: '', detail: '', brief: '', options: [] },
+      { kind: 'assumption', text: 'Displayen är urkopplad.', about: '', detail: '', brief: '', options: [] },
     ]);
     expect(model.summary('s1')?.status).toBe('waiting');
     model.dismissCallouts('s1');
@@ -256,7 +256,7 @@ describe('questions already answered', () => {
     apply({ type: 'text', text: 'Öppna frågor: SPI (besvarad), baudrate.' });
     apply(finish);
     const lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
-    model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Ska jag använda SPI-bussen för givaren? (besvarad)', context: '', detail: '', brief: '', options: [] }, { kind: 'question', text: 'Vilken baudrate ska gälla', context: '', detail: '', brief: '', options: [] }], []);
+    model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Ska jag använda SPI-bussen för givaren? (besvarad)', about: '', detail: '', brief: '', options: [] }, { kind: 'question', text: 'Vilken baudrate ska gälla', about: '', detail: '', brief: '', options: [] }], []);
     expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Vilken baudrate ska gälla']);
   });
 });
@@ -282,7 +282,7 @@ describe('turn tags from a cheap model', () => {
     const transcript = model.transcript('s1');
     const lastUser = transcript.filter((e) => e.kind === 'user').pop()!;
     const choice = transcript.find((e) => e.kind === 'assistant' && e.text.startsWith('E väntar'))!;
-    const changed = model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Greppet: 1 eller 1b?', context: '', detail: '', brief: 'Två varianter.', options: ['1', '1b'] }], [{ entryId: choice.id, blocks: [{ text: 'E väntar på ditt val mellan 1 och 1b.', tag: 'question' }] }]);
+    const changed = model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Greppet: 1 eller 1b?', about: '', detail: '', brief: 'Två varianter.', options: ['1', '1b'] }], [{ entryId: choice.id, blocks: [{ text: 'E väntar på ditt val mellan 1 och 1b.', tag: 'question' }] }]);
     expect(changed.map((e) => e.id)).toEqual([choice.id]);
     expect(model.transcript('s1').find((e) => e.id === choice.id)).toMatchObject({ blocks: [{ tag: 'question' }] });
     expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['Får jag beställa kortet?', 'Greppet: 1 eller 1b?']);

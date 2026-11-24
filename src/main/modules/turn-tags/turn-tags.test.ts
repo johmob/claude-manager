@@ -29,6 +29,7 @@ describe('turn tags', () => {
   it('asks a cheap model with numbered blocks', () => {
     const request = tagRequest([['Jag startar E.'], ['Välj 1 eller 1b.', 'Bakgrund.']], 'C:\\tmp');
     expect(request).toMatchObject({ model: 'haiku', tools: [] });
+    expect(tagRequest([['x']], 'C:\\tmp', ['cad.2 Handtag v4']).prompt).toContain('Pågående punkter i arbetsschemat:\n- cad.2 Handtag v4');
     expect(request.prompt).toContain('[1.1]\nJag startar E.\n\n[2.1]\nVälj 1 eller 1b.\n\n[2.2]\nBakgrund.');
   });
 
@@ -49,7 +50,7 @@ describe('turn tags', () => {
           { id: '2.1', tag: 'nonsense' },
         ],
         questions: [
-          { text: 'Ska greppet vara 1 eller 1b?', kind: 'question', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2 },
+          { text: 'Ska greppet vara 1 eller 1b?', kind: 'question', about: 'cad.2 Handtag v4', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2 },
           { text: 'Fel nummer', kind: 'question', options: [], brief: '', message: 9 },
         ],
       },
@@ -57,7 +58,7 @@ describe('turn tags', () => {
     );
     expect(tags).toEqual({
       tags: [['result'], [null, 'fail']],
-      questions: [{ text: 'Ska greppet vara 1 eller 1b?', kind: 'question', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2 }],
+      questions: [{ text: 'Ska greppet vara 1 eller 1b?', kind: 'question', about: 'cad.2 Handtag v4', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2 }],
     });
     expect(readTags(null, [1])).toBeNull();
     expect(taggedBlocks(['a', 'b'], ['pass'])).toEqual([{ text: 'a', tag: 'pass' }, { text: 'b', tag: null }]);

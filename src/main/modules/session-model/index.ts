@@ -37,6 +37,8 @@ export interface SessionModel {
    * latest message from the user). Returns the entries that changed.
    */
   applyTurnTags(id: string, afterEntryId: string | null, questions: OpenQuestion[], blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[];
+  /** Puts tagged blocks on assistant entries (e.g. saved tags after a restart). Returns the entries that changed. */
+  setBlocks(id: string, blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[];
   setMapping(id: string, mapping: boolean): void;
   /** Marks a session as stopped by the usage limit (from its saved record, after a restart). */
   setLimit(id: string, resetsAt: string): void;
@@ -169,7 +171,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       const fresh = s.callouts.slice(s.calloutsBefore);
       s.calloutsBefore = s.callouts.length;
       const tagged = fresh.flatMap((c): OpenQuestion[] =>
-        c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), context: '', detail: '', brief: '', options: [] }] : [],
+        c.kind === 'question' || c.kind === 'note' ? [{ kind: c.kind === 'note' ? 'assumption' : 'question', text: calloutText(c), about: '', detail: '', brief: '', options: [] }] : [],
       );
       s.taggedQuestions = tagged;
       const asked = tagged.filter((q) => !alreadyAnswered(s.answered, q.text)).slice(0, MAX_QUESTIONS);
@@ -339,6 +341,19 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
     };
   }
 
+  function setBlocks(s: SessionState, blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[] {
+    const tagged = new Map(blocks.map((b) => [b.entryId, b.blocks]));
+    const changed: TranscriptEntry[] = [];
+    s.transcript = s.transcript.map((e) => {
+      const these = tagged.get(e.id);
+      if (e.kind !== 'assistant' || !these) return e;
+      const next = { ...e, blocks: these };
+      changed.push(next);
+      return next;
+    });
+    return changed;
+  }
+
   function loadHistory(id: string, events: SessionEvent[]): TranscriptEntry[] {
     const s = states.get(id);
     if (!s) return [];
@@ -369,6 +384,10 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       s.limitResetsAt = resetsAt;
       s.lastError = LIMIT_MESSAGE;
     },
+    setBlocks: (id, blocks) => {
+      const s = states.get(id);
+      return s ? setBlocks(s, blocks) : [];
+    },
     setMapping: (id, mapping) => {
       const s = states.get(id);
       if (s) s.mapping = mapping;
@@ -385,16 +404,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         .slice(0, MAX_QUESTIONS);
       if (JSON.stringify(asked.map((q) => q.text)) !== JSON.stringify(s.questions.map((q) => q.text))) s.questionsId = String(now());
       s.questions = asked;
-      const tagged = new Map(blocks.map((b) => [b.entryId, b.blocks]));
-      const changed: TranscriptEntry[] = [];
-      s.transcript = s.transcript.map((e) => {
-        const these = tagged.get(e.id);
-        if (e.kind !== 'assistant' || !these) return e;
-        const next = { ...e, blocks: these };
-        changed.push(next);
-        return next;
-      });
-      return changed;
+      return setBlocks(s, blocks);
     },
     dismissCallouts: (id) => {
       const s = states.get(id);

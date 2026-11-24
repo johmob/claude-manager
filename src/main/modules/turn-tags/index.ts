@@ -9,9 +9,10 @@ const MAX_MESSAGES = 12;
 const MAX_BLOCKS = 80;
 const MAX_BLOCK_CHARS = 1500;
 const MAX_BRIEF_CHARS = 240;
+const MAX_ABOUT_CHARS = 100;
 
 export interface TurnTags {
-  questions: Array<Omit<OpenQuestion, 'context' | 'detail'> & { message: number }>;
+  questions: Array<Omit<OpenQuestion, 'detail'> & { message: number }>;
   /** Per message, per block: its tag (null when the model gave none). */
   tags: Array<Array<BlockTag | null>>;
 }
@@ -36,10 +37,11 @@ const SCHEMA = {
           text: { type: 'string' },
           kind: { type: 'string', enum: ['question', 'assumption'] },
           options: { type: 'array', items: { type: 'string' } },
+          about: { type: 'string' },
           brief: { type: 'string' },
           message: { type: 'integer' },
         },
-        required: ['text', 'kind', 'options', 'brief', 'message'],
+        required: ['text', 'kind', 'about', 'options', 'brief', 'message'],
         additionalProperties: false,
       },
     },
@@ -87,7 +89,8 @@ export function messagesForTagging(texts: string[]): string[][] {
   return split;
 }
 
-export function tagRequest(messages: string[][], cwd: string): StructuredRequest {
+/** `work`: the work schema's items in progress ("id title"), so a question can be tied to its step. */
+export function tagRequest(messages: string[][], cwd: string, work: string[] = []): StructuredRequest {
   const numbered = messages
     .map((blocks, m) => blocks.map((b, i) => `[${m + 1}.${i + 1}]\n${b.length > MAX_BLOCK_CHARS ? `${b.slice(0, MAX_BLOCK_CHARS)}…` : b}`).join('\n\n'))
     .join('\n\n');
@@ -111,12 +114,16 @@ export function tagRequest(messages: string[][], cwd: string): StructuredRequest
     '2. questions: varje fråga eller val agenten uttryckligen ber användaren svara på eller ta ställning till, och varje antagande användaren ska bekräfta.',
     '   Lägesrapporter, resultat, listor över vad som gjorts eller ska göras, rubriker och förklaringar är aldrig frågor, inte heller i punktlistor eller efter ett kolon.',
     '   Ta inte med frågor som agenten själv besvarar i samma tur. Hellre en fråga för lite än en påhittad. För varje:',
-    '   text: frågan med agentens egna ord, kort; kind: "question" eller "assumption";',
+    '   Användaren har många agenter och projekt igång och läser frågan utan resten av texten, så den måste gå att förstå fristående.',
+    '   text: frågan med agentens ord, kort, men med det tillagt som behövs för att förstå den fristående (vilken modell, del eller version den gäller; "Är skruvarna M3?" blir "Är skruvarna i handtag v4 M3?"); kind: "question" eller "assumption";',
+    '   about: vad frågan gäller, högst 80 tecken: modell, del, version eller delmoment med agentens namn på dem (t.ex. "Handtag v4, kåpan mot greppet"), och punktens id ur arbetsschemat först om det framgår vilken punkt det är (t.ex. "cad.2.1 Handtag v4: kåpan"); "" om det inte framgår;',
     '   options: svarsalternativen om agenten gav några (t.ex. ["1", "1b"] eller ["A", "B"]), annars [];',
-    '   brief: en till två meningar, högst 200 tecken, med det användaren behöver veta för att svara direkt, bara från texten;',
+    '   brief: en till två meningar, högst 200 tecken, med det användaren behöver veta för att svara direkt, bara från texten, och som nämner vad det gäller;',
     '   message: numret på meddelandet där frågan står.',
     'Svara med JSON.',
     '',
+    ...(work.length ? ['Pågående punkter i arbetsschemat:', ...work.map((w) => `- ${w}`), ''] : []),
+    'Meddelandena:',
     numbered,
   ].join('\n');
   return { prompt, schema: SCHEMA, model: 'haiku', cwd, tools: [], maxTurns: 3 };
@@ -144,10 +151,12 @@ export function readTags(reply: unknown, blockCounts: number[]): TurnTags | null
     const text = typeof x['text'] === 'string' ? x['text'].trim() : '';
     if (!text || !inRange(x['message'])) return [];
     const brief = typeof x['brief'] === 'string' ? x['brief'].trim() : '';
+    const about = typeof x['about'] === 'string' ? x['about'].trim().slice(0, MAX_ABOUT_CHARS) : '';
     return [
       {
         text,
         kind: x['kind'] === 'assumption' ? 'assumption' : 'question',
+        about,
         options: Array.isArray(x['options']) ? x['options'].filter((o): o is string => typeof o === 'string' && !!o.trim()).map((o) => o.trim()).slice(0, 6) : [],
         brief: brief.length > MAX_BRIEF_CHARS ? `${brief.slice(0, MAX_BRIEF_CHARS - 1)}…` : brief,
         message: x['message'] as number,

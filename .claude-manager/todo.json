@@ -1,6 +1,6 @@
 {
   "title": "Claude Code Manager",
-  "updated": "2026-11-24T06:02:28Z",
+  "updated": "2026-11-24T06:07:34Z",
   "tracks": [
     {
       "id": "eng",
@@ -375,7 +375,39 @@
               "status": "done",
               "id": "ui.6.6",
               "title": "Haiku taggar varje textblock och frågorna",
-              "notes": "Användaren: taggar likt testsyntax, nyanserade så att UI kan styras. 13 taggar (answer, result, pass, fail, warning, risk, question, assumption, decision, next, plan, progress, background) per block, med etikett och färg i chatten och på korten. Provat med en riktig tur: rätt taggar och rätt två frågor. Taggarna sparas inte över omstart. Klart, inte släppt än."
+              "notes": "Användaren: taggar likt testsyntax, nyanserade så att UI kan styras. 13 taggar per block med etikett och färg i chatten och på korten. Användaren: taggarna ska sparas; de sparas nu per kort och läggs tillbaka efter omstart. Klart, inte släppt än."
+            },
+            {
+              "id": "ui.6.7",
+              "title": "Frågerutan visar chatt och vad frågan gäller",
+              "status": "done",
+              "notes": "Användaren: \"Är skruvarna M3?\" går inte att svara på utan att veta vilken modell. Rutan visar chattens namn och delmomentet (Haikus \"about\", annars pågående punkt); Haiku och protokollet ska skriva fristående frågor. Klart, inte släppt än."
+            }
+          ]
+        },
+        {
+          "id": "ui.7",
+          "title": "Ikon per chatt",
+          "notes": "Användaren: en stor pool ikoner; en chatt får en lämplig ikon efter kartläggningen. Visas vid frågor, i chattens rubrik och i overlay-bollen.",
+          "items": [
+            {
+              "id": "ui.7.1",
+              "title": "Ikonpool (lucide, kurerat urval)",
+              "status": "in_progress",
+              "progress": 0,
+              "notes": "Ett åttiotal ikoner som passar projekt: elektronik, mekanik, mjukvara, data, fordon, natur m.m."
+            },
+            {
+              "id": "ui.7.2",
+              "title": "Haiku väljer ikon efter kartläggningen",
+              "status": "not_started",
+              "notes": "Sparas i kortets post. Även befintliga kort med schema men utan ikon får en."
+            },
+            {
+              "id": "ui.7.3",
+              "title": "Visa ikonen i frågerutan, rubriken och overlay-bollen",
+              "status": "not_started",
+              "notes": "Initialer som reserv när ikon saknas."
             }
           ]
         }

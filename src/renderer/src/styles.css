@@ -831,3 +831,11 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .tb[data-tag="decision"] { --c: var(--c-important); }
 .tb[data-tag="next"] { --c: color-mix(in srgb, var(--c-tip) 60%, transparent); }
 .tb[data-quiet="true"] { --c: color-mix(in srgb, var(--muted) 30%, transparent); color: var(--muted); }
+
+/* Which chat asks, and about what */
+.q-source { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin: 2px 0 8px; min-width: 0; }
+.q-source-name { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--text); }
+.q-source-name::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.q-source-about { color: var(--muted); }
+.q-source-about::before { content: '›'; margin-right: 8px; color: var(--muted); }
+.ov-q .q-source { font-size: 0.78rem; margin: 0 0 6px; }
