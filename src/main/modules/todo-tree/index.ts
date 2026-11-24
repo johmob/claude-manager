@@ -7,18 +7,19 @@ export const TODO_RELATIVE_PATH = '.claude-manager/todo.json';
 const POLL_MS = 1000;
 
 export const TODO_PROTOCOL = `# Work schema
-Keep a work schema for the project in \`${TODO_RELATIVE_PATH}\` in the project root (create the folder if needed). The user sees it as an org chart: the project on top, parallel tracks below it, each track's items under the track.
-- Write it as soon as you know the project: after reading up on it, when asked about its status or plan, or before starting real work. Mark what is already done (judge from the code, git history and docs), what is in progress and what remains. If the file exists, update it instead.
-- Read up on the project yourself. Never hand mapping the project, judging what matters or summarising its state to a subagent: that is the main agent's job. Subagents get clearly bounded execution tasks.
-- Split the work into parallel tracks by area that can progress independently, e.g. "CAD – housing", "Firmware – controller", "Firmware – sensor node", "Web – result pages". A small job is a single track.
-- Give each track an owner: the subagent that works on it, or "main" for yourself. A track is a natural unit to hand to a subagent.
-- Organise tracks by area of the project, never by phase or chronology. Give the tree depth: split each item into sub-items for its parts (usually 2-3 levels), so the schema shows the project's structure, not one flat list. Use ids like "fw-a.2" and "fw-a.2.1".
-- Keep it easy to take in at a glance. The project title is at most four words. A track's or item's title names the thing in at most five words, a noun phrase such as "SPI driver" or "Display OTA", never a sentence or a description: details go in "notes". Keep at most about seven items on one level; when an area has more, group them into packages (an item with sub-items) by the part of the project they belong to.
-- Never mix leaves and groups on one level: when an item has sub-items next to loose items, gather the loose ones under their own group (for example "Övrigt"), so every level is either all groups or all leaves.
-- Set "status" ("not_started", "in_progress", "done") on the lowest-level items, and "progress" (0-100) on items in progress. The app computes tracks and parents from their items.
-- Give every track and every item "notes": one to three sentences on what it covers, where it stands, what is left, and any open questions or risks. The user clicks an item to read them, so an item without notes shows nothing. Write them for all items when you map the project, write them for every new item, and keep them current like the status.
-- When an item needs other items finished first, list their ids in "dependsOn", also across tracks.
-- Notice when the work moves into a new area or phase that no existing track covers (for example a new device, a test campaign, documentation, or a change of direction). Before working on it, ask the user with the AskUserQuestion tool whether to open a new track for it: propose its title and owner, and offer adding it under an existing track as the alternative. Small sub-items inside an existing track need no question.
+Keep the project's work schema in \`${TODO_RELATIVE_PATH}\` (create the folder if needed). The user sees it as an org chart: the project on top, parallel tracks below, each track's items under it.
+- Write it as soon as you know the project, before real work. Mark what is done (judge from code, git history and docs), in progress and left. If the file exists, update it.
+- Tracks are areas that can progress independently ("CAD – housing", "Firmware – controller", "Web – result pages"), never phases. Each has an owner: the subagent working on it, or "main". A small job is one track.
+- Give it depth: split items into sub-items for their parts (usually 2–3 levels), ids like "fw-a.2.1". At most about seven items per level; group more into packages. Never mix leaves and groups on one level: gather loose items under their own group (e.g. "Övrigt").
+- Titles name the thing in at most five words (project title at most four), a noun phrase such as "SPI driver", never a sentence.
+- Every track and item has "notes": one to three sentences on what it covers, where it stands, what is left, open questions or risks. Keep them current.
+- Leaves carry "status" ("not_started", "in_progress", "done") and, while in progress, "progress" (0–100); the app computes the parents. List prerequisite ids in "dependsOn", also across tracks.
+- "in_progress" only while work on the item actually runs; set it back or to "done" the moment it stops. Strike or merge items that turn out redundant instead of carrying them out because they are listed.
+- When the user mentions something that belongs to another item (idea, requirement, bug, decision), add it to that item's notes at once, marked "Användaren: …", and say in one line where. Create the item if none fits. Read an item's notes before you start on it.
+- The structure (tracks, items, order, dependencies) is yours alone. A subagent sets only its own items' status, progress and notes; check what it recorded. Refer to items by id when you report.
+- When the user focuses on a track ("we focus on this today"), set "focus": true on it and work on it first; remove it when the focus ends.
+- Before work moves into an area no track covers, ask the user with AskUserQuestion whether to open a new track (propose title and owner, offer an existing track as the alternative). Small sub-items need no question.
+- Skip the schema only for a plain question unrelated to the project's work.
 - Exact format:
 {
   "title": "What this session is building",
@@ -30,13 +31,7 @@ Keep a work schema for the project in \`${TODO_RELATIVE_PATH}\` in the project r
     { "id": "web", "title": "Web – result pages", "owner": "main", "notes": "Pages that show the measurements live and as history.", "items": [
       { "id": "web.1", "title": "Live chart", "status": "not_started", "dependsOn": ["fw-a.2"], "notes": "Needs the data protocol; open question: how many samples per second to show." } ] }
   ]
-}
-- Use the schema as your guide and focus on closing items. Set "in_progress" only while the work on an item actually runs, and set it back to "not_started" or on to "done" the moment it stops (the app shows in-progress items as resting when no agent works). When an item turns out redundant, obsolete or covered by another, strike it or merge it instead of carrying it out because it is listed.
-- Keep it current as you go (including "updated"), and update it before changing direction when the plan changes.
-- When the user chooses to focus on a track (for example "we focus on this today"), set "focus": true on that track and work on it first; remove "focus" when the focus ends or moves elsewhere. The app shows focused tracks glowing.
-- The schema is also your memory. When the user mentions something in chat that belongs to another item than the one you are working on now (an idea, a requirement, a bug, a decision), add it to that item's notes at once, marked as from the user ("Användaren: …"), and say in one line where you noted it. Create the item if none fits. Read an item's notes before you start on it, and update them once a remark is dealt with.
-- Write and update the file yourself, as the main agent: the structure (tracks, items, order, dependencies) is yours alone. It is your own map: plan from it, and refer to items by id (e.g. "fw-a.2") when you report progress. Give every subagent the exact ids and titles of the items it works on; when it finishes one, it sets only that item's status, progress and notes in the file (reading it just before, changing nothing else) and names the ids in its report. Check what it recorded, and record progress in the schema rather than relaying it to the user in chat.
-- Skip it only for a plain question that has nothing to do with the project's work.`;
+}`;
 
 /**
  * Sent to a session's main agent to map its project into the work schema. It is shown as the user's
