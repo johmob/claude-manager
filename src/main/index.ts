@@ -515,7 +515,7 @@ function boot(): void {
 
   /**
    * Has the session's main agent map its project into the work schema, so the map stays in its own
-   * conversation. For that turn it runs on Fable (Opus when the account lacks Fable) with high effort,
+   * conversation. For that turn it runs on Opus with high effort,
    * then goes back to the card's model and effort. The user's first message waits until the map exists.
    * Mappings run one at a time.
    */
@@ -550,9 +550,8 @@ function boot(): void {
     const record = findRecord(job.id);
     if (!record || record.archived) return endMapping('stopped');
     job.restore = { model: record.model, effort: record.effort };
-    const planner: ModelChoice = account.models.some((m) => m.choice === 'fable') ? 'fable' : 'opus';
-    const name = planner === 'fable' ? 'Fable' : 'Opus';
-    onSessionEvent({ type: 'notice', sessionId: job.id, text: `Huvudagenten kartlägger projektet på ${name} med hög effort och går sedan tillbaka till ${record.model} / ${record.effort}.`, level: 'info' });
+    const planner: ModelChoice = 'opus';
+    onSessionEvent({ type: 'notice', sessionId: job.id, text: `Huvudagenten kartlägger projektet på Opus med hög effort och går sedan tillbaka till ${record.model} / ${record.effort}.`, level: 'info' });
     try {
       if (engine.isRunning(job.id)) {
         await engine.setModel(job.id, planner);

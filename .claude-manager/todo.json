@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-24T20:13:39.212Z",
+  "updated": "2026-11-24T20:24:32.220Z",
   "tracks": [
     {
       "id": "design",
@@ -33,7 +33,7 @@
             },
             {
               "id": "design.1.4",
-              "title": "Samma gränssnitt i fönster och webbläsare",
+              "title": "Samma gränssnitt överallt",
               "status": "done",
               "notes": "remoteBridge ger window.cm över websocket, så samma React-kod körs i Electron och i telefonens webbläsare."
             }
@@ -172,33 +172,33 @@
           "items": [
             {
               "id": "eng.1.1",
-              "title": "Strömmande sessioner, start och återupptagning",
+              "title": "Strömmande sessioner",
               "status": "done",
-              "notes": ""
+              "notes": "Varje projekt kör en egen Agent SDK-session som strömmar händelser och kan återupptas efter omstart."
             },
             {
               "id": "eng.1.2",
-              "title": "Frågor och behörigheter via canUseTool",
+              "title": "Frågor och behörigheter",
               "status": "done",
-              "notes": ""
+              "notes": "Agentens frågor och behörighetsfrågor går via canUseTool till appen och besvaras där."
             },
             {
               "id": "eng.1.3",
-              "title": "Callouts ur agentens text",
+              "title": "Callouts ur texten",
               "status": "done",
-              "notes": ""
+              "notes": "GitHub-rutor ([!NOTE] m.fl.) plockas ur agentens text och visas som egna callouts."
             },
             {
               "id": "eng.1.4",
-              "title": "Avbrott, modell- och effortbyte live",
+              "title": "Avbrott och livebyten",
               "status": "done",
-              "notes": ""
+              "notes": "Turen kan avbrytas, och modell och effort kan bytas medan sessionen lever."
             },
             {
               "id": "eng.1.5",
-              "title": "Tokens och kontextmätning per tur",
+              "title": "Token- och kontextmätning",
               "status": "done",
-              "notes": ""
+              "notes": "Tokens och kontextens fyllnad räknas per tur och visas på kortet."
             }
           ]
         },
@@ -209,27 +209,27 @@
           "items": [
             {
               "id": "eng.2.1",
-              "title": "Status, agenter, aktuell uppgift",
+              "title": "Status och agenter",
               "status": "done",
-              "notes": ""
+              "notes": "Sessionsmodellen räknar ut status, arbetande subagenter och aktuell uppgift."
             },
             {
               "id": "eng.2.2",
-              "title": "Transkript med tänkande och historik",
+              "title": "Transkript och tänkande",
               "status": "done",
-              "notes": ""
+              "notes": "Transkriptet sparar text, tänkande och verktyg, och historiken laddas vid start."
             },
             {
               "id": "eng.2.3",
               "title": "Callouts per tur",
               "status": "done",
-              "notes": ""
+              "notes": "Callouts hålls per tur så att de kan visas och avfärdas tillsammans."
             },
             {
               "id": "eng.2.4",
-              "title": "Sparad historik vid omstart",
+              "title": "Historik vid omstart",
               "status": "done",
-              "notes": ""
+              "notes": "Sessionernas historik och öppna frågor sparas och finns kvar efter omstart."
             }
           ]
         }
@@ -248,27 +248,27 @@
           "items": [
             {
               "id": "plan.1.1",
-              "title": "Spår, underpunkter, ägare, beroenden",
+              "title": "Spår och beroenden",
               "status": "done",
-              "notes": ""
+              "notes": "Formatet har spår, underpunkter, ägare och dependsOn mellan punkter."
             },
             {
               "id": "plan.1.2",
-              "title": "Beräknade föräldrar och blockerade punkter",
+              "title": "Beräknade föräldrar",
               "status": "done",
-              "notes": ""
+              "notes": "Appen räknar status och förlopp för spår och grupper ur löven och markerar blockerade punkter."
             },
             {
               "id": "plan.1.3",
-              "title": "Gamla blocks-formatet läses fortfarande",
+              "title": "Gamla blocks-formatet",
               "status": "done",
-              "notes": ""
+              "notes": "Äldre scheman i blocks-formatet läses fortfarande."
             },
             {
               "id": "plan.1.4",
-              "title": "Beskrivning (notes) per punkt",
+              "title": "Notes per punkt",
               "status": "done",
-              "notes": ""
+              "notes": "Varje spår och punkt har 1–3 meningar som visas när användaren klickar på den."
             }
           ]
         },
@@ -279,33 +279,33 @@
           "items": [
             {
               "id": "plan.2.1",
-              "title": "Huvudagenten kartlägger själv (Fable/high för den turen)",
+              "title": "Huvudagenten kartlägger",
               "status": "done",
-              "notes": ""
+              "notes": "Huvudagenten kartlägger själv, för den turen på Opus med hög effort (tidigare Fable)."
             },
             {
               "id": "plan.2.2",
-              "title": "Kartlägg automatiskt när schema saknas",
+              "title": "Automatisk kartläggning",
               "status": "done",
-              "notes": ""
+              "notes": "Ett projekt utan schema kartläggs innan första meddelandet skickas."
             },
             {
               "id": "plan.2.3",
-              "title": "Knapp Kartlägg / Kartlägg om i schemavyn",
+              "title": "Kartlägg-knappen",
               "status": "done",
-              "notes": ""
+              "notes": "\"Kartlägg\" och \"Kartlägg om\" i schemavyn, valfritt med egen beskrivning av strukturen."
             },
             {
               "id": "plan.2.4",
-              "title": "Tillbaka till kortets modell, sedan första meddelandet",
+              "title": "Tillbaka efter kartläggning",
               "status": "done",
-              "notes": ""
+              "notes": "Efter kartläggningen återgår sessionen till kortets modell och effort, och första meddelandet skickas."
             },
             {
               "id": "plan.2.5",
               "title": "Separat planerare borttagen",
               "status": "done",
-              "notes": ""
+              "notes": "Den fristående planeringsprocessen togs bort: huvudagenten kunde då bara kartan i andra hand."
             }
           ]
         },
@@ -316,27 +316,27 @@
           "items": [
             {
               "id": "plan.3.1",
-              "title": "Huvudagenten underhåller schemat själv, hela tiden",
+              "title": "Schemat underhålls löpande",
               "status": "done",
-              "notes": ""
+              "notes": "Huvudagenten uppdaterar schemat själv efter varje steg; appen påminner när en tur gått utan uppdatering."
             },
             {
               "id": "plan.3.2",
-              "title": "Fråga innan nytt spår öppnas",
+              "title": "Fråga före nytt spår",
               "status": "done",
-              "notes": ""
+              "notes": "Innan arbetet går in i ett område utan spår frågar agenten användaren."
             },
             {
               "id": "plan.3.3",
-              "title": "Ordna efter område med djup, inte kronologi",
+              "title": "Område före kronologi",
               "status": "done",
-              "notes": ""
+              "notes": "Spår ordnas efter område med 2–3 nivåers djup, aldrig efter fas."
             },
             {
               "id": "plan.3.4",
-              "title": "Schemat som agentens minne för anmärkningar i chatten",
+              "title": "Schemat som minne",
               "status": "done",
-              "notes": ""
+              "notes": "Det användaren nämner om andra punkter skrivs in i deras notes (\"Användaren: …\")."
             },
             {
               "id": "plan.3.5",
@@ -346,7 +346,7 @@
             },
             {
               "id": "plan.3.6",
-              "title": "Styr efter trädet och stäng punkter",
+              "title": "Styr efter trädet",
               "status": "done",
               "notes": "TODO_PROTOCOL och grundregel 1 säger att trädet styr arbetet, att in_progress bara gäller medan arbetet pågår, att överflödiga punkter stryks eller slås ihop och att nivåer inte blandar blad och grupper."
             },
@@ -366,7 +366,7 @@
               "id": "plan.3.9",
               "title": "Grundregler som checklistor",
               "status": "done",
-              "notes": "Användaren: reglerna ska vara superkoncisa och följas. Nu checklistor vid start, större arbete, klart steg och turens slut (~280 ord, förut ~600); schemaprotokollet kortat till ~560 ord. Planerare Opus medium (high för svåra konstruktioner), kodare på lägsta nivå uppgiften kräver, ingen Fable. Användaren: ingen spärr eller fråga vid viss förbrukning. Orörda gamla standardregler uppgraderas automatiskt. Når appen vid nästa installation."
+              "notes": "Användaren: reglerna ska vara superkoncisa och följas. Nu checklistor vid start, större arbete, klart steg och turens slut (~280 ord, förut ~600); schemaprotokollet kortat till ~560 ord. Planerare Opus medium (high för svåra konstruktioner), kodare på lägsta nivå uppgiften kräver. Användaren: ingen spärr eller fråga vid viss förbrukning. Orörda gamla standardregler uppgraderas automatiskt. Når appen vid nästa installation. Användaren: Fable ska inte förbjudas, bara inte föreslås; agenten väljer lämplig planeringsmodell, som standard Opus medium eller high."
             }
           ]
         }
@@ -397,13 +397,13 @@
             },
             {
               "id": "chat.1.3",
-              "title": "Nivå per stycke och per chatt",
+              "title": "Nivå per stycke",
               "status": "done",
               "notes": "Användaren: varje meddelande ska visa sin nivå; lägesväljaren i varje chatt. En till tre prickar per stycke (en: syns även i Minimal), samma prickar i väljaren i varje chattfönster, valet sparas per chatt. Provat dolt. Klart, inte släppt."
             },
             {
               "id": "chat.1.4",
-              "title": "Turens slut visas på en gång",
+              "title": "Turens slut på en gång",
               "status": "done",
               "notes": "Användaren: allt ska komma samtidigt även om det kommer senare. Text, frågor, status och notis hålls tills taggarna kommit (högst 90 s). Klart, inte släppt."
             },
@@ -429,7 +429,7 @@
               "id": "chat.1.8",
               "title": "Agentens egna taggar",
               "status": "done",
-              "notes": ""
+              "notes": "Agenten kan själv tagga stycken; appens Haiku-taggning kompletterar."
             },
             {
               "id": "chat.1.9",
@@ -441,8 +441,8 @@
         },
         {
           "id": "chat.2",
-          "title": "Frågeflöde",
-          "notes": "Äkta frågor samlas, köas och besvaras i helskärm med underlag.",
+          "title": "Frågor",
+          "notes": "Agentens frågor och antaganden. Sedan 0.1.36 besvaras de i en ruta sist i chatten; helskärmsflödet är borttaget.",
           "items": [
             {
               "id": "chat.2.1",
@@ -466,23 +466,23 @@
               "id": "chat.2.4",
               "title": "Öppnas från overlay och kort",
               "status": "done",
-              "notes": ""
+              "notes": "Overlay, kort, notiser och mobil öppnar chatten vid frågerutan (sedan 0.1.36, tidigare helskärm)."
             },
             {
               "id": "chat.2.5",
-              "title": "Alla svar som ett meddelande",
+              "title": "Svaren som ett meddelande",
               "status": "done",
-              "notes": ""
+              "notes": "Alla svar skickas tillsammans som ett meddelande till agenten."
             },
             {
               "id": "chat.2.6",
               "title": "Texten runt frågan",
               "status": "done",
-              "notes": ""
+              "notes": "Underlaget runt frågan visas under den, utan block som bara upprepar frågan."
             },
             {
               "id": "chat.2.7",
-              "title": "Visar chatt och vad det gäller",
+              "title": "Chatt och ämne",
               "status": "done",
               "notes": "Användaren: \"Är skruvarna M3?\" går inte att svara på utan att veta vilken modell. Rutan visar chattens namn och delmomentet (Haikus \"about\", annars pågående punkt); Haiku och protokollet ska skriva fristående frågor. Klart, inte släppt än."
             },
@@ -536,9 +536,15 @@
             },
             {
               "id": "chat.2.16",
-              "title": "Frågor besvaras i chatten, inte i helskärm",
+              "title": "Frågor i chatten",
               "status": "done",
               "notes": "Användaren: ta bort frågorna i helskärm, bara strul. Flera frågor ska fortfarande summeras, men frågas och besvaras enbart i chatten: en ruta sist i chatten med frågorna (rubrik, vad de gäller, underlag, svarsknappar och svarsfält per fråga) och ett Skicka för alla. Overlayn, korten och mobilen öppnar chatten vid frågan i stället för helskärmsflödet. Helskärmsflödet och popupen för frågor tas bort. Användaren igen: en fråga i helskärm försvann medan hen svarade och kom sedan tillbaka; bort med helskärmsfrågor. Högst prioritet i kvällens kö. Provat dolt."
+            },
+            {
+              "id": "chat.2.17",
+              "title": "Städa gammal frågestil",
+              "status": "not_started",
+              "notes": "Det döda blocket \"Question flow, full screen\" i mobile.css och de .qf-regler i styles.css som bara det använder."
             }
           ]
         },
@@ -555,7 +561,7 @@
             },
             {
               "id": "chat.3.2",
-              "title": "Avbryt och gör detta i stället",
+              "title": "Avbryt och gör annat",
               "status": "done",
               "notes": "Användaren: kommando för att stoppa agenten och ta senaste meddelandet. Ctrl+Enter i skrivrutan, och \"Avbryt och läs nu\" på köat meddelande. Provat dolt med en riktig tur. Klart."
             },
@@ -579,7 +585,7 @@
             },
             {
               "id": "chat.3.6",
-              "title": "Dra in och klistra in filer",
+              "title": "Dra in filer",
               "status": "done",
               "notes": "Klart i kod: alla filer kan dras in eller klistras in (via sökväg från Explorer, annars kopia i temp, max 10 MB) och visas som chips; på mobilen finns en Fil-knapp. Provat dolt."
             }
@@ -594,7 +600,7 @@
               "id": "chat.4.1",
               "title": "Kommandon hopfällda",
               "status": "done",
-              "notes": ""
+              "notes": "Verktyg och kommandon ligger hopfällda under \"Under arbetet\" och fäller ut vid klick."
             },
             {
               "id": "chat.4.2",
@@ -653,7 +659,7 @@
             },
             {
               "id": "chat.5.3",
-              "title": "Nytt mejl i Outlook med bilden",
+              "title": "Mejla bilden",
               "status": "done",
               "notes": "Startar Outlook med ett nytt mejl där bilden är bifogad (outlook.exe /a <fil>); knappen visas bara om Outlook finns. Klart: Nytt mejl i Outlook via outlook.exe /a, knappen bara om klassiska Outlook finns. Ej provat i en dold instans ännu. Provat dolt."
             },
@@ -665,13 +671,13 @@
             },
             {
               "id": "chat.5.5",
-              "title": "Filer i chatten: spara, öppna, dela",
+              "title": "Fillänkar: åtgärder",
               "status": "done",
               "notes": "Länkar till lokala filer i chatten (PDF, STL, CSV …) får samma åtgärder som bilder: Spara som, Öppna, Visa i mappen, Kopiera filen (klistra in i Teams eller Outlook) och Nytt mejl i Outlook med filen bifogad. Användaren: högerklick på en fillänk i chatten ger en meny med Visa i mapp (Utforskaren öppnas med filen markerad), så filen kan hämtas utan att öppnas eller letas upp. Klart: Högerklicksmeny på fillänkar: Öppna, Visa i mapp, Spara som, Kopiera filen, Nytt mejl. Ej provat i en dold instans ännu. Provat dolt."
             },
             {
               "id": "chat.5.6",
-              "title": "Ladda ned och dela filer i mobilen",
+              "title": "Filer i mobilen",
               "status": "done",
               "notes": "I mobilvyn hämtas filen från hemdatorn via en skyddad väg i fjärrvärden (samma regler som bilder, men fler filtyper och en storleksgräns), och Dela öppnar telefonens delningsmeny med filen. Klart: Skyddad /file-väg (mappar i projekten, vitlistade typer, 50 MB) plus Ladda ned/Dela-ark. Ej provat i en dold instans ännu. Provat dolt."
             }
@@ -768,12 +774,12 @@
           "items": [
             {
               "id": "voice.4.1",
-              "title": "Röstsvar i frågeflödet",
+              "title": "Röstsvar på frågor",
               "status": "not_started",
               "dependsOn": [
                 "voice.2.2"
               ],
-              "notes": "Mikrofon i frågeflödet; säger man ett av alternativen väljs det."
+              "notes": "Mikrofon i frågerutan i chatten; säger man ett av alternativen väljs det. Bygger på chat.2.16 (klar)."
             },
             {
               "id": "voice.4.2",
@@ -798,33 +804,33 @@
           "items": [
             {
               "id": "tree.1.1",
-              "title": "Organisationsschema, maximerar vid behov",
+              "title": "Organisationsschema",
               "status": "done",
-              "notes": ""
+              "notes": "Projektet överst, spåren under, punkterna i varje spår. Sedan 0.1.36 radbryts spåren i fönstrets bredd i stället för att fönstret maximeras."
             },
             {
               "id": "tree.1.2",
-              "title": "Klicka på punkt och fråga agenten",
+              "title": "Fråga agenten om punkt",
               "status": "done",
-              "notes": ""
+              "notes": "Klick på en punkt visar notes och låter användaren kommentera eller fråga agenten."
             },
             {
               "id": "tree.1.3",
-              "title": "Laddningsvisning medan agenten kartlägger",
+              "title": "Laddning vid kartläggning",
               "status": "done",
-              "notes": ""
+              "notes": "Schemavyn visar att agenten kartlägger tills schemat finns."
             },
             {
               "id": "tree.1.4",
-              "title": "Detaljruta per spår och punkt med kommentarsfält",
+              "title": "Detaljruta med kommentar",
               "status": "done",
               "notes": "Klick på spår eller punkt visar beskrivning, beroenden, vad som väntar på den och underpunkter. Kommentaren skickas med referens; den stora frågerutan under trädet är borttagen."
             },
             {
               "id": "tree.1.5",
-              "title": "Kartläggningsläget släpps när schemat är skrivet",
+              "title": "Kartläggningsläget släpps",
               "status": "done",
-              "notes": ""
+              "notes": "Laddningsläget släpps så snart schemat är skrivet."
             },
             {
               "id": "tree.1.6",
@@ -836,7 +842,7 @@
               "id": "tree.1.7",
               "title": "Dölj avklarade",
               "status": "done",
-              "notes": ""
+              "notes": "Kryssruta som döljer klara punkter och spår."
             }
           ]
         },
@@ -853,19 +859,19 @@
             },
             {
               "id": "tree.2.2",
-              "title": "Lösa punkter samlas under en grupp",
+              "title": "Lösa punkter grupperas",
               "status": "done",
               "notes": "Lösa punkter bredvid grupper samlas i trädet under en grupp \"Övrigt\" sist på nivån, och regeln mot att blanda finns i agenternas protokoll och grundregel 1."
             },
             {
               "id": "tree.2.3",
-              "title": "Grupper på alla nivåer får tydliga rubriker",
+              "title": "Tydliga grupprubriker",
               "status": "done",
               "notes": "Grupper är nu rubrikrader i accentfärg med hela titeln radbruten och större text; nästlade grupper är inte längre lådor utan rubrik med indragen lista."
             },
             {
               "id": "tree.2.4",
-              "title": "Klara punkter som en rad sist",
+              "title": "Klara punkter sist",
               "status": "done",
               "notes": "Klara punkter och \"Klart (\"-punkter ligger som en ihopfälld rad \"N klara\" sist på varje nivå."
             }
@@ -890,7 +896,7 @@
             },
             {
               "id": "tree.3.3",
-              "title": "Mindre brus i status och förlopp",
+              "title": "Mindre statusbrus",
               "status": "done",
               "notes": "Förloppsstaplar visas bara över 0 %, spårstatus bara för klar eller pågår med aktiv agent, och en punkt som pågår visar aldrig också väntar."
             },
@@ -902,7 +908,7 @@
             },
             {
               "id": "tree.3.5",
-              "title": "Korta etiketter från Haiku i trädet",
+              "title": "Korta etiketter",
               "status": "done",
               "notes": "Användaren valde. Haiku skriver etikett på högst ca 4 ord per lång titel (t.ex. över 32 tecken), visas i trädet; hela titeln i detaljrutan. Agentens fil rörs inte; cache per titelhash i appens datamapp; bara ändrade titlar skickas. Ny modul (som icon-picker) + root anropar när schemat ändras; summary eller separat IPC levererar etiketterna. Gjort, ej committat: modul short-labels, cache schema-labels.json, summary.todoLabels; provat dolt (t.ex. ISO 9409-fäste med styrstift)."
             },
@@ -935,37 +941,37 @@
           "items": [
             {
               "id": "ui.1.1",
-              "title": "Kort: status, modell/effort, kontext, tokens",
+              "title": "Kortets innehåll",
               "status": "done",
-              "notes": ""
+              "notes": "Kortet visar status, modell och effort, kontext och tokens."
             },
             {
               "id": "ui.1.2",
-              "title": "Skrivrad, frågor och behörigheter på kortet",
+              "title": "Skrivrad på kortet",
               "status": "done",
-              "notes": ""
+              "notes": "Kortet har egen skrivrad och visar frågor och behörigheter."
             },
             {
               "id": "ui.1.3",
-              "title": "Callouts med högerklick Fixa",
+              "title": "Callouts med Fixa",
               "status": "done",
-              "notes": ""
+              "notes": "Callouts på kortet; högerklick ger Fixa som ber agenten åtgärda."
             },
             {
               "id": "ui.1.4",
-              "title": "Användningspanel med plan och färgnivåer",
+              "title": "Användningspanel",
               "status": "done",
-              "notes": ""
+              "notes": "Visar plan, 5-timmars- och veckokvot med färgnivåer."
             },
             {
               "id": "ui.1.5",
-              "title": "Schemaknapp som visar vad som återstår",
+              "title": "Schemaknapp med återstående",
               "status": "done",
               "notes": "På kortet och i Fokus: \"12 punkter kvar\", projektet X % klart, antal som pågår."
             },
             {
               "id": "ui.1.6",
-              "title": "Korten: knappen Öppna chatten, ingen chatt i översikten",
+              "title": "Öppna chatten-knapp",
               "status": "done",
               "notes": "Användaren: på översikten behöver vi inte se chatten alls, och korten ska inte maxa höjden. Senaste svaret och fyllnaden av fönstret borttagna; korten har naturlig höjd. Gjort, ej committat."
             }
@@ -978,9 +984,9 @@
           "items": [
             {
               "id": "ui.2.1",
-              "title": "Rutor sida vid sida, automatiskt urval",
+              "title": "Rutor sida vid sida",
               "status": "done",
-              "notes": ""
+              "notes": "Fokus visar valda sessioner sida vid sida med automatiskt urval."
             },
             {
               "id": "ui.2.2",
@@ -1003,49 +1009,49 @@
           "items": [
             {
               "id": "ui.3.1",
-              "title": "Docka med studs och ikoner",
+              "title": "Docka",
               "status": "done",
-              "notes": ""
+              "notes": "Dockan med studs och projektikoner."
             },
             {
               "id": "ui.3.2",
-              "title": "Overlay: användning, agenter, status",
+              "title": "Overlay",
               "status": "done",
-              "notes": ""
+              "notes": "Overlayn visar användning, agenter och status per projekt."
             },
             {
               "id": "ui.3.3",
-              "title": "Hovringspanel i overlay",
+              "title": "Hovringspanel",
               "status": "done",
-              "notes": ""
+              "notes": "Hovring över en ikon i overlayn visar detaljer om sessionen."
             },
             {
               "id": "ui.3.4",
-              "title": "Större ikoner, animering, agenter som jobbar av totalt",
+              "title": "Ikoner och animering",
               "status": "done",
-              "notes": ""
+              "notes": "Större ikoner, arbetsanimation och arbetande agenter av totalt."
             },
             {
               "id": "ui.3.5",
-              "title": "Arbetsschema som modal",
+              "title": "Schemat som modal",
               "status": "done",
-              "notes": ""
+              "notes": "Arbetsschemat öppnas som modal från overlay och kort."
             },
             {
               "id": "ui.3.6",
-              "title": "Knappar i hovringspanelen i stället för högerklick",
+              "title": "Knappar i hovringspanelen",
               "status": "done",
               "notes": "Svara, Öppna och Arbetsschema i overlayens hovringspanel; högerklicksmenyn är borttagen. Klart, inte släppt än."
             },
             {
               "id": "ui.3.7",
-              "title": "Andel av dagens tokens som appens egna hjälpanrop förbrukat",
+              "title": "Appens andel av tokens",
               "status": "done",
               "notes": "Användaren: vill se att den sammanfattande agenten inte tar flera % av kvoten. Visar appens egna hjälpanrop som andel av dagens användning, vägd som kvoten (modell och cache), inte råa tokens. Klart, inte släppt än."
             },
             {
               "id": "ui.3.8",
-              "title": "Dra overlayen fritt i den svarta bakgrunden",
+              "title": "Fri dragning av overlay",
               "status": "done",
               "notes": "Användaren: klicka på overlayens svarta bakgrund och dra runt den fritt; klick ska inte gå igenom till det som ligger under den. Klart: hela raden tar musen; dra bakgrunden för att flytta, platsen sparas, dubbelklick lägger tillbaka i mitten."
             },
@@ -1057,7 +1063,7 @@
             },
             {
               "id": "ui.3.10",
-              "title": "Användningsrutan: vad kontot har utöver gränserna",
+              "title": "Kontots extra användning",
               "status": "done",
               "notes": "Användaren: ta bort Uppdateras automatiskt och lista som punkter om det finns återställningar på kontot, annars skriv att det inte finns några. Användnings-API:t har inget fält för antal återställningar; listar extra användning, krediter/saldo och kampanjkrediter, annars Inga återställningar eller krediter kvar på kontot. Ej committat."
             },
@@ -1069,19 +1075,19 @@
             },
             {
               "id": "ui.3.12",
-              "title": "Overlayn flimrar inte när den dras",
+              "title": "Overlay utan flimmer",
               "status": "done",
               "notes": "När appen uppdaterade overlayn under en dragning placerades den en bildruta på den gamla platsen (mitt upptill), som en spökbild. Nu stannar den där den är så länge den dras."
             },
             {
               "id": "ui.3.13",
-              "title": "Hovringsrutan visar arbete bara när någon arbetar",
+              "title": "Hovringsruta bara vid arbete",
               "status": "done",
               "notes": "Användaren: overlayns hovringsruta visade \"Tid sedan start 1:27:36\" och \"Just nu: bench Prov på hårdvara (+7 parallellt)\" fast inga agenter körde. Just nu kommer från punkter som står som pågår i schemat; det ska visas bara när sessionen arbetar (annars t.ex. Senast eller inget), och tiden ska gälla den pågående turen, inte sessionens start. Provat dolt."
             },
             {
               "id": "ui.3.14",
-              "title": "Appens förbrukning i procent av kvoten",
+              "title": "Appens andel av kvoten",
               "status": "not_started",
               "notes": "Användaren: räkna ut appens del från hur mycket kvoten faktiskt gått ned. Förslag: logga veckokvotens procent och appens och sessionernas räknade tokens över tid; kvotens ökning delad med alla räknade tokens ger tokens per procentenhet, och appens tokens delat med det ger appens förbrukning i procent av vecko- och 5-timmarskvoten. Skillnaden mot det räknade visar också hur mycket som inte räknas (t.ex. subagenter eller terminalen)."
             }
@@ -1094,15 +1100,15 @@
           "items": [
             {
               "id": "ui.4.1",
-              "title": "Startmeny med ikoner, centrerade flikar",
+              "title": "Startmeny och flikar",
               "status": "done",
-              "notes": ""
+              "notes": "Startmeny med ikoner och centrerade flikar i toppraden."
             },
             {
               "id": "ui.4.2",
-              "title": "Befintligt projekt: fortsätt senaste samtal",
+              "title": "Fortsätt senaste samtal",
               "status": "done",
-              "notes": ""
+              "notes": "Ett befintligt projekt kan fortsätta sitt senaste samtal."
             },
             {
               "id": "ui.4.3",
@@ -1130,7 +1136,7 @@
             },
             {
               "id": "ui.4.7",
-              "title": "Visa ikonen i frågerutan, rubriken och overlay-bollen",
+              "title": "Ikon i frågor och overlay",
               "status": "done",
               "notes": "SessionMark i kortets och rutans rubrik, overlay-bollen och frågerutan, i kortets färg; initialer som reserv. Klart, inte släppt än."
             }
@@ -1151,31 +1157,31 @@
           "items": [
             {
               "id": "life.1.1",
-              "title": "Nytt projekt med Git-repo",
+              "title": "Nytt projekt",
               "status": "done",
-              "notes": ""
+              "notes": "Skapar projektmapp med Git-repo."
             },
             {
               "id": "life.1.2",
-              "title": "Hitta mapp från beskrivning",
+              "title": "Hitta mapp",
               "status": "done",
-              "notes": ""
+              "notes": "Hittar projektmappen utifrån användarens beskrivning."
             },
             {
               "id": "life.1.3",
-              "title": "Välj projektmapp vid första start och i projektdialogerna",
+              "title": "Välj projektmapp",
               "status": "done",
-              "notes": ""
+              "notes": "Val av projektmapp vid första start och i projektdialogerna."
             },
             {
               "id": "life.1.4",
-              "title": "Terminalsessioner: lista och spärr",
+              "title": "Terminalsessioner",
               "status": "done",
-              "notes": ""
+              "notes": "Listar samtal som är öppna i en terminal och spärrar dem mot dubbelkörning."
             },
             {
               "id": "life.1.5",
-              "title": "Arbetsschema och kontext när projektet ändrats utanför appen",
+              "title": "Ändringar utanför appen",
               "status": "done",
               "notes": "Användaren valde: fråga med Uppdatera schemat förvalt, och fortsätt samtalet med ändringslistan. Appen noterar git-läget vid varje turs slut och jämför vid start och var 10:e minut; rad på kort och chatt med Uppdatera schemat, Kartlägg om, Ignorera. Provat dolt. Projekt utan git kontrolleras inte. Kort utan sparat git-läge utgår från senaste commit före schemats updated-tid, så tidigare ändringar syns direkt. Användaren bekräftade att projekt utan git inte kontrolleras. Första kontrollen efter installationen av 0.1.16 räknade appens egna två sista commits (8379dab, 883b743) som ändrade utanför appen, eftersom kortet saknade sparat git-läge och utgick från schemats updated-tid. Engångsfall; därefter sparas läget vid varje turs slut."
             }
@@ -1190,23 +1196,23 @@
               "id": "life.2.1",
               "title": "Användning via OAuth",
               "status": "done",
-              "notes": ""
+              "notes": "Kvoten läses via kontots OAuth och skrivs till usage.json för agenterna."
             },
             {
               "id": "life.2.2",
-              "title": "Plan och tillgängliga modeller",
+              "title": "Plan och modeller",
               "status": "done",
-              "notes": ""
+              "notes": "Planen och tillgängliga modeller frågas från Claude Code utan tokens."
             },
             {
               "id": "life.2.3",
               "title": "Standard Opus/medium",
               "status": "done",
-              "notes": ""
+              "notes": "Nya sessioner startar på Opus med medium effort."
             },
             {
               "id": "life.2.4",
-              "title": "Gränsen: rätt status och fortsätt bara avbrutet arbete",
+              "title": "Status vid nådd gräns",
               "status": "done",
               "notes": "Sessioner som arbetar när användningen når 100 % märks som stoppade av gränsen (sparas över omstart). Efter återställning fortsätter bara avbrutet arbete; väntande sessioner väcks inte. Klart, inte släppt än."
             },
@@ -1218,7 +1224,7 @@
             },
             {
               "id": "life.2.6",
-              "title": "Code Mode: bevaka stöd i Agent SDK",
+              "title": "Code Mode i SDK",
               "status": "not_started",
               "notes": "Användaren: hade experimentläget i Claude Codes json-fil, drog betydligt mindre tokens. Det är Code Mode: env CLAUDE_CODE_EXPERIMENTAL_CODE_MODE=1 i ~/.claude/settings.json. Enligt dokumentationen bara i interaktiv terminal, inte Desktop/bakgrund. Provat med Agent SDK (Haiku, env satt): inget REPL-verktyg, alltså inte aktivt i appens sessioner. Påslaget globalt gör att terminalsessioner bara kan återupptas med Code Mode på, vilket kan krocka med Befintligt projekt i appen. Användaren valde: stanna på SDK:n och kontrollera stödet för Code Mode vid varje ny Agent SDK-version (prova med env CLAUDE_CODE_EXPERIMENTAL_CODE_MODE=1 och se om verktyget REPL dyker upp i init). Slå på det i appen när det fungerar. 2026-11-24: Agent SDK uppgraderat till 0.3.331; fortfarande inget Code Mode i SDK:ns typer."
             }
@@ -1231,31 +1237,31 @@
           "items": [
             {
               "id": "life.3.1",
-              "title": "Systemfält, stängning, enkel instans",
+              "title": "Systemfält och instans",
               "status": "done",
-              "notes": ""
+              "notes": "Systemfältsikon, stängning till fältet och en enda instans."
             },
             {
               "id": "life.3.2",
-              "title": "Automatiskt fokus (in vid skrivning, ut efter 3 dagar)",
+              "title": "Automatiskt fokus",
               "status": "done",
-              "notes": ""
+              "notes": "Sessioner går in i Fokus vid skrivning och ut efter tre dagar utan aktivitet."
             },
             {
               "id": "life.3.3",
-              "title": "Kontextfönster med omstart",
+              "title": "Kontextfönster",
               "status": "done",
-              "notes": ""
+              "notes": "Byte av kontextfönster med omstart av sessionen."
             },
             {
               "id": "life.3.4",
-              "title": "Startar med Windows i systemfältet, overlay på som standard",
+              "title": "Start med Windows",
               "status": "done",
-              "notes": ""
+              "notes": "Startar med Windows i systemfältet, overlay på som standard."
             },
             {
               "id": "life.3.5",
-              "title": "Sessionsvärd: uppdatera utan att avbryta agenter (idé, vilande)",
+              "title": "Sessionsvärd (vilande)",
               "status": "not_started",
               "notes": "Idé: en egen process äger agentprocesserna så att appen kan uppdateras medan de arbetar vidare. Användaren: vi har nog gjort de flesta uppdateringarna, kommande småfixar får fungera som nu; gör inget."
             }
@@ -1307,7 +1313,7 @@
             },
             {
               "id": "sched.2.2",
-              "title": "Jobb visar läge och detaljer vid klick",
+              "title": "Jobbläge och detaljer",
               "status": "done",
               "notes": "Användaren: tydligt om ett jobb är aktivt, inget Kör nu på aktiva jobb, klick ger ett litet kort på plats med kort beskrivning. Jobb har nu fältet description som agenterna fyller i. Testat dolt."
             },
@@ -1357,7 +1363,7 @@
               "dependsOn": [
                 "mob.1.3"
               ],
-              "notes": "Installera på hemdatorn enligt docs/HOME-SETUP.md, para telefonen och prova kamera, avbryt, hemskärm och bilder."
+              "notes": "Användaren: provas hemma med zip-filen på minneskortet (claude-manager-hemma.zip: LÄS-MIG.md, starta.ps1, pushtestet; kör med den installerade appen som Node). Kräver 0.1.35 eller senare hemma."
             }
           ]
         },
@@ -1379,7 +1385,7 @@
               "dependsOn": [
                 "mob.2.1"
               ],
-              "notes": "Enligt docs/HOME-SETUP.md steg 3: notis direkt, med släckt skärm och med stängd app i Brave. Resultatet avgör vägen för push."
+              "notes": "Användaren kör pushtestet hemma med starta.ps1 ur zip-filen på minneskortet: notis direkt, med släckt skärm och med stängd Brave. Resultatet avgör webbpush eller egen Android-app."
             },
             {
               "id": "mob.2.3",
@@ -1407,9 +1413,9 @@
           "items": [
             {
               "id": "ship.1.1",
-              "title": "Enhetstester för rena moduler",
+              "title": "Enhetstester",
               "status": "done",
-              "notes": ""
+              "notes": "Vitest för de rena modulerna; 160 tester i 0.1.36."
             },
             {
               "id": "ship.1.2",
@@ -1426,37 +1432,37 @@
           "items": [
             {
               "id": "ship.2.1",
-              "title": "Paketering med uppackad Claude-binär",
+              "title": "Paketering",
               "status": "done",
-              "notes": ""
+              "notes": "Installationsfil med uppackad Claude-binär."
             },
             {
               "id": "ship.2.2",
-              "title": "Release-flöde: npm run release bygger och publicerar",
+              "title": "Release-flöde",
               "status": "done",
-              "notes": ""
+              "notes": "npm run release kör kontroller, bumpar, taggar, bygger och publicerar på GitHub."
             },
             {
               "id": "ship.2.3",
-              "title": "Automatisk uppdatering (electron-updater) med knapp Auto-uppdatera",
+              "title": "Automatisk uppdatering",
               "status": "done",
-              "notes": ""
+              "notes": "electron-updater med knappen Auto-uppdatera; installerar aldrig utan omstart. Användaren har den avstängd."
             },
             {
               "id": "ship.2.4",
-              "title": "Uppdateringar installeras vid omstart eller med Installera nu",
+              "title": "Installation vid omstart",
               "status": "done",
               "notes": "Användaren: räcker med \"ny version · Installera nu\" i toppraden, och installation vid varje omstart om valt i inställningarna. Frågerutan och notisen borttagna. Appen startar aldrig om själv. Klart. Bugg rättad i 0.1.15: appen fastnade på första nedladdade versionen (0.1.8) och letade inte efter nyare."
             },
             {
               "id": "ship.2.5",
-              "title": "Första releasen och installation av den hos användaren",
+              "title": "Första releasen",
               "status": "done",
               "notes": "Releaser publiceras med npm run release; appen uppdaterar sig själv när den är ledig."
             },
             {
               "id": "ship.2.6",
-              "title": "Installera samlade ändringar när du säger till",
+              "title": "Installera på begäran",
               "status": "done",
               "notes": "0.1.35 installerad 2026-11-24 efter användarens klartecken."
             }
@@ -1469,19 +1475,19 @@
           "items": [
             {
               "id": "ship.3.1",
-              "title": "Genomgång av personlig information i repot",
+              "title": "Genomgång av personuppgifter",
               "status": "done",
               "notes": "Testdata och referenser rensade, git-historiken omskriven till anonym GitHub-adress."
             },
             {
               "id": "ship.3.2",
-              "title": "Skriv om git-historiken till anonym e-post",
+              "title": "Anonym git-historik",
               "status": "done",
-              "notes": ""
+              "notes": "Historiken skrevs om till anonym noreply-adress."
             },
             {
               "id": "ship.3.3",
-              "title": "Gör repot publikt och välj licens",
+              "title": "Publikt repo och licens",
               "status": "done",
               "notes": "Repot är publikt med MIT-licens."
             }
@@ -1494,13 +1500,13 @@
           "items": [
             {
               "id": "ship.4.1",
-              "title": "Dokumentation (README, DECISIONS)",
+              "title": "README och DECISIONS",
               "status": "done",
-              "notes": ""
+              "notes": "README beskriver funktionerna, DECISIONS varför; uppdaterade för 0.1.36."
             },
             {
               "id": "ship.4.2",
-              "title": "Loggning (kan stängas av under ⚙)",
+              "title": "Loggning",
               "status": "done",
               "notes": "Användaren: loggning i nästa version, både text och vad och hur det visas. Gjort (ej committat): logs/app-DATUM.jsonl i datamappen, 14 dagar, händelser, chattrader med taggar, kortens läge, Haikus taggning, gränssnittsanrop. Provat dolt."
             }

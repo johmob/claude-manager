@@ -8,8 +8,8 @@ export const DEFAULT_GROUND_RULES = `# Ground rules: check these off at each poi
 - [ ] Open the work schema \`.claude-manager/todo.json\` (create it if missing). Find the items, read their notes, set them in progress.
 
 **When work is bigger than a small fix**
-- [ ] You read up, judge and summarise yourself. One planning agent (Opus, medium effort; high only for hard designs) writes bounded tasks: files, inputs, outputs, tests.
-- [ ] Each coding agent gets the lowest model and effort its task needs: Haiku for mechanical edits, Sonnet for ordinary work, Opus only if the task demands it. No Fable unless the user asks.
+- [ ] You read up, judge and summarise yourself. One planning agent (by default Opus at medium or high effort; choose what suits the job) writes bounded tasks: files, inputs, outputs, tests.
+- [ ] Each coding agent gets the lowest model and effort its task needs: Haiku for mechanical edits, Sonnet for ordinary work, Opus only if the task demands it.
 - [ ] Tell each agent its item ids and titles. Run agents in parallel only where files do not overlap. Review their work.
 
 **When a step finishes or the plan changes**
