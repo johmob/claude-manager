@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-25T06:56:08.374Z",
+  "updated": "2026-11-25T06:57:21.571Z",
   "tracks": [
     {
       "id": "design",
@@ -1472,9 +1472,9 @@
             },
             {
               "id": "mail.3.3",
-              "title": "Svar via Outlook",
+              "title": "Godkänt svar skickas",
               "status": "not_started",
-              "notes": "Agentens svar läggs som utkast i Outlook (svar i tråden, med bilagor) så användaren granskar och skickar själv.",
+              "notes": "Användaren: mejlen hanteras helt i appen; Outlook används dolt i bakgrunden och inget Outlook-fönster öppnas. Agentens svar visas i appen och skickas via Outlook först när användaren godkänt det, aldrig av sig självt.",
               "dependsOn": [
                 "mail.3.2"
               ]
