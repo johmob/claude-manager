@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-25T06:58:34.319Z",
+  "updated": "2026-11-25T07:01:13.761Z",
   "tracks": [
     {
       "id": "design",
@@ -1403,7 +1403,7 @@
         {
           "id": "mail.1",
           "title": "Läsa Outlook",
-          "notes": "Hämta mejl från Outlook classic på datorn.",
+          "notes": "Hämta mejl från Outlook classic på datorn. Livslängd: Microsoft stöder Outlook classic (Microsoft 365) till minst 2029; företag kan flyttas till nya Outlook tidigast mars 2027 (går att välja bort). Nya Outlook saknar COM, så mejlkällan byggs som en utbytbar modul: COM nu, Microsoft Graph (kräver IT:s godkännande av en app) som reserv.",
           "items": [
             {
               "id": "mail.1.1",
