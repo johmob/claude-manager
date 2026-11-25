@@ -1398,7 +1398,7 @@
       "id": "mail",
       "title": "Mejl – Outlook",
       "owner": "main",
-      "notes": "Användaren (önskelista): en Outlook-vy i appen. Varje nytt mejl bedöms av en agent; skräp stör inte, mejl som bör besvaras ger en mejlikon-notis i fältet. Varje mejltråd får egen chatt, historik och kontext som överlever omstart, så agenten kan fortsätta t.ex. tunа en illustration när svaret kommer dagar senare. Användaren har Outlook classic.",
+      "notes": "Användaren (önskelista): en Outlook-vy i appen. Varje nytt mejl bedöms av en agent; skräp stör inte, mejl som bör besvaras ger en mejlikon-notis i fältet. Varje mejltråd får egen chatt, historik och kontext som överlever omstart, så agenten kan fortsätta t.ex. justera en illustration när svaret kommer dagar senare. Användaren har Outlook classic.",
       "items": [
         {
           "id": "mail.1",
