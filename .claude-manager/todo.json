@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-25T06:57:21.571Z",
+  "updated": "2026-11-25T06:58:34.319Z",
   "tracks": [
     {
       "id": "design",
@@ -1409,7 +1409,7 @@
               "id": "mail.1.1",
               "title": "Koppling till Outlook classic",
               "status": "not_started",
-              "notes": "Förslag: Outlooks COM-gränssnitt (Outlook.Application, MAPI) via en liten PowerShell- eller node-brygga; inget molnkonto eller Graph-behörighet behövs. Utreds: säkerhetsprompter och företagets policy."
+              "notes": "Kontrollerat 2026-11-25 på jobbdatorn: Outlook classic 16.0 (Microsoft 365, 64-bit) körs, ett Exchange-konto i cachat läge. COM via GetActiveObject ansluter på ~40 ms; inkorg och Skickat läses, ConversationID finns, skyddade fält (avsändare, text) läses utan säkerhetsprompt eftersom Defender är på och uppdaterad; inga Outlook-policyer satta. Nya Outlook finns också installerat men används inte. Kvar: prova att skicka (Send) och NewMailEx-händelser i en långlivad brygga; IT-policy för att skicka jobbmejl till Claude."
             },
             {
               "id": "mail.1.2",
