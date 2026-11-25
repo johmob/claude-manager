@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-24T20:57:05.284Z",
+  "updated": "2026-11-25T06:56:08.374Z",
   "tracks": [
     {
       "id": "design",
@@ -1389,6 +1389,121 @@
               "title": "Loggning",
               "status": "done",
               "notes": "Användaren: loggning i nästa version, både text och vad och hur det visas. Gjort (ej committat): logs/app-DATUM.jsonl i datamappen, 14 dagar, händelser, chattrader med taggar, kortens läge, Haikus taggning, gränssnittsanrop. Provat dolt."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mail",
+      "title": "Mejl – Outlook",
+      "owner": "main",
+      "notes": "Användaren (önskelista): en Outlook-vy i appen. Varje nytt mejl bedöms av en agent; skräp stör inte, mejl som bör besvaras ger en mejlikon-notis i fältet. Varje mejltråd får egen chatt, historik och kontext som överlever omstart, så agenten kan fortsätta t.ex. tunа en illustration när svaret kommer dagar senare. Användaren har Outlook classic.",
+      "items": [
+        {
+          "id": "mail.1",
+          "title": "Läsa Outlook",
+          "notes": "Hämta mejl från Outlook classic på datorn.",
+          "items": [
+            {
+              "id": "mail.1.1",
+              "title": "Koppling till Outlook classic",
+              "status": "not_started",
+              "notes": "Förslag: Outlooks COM-gränssnitt (Outlook.Application, MAPI) via en liten PowerShell- eller node-brygga; inget molnkonto eller Graph-behörighet behövs. Utreds: säkerhetsprompter och företagets policy."
+            },
+            {
+              "id": "mail.1.2",
+              "title": "Bevaka nya mejl",
+              "status": "not_started",
+              "notes": "Inkorgens nya mejl (NewMailEx eller periodisk avläsning) med avsändare, ämne, text, bilagor och ConversationID.",
+              "dependsOn": [
+                "mail.1.1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mail.2",
+          "title": "Sortering och notis",
+          "notes": "Användaren: vill inte störas av företagsskräp, bara av det som bör besvaras eller kräver åtgärd.",
+          "items": [
+            {
+              "id": "mail.2.1",
+              "title": "Agentbedömning per mejl",
+              "status": "not_started",
+              "notes": "Billig modell (Haiku) bedömer: skräp, bara info, bör besvaras, kräver åtgärd; kort motivering och föreslagen åtgärd.",
+              "dependsOn": [
+                "mail.1.2"
+              ]
+            },
+            {
+              "id": "mail.2.2",
+              "title": "Mejlikon i fältet",
+              "status": "not_started",
+              "notes": "Användaren: notis med mejlikon i baren (overlay/docka) bara för mejl som bör besvaras; klick öppnar mejlet i appen.",
+              "dependsOn": [
+                "mail.2.1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mail.3",
+          "title": "Mejlvy med chatt",
+          "notes": "Användaren: läser mejlet i appen, och bredvid finns en chatt med en agent som redan satt sig in i det.",
+          "items": [
+            {
+              "id": "mail.3.1",
+              "title": "Läsvy för mejlet",
+              "status": "not_started",
+              "notes": "Mejlet och tråden visas i appen, med bilagor.",
+              "dependsOn": [
+                "mail.1.2"
+              ]
+            },
+            {
+              "id": "mail.3.2",
+              "title": "Agent per mejltråd",
+              "status": "not_started",
+              "notes": "Användaren: en agent sätts in direkt på mejlet i stället för att kopiera in det; den gör åtgärden (t.ex. en illustration eller design) och formulerar svaret.",
+              "dependsOn": [
+                "mail.3.1"
+              ]
+            },
+            {
+              "id": "mail.3.3",
+              "title": "Svar via Outlook",
+              "status": "not_started",
+              "notes": "Agentens svar läggs som utkast i Outlook (svar i tråden, med bilagor) så användaren granskar och skickar själv.",
+              "dependsOn": [
+                "mail.3.2"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mail.4",
+          "title": "Minne per tråd",
+          "notes": "Användaren: när svar kommer dagar senare ska agenten ha hela historiken, förstå uppkomsten och vad som gjorts, även efter omstart.",
+          "items": [
+            {
+              "id": "mail.4.1",
+              "title": "Trådens historik och kontext",
+              "status": "not_started",
+              "notes": "Varje mejltråd (ConversationID) får egen session, transkript och arbetsmapp med det agenten skapat; sparas över omstart.",
+              "dependsOn": [
+                "mail.3.2"
+              ]
+            },
+            {
+              "id": "mail.4.2",
+              "title": "Svar återupptar tråden",
+              "status": "not_started",
+              "notes": "Ett nytt mejl i en tråd som agenten redan arbetat med öppnar samma session, med tidigare mejl, svar och filer som kontext.",
+              "dependsOn": [
+                "mail.4.1",
+                "mail.1.2"
+              ]
             }
           ]
         }
