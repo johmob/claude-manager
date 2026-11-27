@@ -7,7 +7,7 @@
       "cron": "5 16 27 11 *",
       "kind": "agent",
       "prompt": "Veckokvoten har förnyats. Läs .claude-manager/resume.md och arbeta igenom kön där, uppifrån, enligt reglerna i filen. Stäng sedan av det här jobbet (enabled: false i .claude-manager/schedule.json).",
-      "enabled": true
+      "enabled": false
     }
   ]
 }
