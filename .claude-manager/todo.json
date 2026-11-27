@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:45:27.010Z",
+  "updated": "2026-11-27T11:39:30.477Z",
   "tracks": [
     {
       "id": "design",
@@ -1072,7 +1072,7 @@
               "id": "ui.3.16",
               "title": "Overlay dold vid helskärm",
               "status": "not_started",
-              "notes": "Användaren: när appens fönster är i helskärm (maximerat eller helskärm) döljs overlayn, eftersom allt redan syns i appen. Den kommer tillbaka när fönstret minimeras, återställs eller hamnar bakom ett annat fönster."
+              "notes": "Användaren: när appens fönster är i helskärm (maximerat eller helskärm) döljs overlayn, eftersom allt redan syns i appen. Den kommer tillbaka när fönstret minimeras, återställs eller hamnar bakom ett annat fönster. Användaren bekräftar: overlayn döljs enbart när appen är i helskärm och inte skymd av något annat fönster."
             }
           ]
         },
