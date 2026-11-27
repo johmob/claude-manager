@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:42:59.020Z",
+  "updated": "2026-11-27T09:45:03.889Z",
   "tracks": [
     {
       "id": "design",
@@ -1061,6 +1061,12 @@
               "title": "Appens andel av kvoten",
               "status": "not_started",
               "notes": "Användaren: räkna ut appens del från hur mycket kvoten faktiskt gått ned. Förslag: logga veckokvotens procent och appens och sessionernas räknade tokens över tid; kvotens ökning delad med alla räknade tokens ger tokens per procentenhet, och appens tokens delat med det ger appens förbrukning i procent av vecko- och 5-timmarskvoten. Skillnaden mot det räknade visar också hur mycket som inte räknas (t.ex. subagenter eller terminalen)."
+            },
+            {
+              "id": "ui.3.15",
+              "title": "Overlay snäpper till lägen",
+              "status": "not_started",
+              "notes": "Användaren: overlayn går nu att dra fritt, vilket är bra, men dras den nära överkant mitt, mitt höger eller mitt vänster ska den snäppa till ett fast läge (magnetiskt inom en liten zon, med en antydan om läget under dragningen). Utanför zonerna ligger den kvar där den släpps."
             }
           ]
         },
@@ -1110,6 +1116,12 @@
               "title": "Ikon i frågor och overlay",
               "status": "done",
               "notes": "SessionMark i kortets och rutans rubrik, overlay-bollen och frågerutan, i kortets färg; initialer som reserv. Klart, inte släppt än."
+            },
+            {
+              "id": "ui.4.8",
+              "title": "Menyn Nytt",
+              "status": "not_started",
+              "notes": "Användaren: i topplisten samlas Ny chatt, Nytt projekt, Befintligt projekt och Grundregler i en traditionell utfällbar meny, t.ex. \"Nytt\", i stället för separata ikoner."
             }
           ]
         }
