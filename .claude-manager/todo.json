@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T11:39:30.477Z",
+  "updated": "2026-11-27T11:40:37.440Z",
   "tracks": [
     {
       "id": "design",
@@ -424,6 +424,12 @@
               "title": "Färdigformaterat innan det visas",
               "status": "done",
               "notes": "Användaren: text visas och ändras sedan (formatering, taggar, omflyttning) efter att den redan syns. Allt ska vara färdigformaterat när det visas: inget får byta utseende eller plats efteråt. Gäller både turens slut och det som visas under arbetet. || Sena taggar ändrar inte längre text som redan visas, callouts efter hållen text väntar i loggen, bilder har fast ram. Ej provat i dold testinstans. Provat dolt. Användaren: svaret syntes först oformaterat (i rutan Under arbetet medan det väntade på taggarna). Rättat i 0.1.38: väntande svarstext visas inte i rutan; svaret visas först färdigformaterat. Provat dolt."
+            },
+            {
+              "id": "chat.1.10",
+              "title": "Rulla till senaste",
+              "status": "not_started",
+              "notes": "Användaren: har det kommit flera meddelanden medan användaren varit inaktiv i appen, rullar chatten ned till det senaste. Den rullar aldrig medan användaren sitter och läser (har rullat upp, markerat text eller rört musen/tangentbordet i chatten nyligen). Förslag: annars en knapp \"N nya ↓\"."
             }
           ]
         },
