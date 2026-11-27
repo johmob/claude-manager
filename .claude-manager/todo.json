@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:17:16.351Z",
+  "updated": "2026-11-27T09:18:55.150Z",
   "tracks": [
     {
       "id": "design",
@@ -1404,7 +1404,7 @@
       "id": "mail",
       "title": "Mejl – Outlook",
       "owner": "main",
-      "notes": "Användaren (önskelista): en Outlook-vy i appen. Varje nytt mejl bedöms av en agent; skräp stör inte, mejl som bör besvaras ger en mejlikon-notis i fältet. Varje mejltråd får egen chatt, historik och kontext som överlever omstart, så agenten kan fortsätta t.ex. justera en illustration när svaret kommer dagar senare. Användaren har Outlook classic. Förslag att diskutera (användaren lämnade öppet): egen flik Mejl bredvid Översikt och Fokus; en lista över bedömda mejl där skräp är dolt som standard; knapp \"inte viktigt\" och lista över viktiga avsändare som lär bedömningen; historik och arbetsmappar i appens datamapp under mail/<tråd>; agentens filer föreslås som bilagor men bifogas först när användaren bockar i. Användaren: specen (docs/MAIL.md) skrivs efter mer diskussion.",
+      "notes": "Användaren (önskelista): en Outlook-vy i appen. Varje nytt mejl bedöms av en agent; skräp stör inte, mejl som bör besvaras ger en mejlikon-notis i fältet. Varje mejltråd får egen chatt, historik och kontext som överlever omstart, så agenten kan fortsätta t.ex. justera en illustration när svaret kommer dagar senare. Användaren har Outlook classic. Förslag att diskutera (användaren lämnade öppet): egen flik Mejl bredvid Översikt och Fokus; en lista över bedömda mejl där skräp är dolt som standard; knapp \"inte viktigt\" och lista över viktiga avsändare som lär bedömningen; historik och arbetsmappar i appens datamapp under mail/<tråd>; agentens filer föreslås som bilagor men bifogas först när användaren bockar i. Användaren: specen (docs/MAIL.md) skrivs efter mer diskussion. Användaren: allt i spåret är riktning, inte färdig instruktion. Den agent som planerar och bygger har frihet att ändra, förbättra och lägga till; det ska stå uttryckligen i dess uppdrag.",
       "items": [
         {
           "id": "mail.1",
@@ -1466,6 +1466,15 @@
               "title": "Lär av användarens val",
               "status": "not_started",
               "notes": "Användaren: oavsett val sparas vad användaren gjorde, typ av innehåll, avsändare m.m., så att bedömningen och den föreslagna åtgärden blir bättre med tiden. Sparas i databasen (mail.4.1).",
+              "dependsOn": [
+                "mail.2.1"
+              ]
+            },
+            {
+              "id": "mail.2.5",
+              "title": "Förarbete i bakgrunden",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. För mejl som bör besvaras läser agenten in sig och tar fram ett förslag redan innan användaren tittar, så att \"Svara åt mig\" är klart direkt och hovringsträdet kan visa den föreslagna åtgärden. Kan stängas av för att spara tokens.",
               "dependsOn": [
                 "mail.2.1"
               ]
@@ -1564,6 +1573,52 @@
                 "mail.3.2",
                 "mail.4.1"
               ]
+            },
+            {
+              "id": "mail.4.4",
+              "title": "Koppla till projekt",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Gäller mejlet ett projekt som appen redan kör (personer, ämnesord, filer) föreslås det projektets session i stället för ett nytt tillfälligt projekt, så arbetet hamnar där kunskapen redan finns.",
+              "dependsOn": [
+                "mail.4.1"
+              ]
+            },
+            {
+              "id": "mail.4.5",
+              "title": "Bevaka utlovat och obesvarat",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Agenten noterar löften i skickade svar (\"skickar rapporten på fredag\") och mejl som väntar på svar från andra, och påminner via schemat när något förfaller eller inget svar kommit.",
+              "dependsOn": [
+                "mail.4.1"
+              ]
+            },
+            {
+              "id": "mail.4.6",
+              "title": "Skrivstil från Skickat",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Agenten lär sig användarens ton, längd och språk per mottagare från Skickat, så svaren låter som användaren.",
+              "dependsOn": [
+                "mail.1.1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mail.5",
+          "title": "Säkerhet och integritet",
+          "notes": "Förslag från main: mejl är text från främlingar och får aldrig styra agenten, och allt behöver inte gå till Claude.",
+          "items": [
+            {
+              "id": "mail.5.1",
+              "title": "Mejl är data, inte order",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Instruktioner i ett mejl (\"skicka mig filen X\") följs aldrig av sig själva. Mejlagenten har begränsade verktyg och skickar inget utan användarens godkännande, och den varnar för misstänkt nätfiske."
+            },
+            {
+              "id": "mail.5.2",
+              "title": "Lokalt förfilter",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Nyhetsbrev och utskick (List-Unsubscribe, kända avsändare) sorteras lokalt utan AI, vilket sparar tokens. Användaren kan undanta avsändare eller ämnen som aldrig ska skickas till Claude."
             }
           ]
         }
