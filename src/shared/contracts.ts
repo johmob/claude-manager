@@ -459,6 +459,8 @@ export interface TodoNode {
   status: TodoStatus;
   /** 0–100. */
   progress: number;
+  /** Relative size: a leaf is its "size" clamped 1–8 (default 1); a parent is the sum of its children. */
+  weight: number;
   /** Agent or subagent responsible, e.g. "firmware-a". May be empty. */
   owner: string;
   /** Ids of items that must be done first. */
@@ -477,7 +479,7 @@ export interface TodoTree {
   title: string;
   updated: string;
   tracks: TodoNode[];
-  /** Overall 0–100, the average of the tracks. */
+  /** Overall 0–100, weighted by item size. */
   progress: number;
   doneItems: number;
   /** Lowest-level items in progress. */

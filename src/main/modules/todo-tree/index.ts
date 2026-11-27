@@ -13,6 +13,7 @@ Keep the project's work schema in \`${TODO_RELATIVE_PATH}\` (create the folder i
 - Give it depth: split items into sub-items for their parts (usually 2–3 levels), ids like "fw-a.2.1". At most about seven items per level; group more into packages. Never mix leaves and groups on one level: gather loose items under their own group (e.g. "Övrigt").
 - Titles name the thing in at most five words (project title at most four), a noun phrase such as "SPI driver", never a sentence.
 - Every track and item has "notes": one to three sentences on what it covers, where it stands, what is left, open questions or risks. Keep them current.
+- Leaves may carry "size": relative effort from 1 (under an hour) to 8 (a week or more), default 1. Set it on every new item, always on large ones; the app weights progress by it.
 - Leaves carry "status" ("not_started", "in_progress", "done") and, while in progress, "progress" (0–100); the app computes the parents. List prerequisite ids in "dependsOn", also across tracks.
 - "in_progress" only while work on the item actually runs; set it back or to "done" the moment it stops. Strike or merge items that turn out redundant instead of carrying them out because they are listed.
 - When the user mentions something that belongs to another item (idea, requirement, bug, decision), add it to that item's notes at once, marked "Användaren: …", and say in one line where. Create the item if none fits. Read an item's notes before you start on it.
@@ -26,8 +27,8 @@ Keep the project's work schema in \`${TODO_RELATIVE_PATH}\` (create the folder i
   "updated": "2026-11-23T09:00:00Z",
   "tracks": [
     { "id": "fw-a", "title": "Firmware – controller", "owner": "firmware-a", "notes": "STM32 firmware for the controller board: drivers, protocol to the display, control loop.", "items": [
-      { "id": "fw-a.1", "title": "SPI driver", "status": "done", "notes": "DMA-based, tested against the pressure sensor at 8 MHz." },
-      { "id": "fw-a.2", "title": "Data protocol", "status": "in_progress", "progress": 40, "notes": "Framing and CRC work on the bench. Retries and versioning are left." } ] },
+      { "id": "fw-a.1", "title": "SPI driver", "status": "done", "size": 2, "notes": "DMA-based, tested against the pressure sensor at 8 MHz." },
+      { "id": "fw-a.2", "title": "Data protocol", "status": "in_progress", "progress": 40, "size": 5, "notes": "Framing and CRC work on the bench. Retries and versioning are left." } ] },
     { "id": "web", "title": "Web – result pages", "owner": "main", "notes": "Pages that show the measurements live and as history.", "items": [
       { "id": "web.1", "title": "Live chart", "status": "not_started", "dependsOn": ["fw-a.2"], "notes": "Needs the data protocol; open question: how many samples per second to show." } ] }
   ]
@@ -58,6 +59,11 @@ const STATUSES: readonly TodoStatus[] = ['not_started', 'in_progress', 'done'];
 /** Progress of an item in progress that gives none. Done is always 100 and not started always 0. */
 const IN_PROGRESS_DEFAULT = 50;
 
+/** A leaf's size (1 small … 8 very large); 1 when missing or not a number. */
+function sizeOf(raw: unknown): number {
+  return typeof raw === 'number' && Number.isFinite(raw) ? Math.round(Math.min(8, Math.max(1, raw))) : 1;
+}
+
 /** Child lists under the names the current ("items") and earlier ("steps", "children") formats use. */
 function childList(raw: Record<string, unknown>): unknown[] {
   for (const key of ['items', 'steps', 'children']) if (Array.isArray(raw[key])) return raw[key] as unknown[];
@@ -75,6 +81,7 @@ function parseNode(raw: unknown, fallbackId: string): TodoNode | null {
     id,
     title: raw['title'].trim(),
     status,
+    weight: sizeOf(raw['size']),
     progress: status === 'done' ? 100 : status === 'not_started' ? 0 : Math.round(Math.min(100, Math.max(0, written ?? IN_PROGRESS_DEFAULT))),
     owner: typeof raw['owner'] === 'string' ? raw['owner'].trim() : '',
     dependsOn: Array.isArray(raw['dependsOn']) ? raw['dependsOn'].map(String) : [],
@@ -91,7 +98,7 @@ function rollUp(node: TodoNode): TodoNode {
   const children = node.children.map(rollUp);
   const statuses = new Set(children.map((c) => c.status));
   const status: TodoStatus = statuses.size === 1 && !statuses.has('in_progress') ? children[0]!.status : 'in_progress';
-  return { ...node, children, status, progress: Math.round(average(children.map((c) => c.progress))) };
+  return { ...node, children, status, weight: sumWeight(children), progress: weightedProgress(children) };
 }
 
 /** Marks unfinished items whose dependencies (anywhere in the schema) are not done. */
@@ -104,8 +111,14 @@ function flatten(nodes: TodoNode[]): TodoNode[] {
   return nodes.flatMap((n) => [n, ...flatten(n.children)]);
 }
 
-function average(values: number[]): number {
-  return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+function sumWeight(nodes: TodoNode[]): number {
+  return nodes.reduce((sum, n) => sum + n.weight, 0);
+}
+
+/** Progress of a set of items, weighted by size, rounded. */
+function weightedProgress(nodes: TodoNode[]): number {
+  const total = sumWeight(nodes);
+  return total ? Math.round(nodes.reduce((sum, n) => sum + n.progress * n.weight, 0) / total) : 0;
 }
 
 /** Parses the work schema file (current "tracks" format or the earlier "blocks" format). Null when unusable. */
@@ -127,7 +140,7 @@ export function parseTodoTree(raw: string): TodoTree | null {
     title: typeof data['title'] === 'string' ? data['title'] : '',
     updated: typeof data['updated'] === 'string' ? data['updated'] : '',
     tracks,
-    progress: Math.round(average(tracks.map((t) => t.progress))),
+    progress: weightedProgress(tracks),
     doneItems: leaves.filter((n) => n.status === 'done').length,
     inProgressItems: leaves.filter((n) => n.status === 'in_progress').length,
     totalItems: leaves.length,

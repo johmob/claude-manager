@@ -1,0 +1,12 @@
+.chat-input-side { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.compact-btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; }
+.compact-btn:hover:not(:disabled) { border-color: var(--accent-ui); }
+.compact-btn:disabled { opacity: 0.5; cursor: default; }
+.compact-btn.with-label { font-size: 0.75rem; }
+.compact-btn[data-level='warn'] { color: #f5b84a; border-color: #f5b84a; }
+.compact-btn[data-level='critical'] { color: #ff6b5e; border-color: #ff6b5e; animation: compact-pulse 1.4s ease-in-out infinite; }
+.compact-btn[data-level]:disabled { animation: none; }
+.compact-spin { animation: compact-rot 1s linear infinite; }
+@keyframes compact-pulse { 50% { box-shadow: 0 0 0 3px rgba(255, 107, 94, 0.3); } }
+@keyframes compact-rot { to { transform: rotate(360deg); } }
+.chat-input textarea { overflow-y: hidden; }

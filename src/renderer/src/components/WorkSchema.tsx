@@ -305,6 +305,7 @@ function ItemDetail({ session, entry, index, onPick, onClose, onSent }: {
           {node.blocked && <span className="ws-blocked">Väntar</span>}
           {node.focus && <span className="ws-focus-badge">I fokus</span>}
           {owner && <span className="ws-owner">{owner}</span>}
+          {!node.children.length && node.weight > 1 && <span className="muted" title="Förloppet viktas efter storlek">Storlek {node.weight}</span>}
           <span className="wd-progress"><Progress value={node.progress} /></span>
           {isTrack && (
             <button type="button" className={node.focus ? 'btn small' : 'btn small focus'} onClick={toggleFocus}>
@@ -469,7 +470,7 @@ export function WorkSchema({ session, onClose }: { session: SessionSummary; onCl
               <div className="ws-root-title" title={todo.title}>{session.todoLabels['root'] ?? (todo.title || session.name)}</div>
               <div className="ws-root-left">{left === 0 ? 'Allt klart' : `${left} av ${todo.totalItems} punkter kvar`}</div>
               <Progress value={todo.progress} color={session.color} />
-              <div className="muted ws-root-count">
+              <div className="muted ws-root-count" title="Viktat efter storlek">
                 Projektet {todo.progress} % klart · {todo.inProgressItems} {ctx.active ? 'pågår' : 'vilande'} ·{todo.tracks.length} spår
               </div>
             </div>

@@ -1,0 +1,10 @@
+.new-menu { position: relative; justify-self: start; display: inline-block; }
+.new-menu-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 12px; border: 0; border-radius: 8px; background: var(--accent-ui); color: #fff; font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
+.new-menu-btn:hover { filter: brightness(1.08); }
+.new-menu-btn .icon { width: 15px; height: 15px; }
+.new-menu-btn[aria-expanded="true"] { filter: brightness(1.12); }
+html[data-theme="night"] .new-menu-btn { color: #05060b; font-weight: 650; box-shadow: 0 0 12px rgba(82,200,255,.35); }
+.new-menu-pop { position: absolute; left: 0; top: calc(100% + 6px); z-index: 40; min-width: 210px; display: flex; flex-direction: column; padding: 5px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.55); -webkit-app-region: no-drag; }
+.new-menu-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--text); font-size: 0.8125rem; text-align: left; cursor: pointer; }
+.new-menu-item:hover, .new-menu-item:focus-visible { background: var(--bg-hover); outline: none; }
+.new-menu-sep { height: 1px; margin: 4px 6px; background: var(--border); }

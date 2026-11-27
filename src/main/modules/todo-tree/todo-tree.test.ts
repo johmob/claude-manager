@@ -28,7 +28,7 @@ describe('parseTodoTree', () => {
     const [fw, web] = tree.tracks;
     expect(fw).toMatchObject({ id: 'fw-a', owner: 'firmware-a', status: 'in_progress', progress: 70 });
     expect(web).toMatchObject({ status: 'not_started', progress: 0 });
-    expect(tree).toMatchObject({ progress: 35, doneItems: 1, inProgressItems: 1, totalItems: 3 });
+    expect(tree).toMatchObject({ progress: 47, doneItems: 1, inProgressItems: 1, totalItems: 3 });
   });
 
   it('marks items blocked by unfinished dependencies, also across tracks', () => {
@@ -55,7 +55,7 @@ describe('parseTodoTree', () => {
 
   it('is tolerant of odd input', () => {
     const tree = parseTodoTree(JSON.stringify({ tracks: [{ title: 'B', status: 'weird', progress: 400 }, { id: 2 }] }))!;
-    expect(tree.tracks).toEqual([{ id: '1', title: 'B', status: 'not_started', progress: 0, owner: '', dependsOn: [], blocked: false, notes: '', focus: false, children: [] }]);
+    expect(tree.tracks).toEqual([{ id: '1', title: 'B', status: 'not_started', progress: 0, weight: 1, owner: '', dependsOn: [], blocked: false, notes: '', focus: false, children: [] }]);
   });
 
   it('rejects invalid JSON and wrong shapes', () => {
@@ -105,5 +105,39 @@ describe('notes', () => {
     expect(tree?.inProgressItems).toBe(1);
     expect(tree?.tracks[0]?.focus).toBe(false);
     expect(parseTodoTree(JSON.stringify({ tracks: [{ id: 't', title: 'T', focus: true }] }))?.tracks[0]?.focus).toBe(true);
+  });
+});
+
+describe('item size', () => {
+  const parse = (items: unknown[]) => parseTodoTree(JSON.stringify({ tracks: [{ id: 't', title: 'T', items }] }))!;
+
+  it('defaults to weight 1 and clamps sizes to 1–8', () => {
+    const t = parse([
+      { id: 'a', title: 'A' },
+      { id: 'b', title: 'B', size: 99 },
+      { id: 'c', title: 'C', size: -3 },
+      { id: 'd', title: 'D', size: 'big' },
+      { id: 'e', title: 'E', size: 3 },
+    ]);
+    expect(t.tracks[0]!.children.map((c) => c.weight)).toEqual([1, 8, 1, 1, 3]);
+    expect(t.tracks[0]!.weight).toBe(14);
+  });
+
+  it('weights progress by size', () => {
+    const big = parse([{ id: 'a', title: 'A', status: 'done', size: 8 }, { id: 'b', title: 'B' }]);
+    expect(big.progress).toBe(89);
+    const small = parse([{ id: 'a', title: 'A', status: 'done' }, { id: 'b', title: 'B', size: 8 }]);
+    expect(small.progress).toBe(11);
+  });
+
+  it('sums weights up through groups and weights the project over tracks', () => {
+    const tree = parseTodoTree(JSON.stringify({ tracks: [
+      { id: 't1', title: 'One', items: [{ id: 'g', title: 'G', items: [{ id: 'g1', title: 'G1', status: 'done', size: 2 }, { id: 'g2', title: 'G2', size: 2 }] }] },
+      { id: 't2', title: 'Two', status: 'not_started', size: 4 },
+    ] }))!;
+    expect(tree.tracks[0]!.children[0]!.weight).toBe(4);
+    expect(tree.tracks.map((t) => t.weight)).toEqual([4, 4]);
+    expect(tree.progress).toBe(25);
+    expect(tree.totalItems).toBe(3);
   });
 });

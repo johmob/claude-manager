@@ -143,6 +143,7 @@ describe('session-model', () => {
       title,
       status,
       progress: 0,
+      weight: 1,
       owner: '',
       dependsOn: [],
       blocked: false,

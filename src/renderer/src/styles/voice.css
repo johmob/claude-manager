@@ -1,0 +1,25 @@
+/* Voice input: mic button and its settings section. */
+.mic-wrap { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
+.mic-btn { position: relative; width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.mic-btn.compact { width: 24px; height: 24px; }
+.mic-btn:hover { background: var(--bg-hover); color: var(--text); }
+.mic-btn > svg, .mic-btn > .mic-pct { position: relative; z-index: 1; }
+.mic-btn.need-download { color: var(--accent-ui); border-style: dashed; }
+.mic-btn.downloading { cursor: default; color: var(--text); }
+.mic-pct { font-size: 0.625rem; font-variant-numeric: tabular-nums; }
+.mic-progress { position: absolute; inset: -1px; border-radius: 50%; opacity: .5; -webkit-mask: radial-gradient(circle, transparent 58%, #000 60%); mask: radial-gradient(circle, transparent 58%, #000 60%); }
+.mic-btn.listening { color: #fff; background: #f0524f; border-color: #f0524f; }
+.mic-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(240, 82, 79, .7); transform: scale(calc(1.1 + var(--mic-level, 0) * 0.7)); opacity: calc(.9 - var(--mic-level, 0) * 0.5); transition: transform .08s linear, opacity .08s linear; pointer-events: none; }
+.mic-btn.transcribing { color: var(--accent-ui); border-color: var(--accent-ui); }
+.mic-spin { animation: spin 1s linear infinite; }
+.mic-hint { position: absolute; top: calc(100% + 4px); right: 0; z-index: 5; max-width: 260px; width: max-content; padding: 4px 8px; font-size: 0.75rem; color: var(--text); background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, .4); }
+
+.voice-settings { display: flex; flex-direction: column; gap: 8px; }
+.voice-slider { display: inline-flex; align-items: center; gap: 8px; }
+.voice-slider input[type="range"] { width: 110px; accent-color: var(--accent-ui); }
+.voice-value { min-width: 2.2em; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.voice-note, .voice-status { color: var(--muted); font-size: 0.75rem; }
+.voice-error { color: #f0524f; }
+.voice-download { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.voice-bar { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+.voice-bar > span { display: block; height: 100%; background: var(--accent-ui); transition: width .25s; }

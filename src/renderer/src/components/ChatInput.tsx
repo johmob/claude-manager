@@ -1,10 +1,12 @@
-import { useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
 import type { SessionSummary } from '../../../shared/contracts';
 import { PASTE_FILE_MAX_BYTES, PASTE_MAX_BYTES, PASTE_TYPES, withAttachments } from '../../../shared/pastedImages';
 import { errorMessage, send } from '../lib/api';
 import { baseName } from '../lib/fileShare';
 import { localImageUrl } from '../lib/localImage';
 import '../styles/attach.css';
+import '../styles/chat-input.css';
+import { CompactButton } from './CompactButton';
 
 interface Attached {
   path: string;
@@ -122,6 +124,21 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
       : [];
 
   const busy = session.status === 'working';
+  const areaRef = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = areaRef.current;
+    if (!el) return;
+    const fit = (): void => {
+      el.style.height = 'auto';
+      const host = el.closest('.tile, .card');
+      const max = compact ? 6 * 18 + 12 : (host?.clientHeight || window.innerHeight) / 2;
+      el.style.height = `${Math.min(el.scrollHeight, max)}px`;
+      el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden';
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [text, compact]);
   /** Enter sends (it waits while the agent is busy); Ctrl+Enter stops what the agent is doing and has it do this instead. */
   const submit = (redirect = false): void => {
     const value = withAttachments(text, images.map((i) => i.path), files.map((f) => f.path));
@@ -175,6 +192,7 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
         </div>
       )}
       <textarea
+        ref={areaRef}
         rows={compact ? 1 : 2}
         value={text}
         placeholder={
@@ -194,6 +212,7 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
       {!compact && (
         <div className="chat-input-side">
           <button type="button" className="icon-btn" title="Kommandon" aria-label="Kommandon" onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
+          <CompactButton session={session} />
           {menuOpen && <ActionsMenu session={session} onClose={() => setMenuOpen(false)} />}
         </div>
       )}

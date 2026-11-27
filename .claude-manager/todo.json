@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T12:06:51.173Z",
+  "updated": "2026-11-27T15:16:02.255Z",
   "tracks": [
     {
       "id": "design",
@@ -129,7 +129,8 @@
               "id": "design.5.1",
               "title": "Genomgång av alla vyer",
               "status": "not_started",
-              "notes": "Förslag: skärmbilder av varje vy i båda temana, sedan en lista med inkonsekvenser (avstånd, storlekar, knappar, tomma lägen) att rätta i en omgång."
+              "notes": "Förslag: skärmbilder av varje vy i båda temana, sedan en lista med inkonsekvenser (avstånd, storlekar, knappar, tomma lägen) att rätta i en omgång.",
+              "size": 3
             },
             {
               "id": "design.5.2",
@@ -261,8 +262,8 @@
             {
               "id": "plan.1.5",
               "title": "Vikt per punkt",
-              "status": "not_started",
-              "notes": "Användaren: 79 % klart stämmer inte när stora spår som mejlet och rösten nyss lagts till; förloppet räknas på antal punkter, så en punkt som tar en vecka väger lika lite som en som tar tio minuter. Förslag: valfritt fält \"size\" (relativ storlek, t.ex. 1 liten till 8 mycket stor) som agenten sätter; appen viktar förlopp och procent med det, och punkter utan size räknas som 1. Protokollet ber agenten sätta size på nya punkter."
+              "status": "done",
+              "notes": "Punkter kan ha \"size\" 1–8 (standard 1); förlopp och procent viktas med det, och protokollet ber agenten sätta size. Provat dolt: en klar punkt med size 8 gav 62 % i stället för 6 %."
             }
           ]
         },
@@ -365,8 +366,9 @@
             {
               "id": "plan.3.10",
               "title": "Kontroll av schemat",
-              "status": "not_started",
-              "notes": "Användaren: även main slarvade med trädet (klara punkter hade kvar \"Ej provat\" i anteckningen). Grundregeln är skärpt: när status ändras skrivs anteckningen om till det som gäller nu. Kvar: appen kontrollerar schemat efter varje tur (klar punkt med \"ej provat\" eller \"kvar\" i anteckningen, pågår utan arbetande agent, tomma anteckningar, för långa titlar, blandade nivåer) och påminner agenten med de konkreta fynden i stället för en allmän påminnelse; i dag påminns den bara när filen inte rörts alls."
+              "status": "done",
+              "notes": "Kod klar, ej provad i körande app. check.ts kontrollerar schemat (klar punkt med \"ej provat\"/\"kvar\", pågår utan agent, tomma anteckningar, långa titlar, blandade nivåer) och sendFromUser skickar konkreta fynd när de ändrats sedan sist. Enhetstester gröna.",
+              "progress": 100
             }
           ]
         }
@@ -440,8 +442,8 @@
             {
               "id": "chat.1.10",
               "title": "Rulla till senaste",
-              "status": "not_started",
-              "notes": "Användaren: har det kommit flera meddelanden medan användaren varit inaktiv i appen, rullar chatten ned till det senaste. Den rullar aldrig medan användaren sitter och läser (har rullat upp, markerat text eller rört musen/tangentbordet i chatten nyligen). Förslag: annars en knapp \"N nya ↓\"."
+              "status": "done",
+              "notes": "Klart i koden, enhetstestat men ej provat i appen. Nya meddelanden räknas medan man är uppskrollad; knappen \"N nya ↓\" visas, och vyn hoppar ner först när minst två är nya och man varit inaktiv i 30 s eller fönstret saknar fokus. Aldrig under markering eller nylig aktivitet."
             }
           ]
         },
@@ -549,8 +551,9 @@
             {
               "id": "chat.2.17",
               "title": "Städa gammal frågestil",
-              "status": "not_started",
-              "notes": "De .qf-regler i styles.css som bara det borttagna helskärmsflödet för frågor använde."
+              "status": "done",
+              "progress": 100,
+              "notes": "Borttagna i styles.css: .qf, .qf-step-dot, .qf-card, .qf-question, .qf-answer, .qf-actions, .qf-spacer, .qf-ok, .qf-full, .qf-from (+ .session-mark-letters-regeln) och @keyframes qf-from-in. Kvar: .qf-detail, .qf-quick, .qf-quick-btn, .qf-brief. Ej committat."
             },
             {
               "id": "chat.2.18",
@@ -561,14 +564,15 @@
             {
               "id": "chat.2.19",
               "title": "Snabbsvar skickas direkt",
-              "status": "not_started",
-              "notes": "Användaren: när rutan bara har en fråga (t.ex. ja/nej) ska ett tryck på Ja, Nej eller ett annat snabbsvar skicka svaret direkt, inte bara fylla i textfältet och kräva \"Skicka svaren\". Med flera frågor fyller knappen i som nu. Fritext går fortfarande att skriva i stället."
+              "status": "done",
+              "notes": "Med en enda fråga skickar ett klick på ett snabbsvar svaret direkt; med flera fyller det i. Provat dolt."
             },
             {
               "id": "chat.2.20",
               "title": "Ljud när frågan visas",
-              "status": "not_started",
-              "notes": "Användaren: notisljudet spelas när agenten skickat sin ursprungliga fråga, inte när appens bearbetning är klar. Kartlagt: ljud spelas bara för brådskande notiser. Turens slut aviseras efter Haiku-taggningen (announceTurnEnd i main/index.ts), men input_requested (agentens AskUserQuestion och behörighetsfrågor) aviseras direkt med ljud och agentens råa frågetext. Åtgärd: ljud och notis först när frågan visas färdig i appen, med samma text som där; utred om även input_requested går via bearbetningen."
+              "status": "done",
+              "notes": "Kod klar, ej provad i körande app. Alla brådskande notiser köas och spelas efter att state:sessions pushats till appen, med samma text som frågepanelen visar. Kön rensas vid ny tur, besvarad fråga och avslut.",
+              "progress": 100
             }
           ]
         },
@@ -616,8 +620,8 @@
             {
               "id": "chat.3.7",
               "title": "Skrivrutan växer",
-              "status": "not_started",
-              "notes": "Användaren: rutan man skriver i är i praktiken en eller två rader. Den ska växa med texten (t.ex. upp till ungefär halva chattens höjd, sedan rullning inuti) och krympa igen när meddelandet skickats."
+              "status": "done",
+              "notes": "Skrivrutan växer med texten upp till halva rutans höjd och rullar sedan inuti; krymper när den töms. Provat dolt."
             }
           ]
         },
@@ -671,8 +675,8 @@
             {
               "id": "chat.4.8",
               "title": "Synlig Komprimera-knapp",
-              "status": "not_started",
-              "notes": "Användaren (0.1.39): det finns fortfarande ingen bra knapp för att komprimera. Dagens knapp är en liten textknapp under kontextmätaren bredvid Fönster: auto och syns knappt. Förslag: en tydlig ikonknapp (fold-vertical) vid chattrutans skicka-knapp eller i chattens rubrik, med kontextens fyllnad i verktygstipset, som framhävs när kontexten börjar bli full; samma förberedelseflöde som chat.4.4."
+              "status": "done",
+              "notes": "Ikonknapp (fold-vertical) vid chattrutan och i kontextraden, blir gul vid 70 % och röd vid 85 % kontext, kör förberedelseflödet. Provat dolt."
             }
           ]
         },
@@ -742,29 +746,31 @@
             {
               "id": "voice.2.1",
               "title": "Mikrofonknapp som slutar lyssna själv",
-              "status": "not_started",
-              "dependsOn": [
-                "voice.1.2"
-              ],
-              "notes": "Användaren: ett klick startar inspelningen, inget hållande. Appen känner av när användaren tystnat och skickar då; tystnadens längd ska kunna ställas (förslag 1–5 s, standard 2 s, i ⚙). Ett klick till avbryter. Valfritt läge: lägg texten i rutan i stället för att skicka direkt."
+              "status": "in_progress",
+              "progress": 40,
+              "notes": "Användaren: ett klick startar inspelningen, inget hållande. Appen känner av när användaren tystnat och skickar då; tystnadens längd ska kunna ställas (förslag 1–5 s, standard 2 s, i ⚙). Ett klick till avbryter. Valfritt läge: lägg texten i rutan i stället för att skicka direkt. Antagande (main, 2026-11-27): beroendet på voice.1.2 (prova Win+H) släpptes; Win+H är bara en jämförelse och behövs inte för att bygga. T5 klar: MicButton, VoiceSettings och voice.css finns (ej verifierade i appen); T3 klar: wav.ts, silence.ts, recorder.ts med tester (recorder ej provad i appen); återstår inkoppling i ChatInput/TopBar (T7).",
+              "size": 3
             },
             {
               "id": "voice.2.2",
               "title": "Lokal transkribering",
-              "status": "not_started",
+              "status": "in_progress",
+              "progress": 0,
               "dependsOn": [
                 "voice.2.1"
               ],
-              "notes": "Egen modul med whisper.cpp och KBLab:s svenska modell; modellen hämtas första gången. Inget ljud lämnar datorn."
+              "notes": "Egen modul med whisper.cpp och KBLab:s svenska modell; modellen hämtas första gången. Inget ljud lämnar datorn.",
+              "size": 5
             },
             {
               "id": "voice.2.3",
               "title": "Städa talspråket",
-              "status": "not_started",
+              "status": "in_progress",
+              "progress": 50,
               "dependsOn": [
                 "voice.2.2"
               ],
-              "notes": "Valfritt: Haiku gör om det transkriberade till en tydlig instruktion; användaren ser texten och kan ändra innan den skickas."
+              "notes": "Valfritt: Haiku gör om det transkriberade till en tydlig instruktion; användaren ser texten och kan ändra innan den skickas. Modulen klar (voice-cleanup: cleanupRequest/readCleanup, med tester). Kvar: voice:clean i main, useVoice och inställningen i ⚙ (integrationen)."
             }
           ]
         },
@@ -776,11 +782,13 @@
             {
               "id": "voice.4.1",
               "title": "Röstsvar på frågor",
-              "status": "not_started",
+              "status": "in_progress",
+              "progress": 30,
               "dependsOn": [
                 "voice.2.2"
               ],
-              "notes": "Mikrofon i frågerutan i chatten; säger man ett av alternativen väljs det. Bygger på chat.2.16 (klar)."
+              "notes": "Mikrofon i frågerutan i chatten; säger man ett av alternativen väljs det. Bygger på chat.2.16 (klar). Matchningen (optionMatch.ts, isSendCommand) är klar med tester. Kvar: mikrofonen per frågekort i QuestionBox.tsx, som väntar på integrationen.",
+              "size": 3
             },
             {
               "id": "voice.4.2",
@@ -1090,7 +1098,8 @@
               "id": "ui.3.14",
               "title": "Appens andel av kvoten",
               "status": "not_started",
-              "notes": "Användaren: räkna ut appens del från hur mycket kvoten faktiskt gått ned. Förslag: logga veckokvotens procent och appens och sessionernas räknade tokens över tid; kvotens ökning delad med alla räknade tokens ger tokens per procentenhet, och appens tokens delat med det ger appens förbrukning i procent av vecko- och 5-timmarskvoten. Skillnaden mot det räknade visar också hur mycket som inte räknas (t.ex. subagenter eller terminalen)."
+              "notes": "Användaren: räkna ut appens del från hur mycket kvoten faktiskt gått ned. Förslag: logga veckokvotens procent och appens och sessionernas räknade tokens över tid; kvotens ökning delad med alla räknade tokens ger tokens per procentenhet, och appens tokens delat med det ger appens förbrukning i procent av vecko- och 5-timmarskvoten. Skillnaden mot det räknade visar också hur mycket som inte räknas (t.ex. subagenter eller terminalen).",
+              "size": 3
             },
             {
               "id": "ui.3.15",
@@ -1156,8 +1165,8 @@
             {
               "id": "ui.4.8",
               "title": "Menyn Nytt",
-              "status": "not_started",
-              "notes": "Användaren: i topplisten samlas Ny chatt, Nytt projekt, Befintligt projekt och Grundregler i en traditionell utfällbar meny, t.ex. \"Nytt\", i stället för separata ikoner."
+              "status": "done",
+              "notes": "Knappen Nytt i topplisten fäller ut Ny chatt, Nytt projekt, Befintligt projekt och Grundregler; stängs med Esc eller klick utanför. Provat dolt."
             }
           ]
         }
@@ -1475,7 +1484,8 @@
               "id": "mail.1.1",
               "title": "Koppling till Outlook classic",
               "status": "not_started",
-              "notes": "Kontrollerat 2026-11-25 på jobbdatorn: Outlook classic 16.0 (Microsoft 365, 64-bit) körs, ett Exchange-konto i cachat läge. COM via GetActiveObject ansluter på ~40 ms; inkorg och Skickat läses, ConversationID finns, skyddade fält (avsändare, text) läses utan säkerhetsprompt eftersom Defender är på och uppdaterad; inga Outlook-policyer satta. Nya Outlook finns också installerat men används inte. Kvar: prova att skicka (Send) och NewMailEx-händelser i en långlivad brygga; IT-policy för att skicka jobbmejl till Claude."
+              "notes": "Kontrollerat 2026-11-25 på jobbdatorn: Outlook classic 16.0 (Microsoft 365, 64-bit) körs, ett Exchange-konto i cachat läge. COM via GetActiveObject ansluter på ~40 ms; inkorg och Skickat läses, ConversationID finns, skyddade fält (avsändare, text) läses utan säkerhetsprompt eftersom Defender är på och uppdaterad; inga Outlook-policyer satta. Nya Outlook finns också installerat men används inte. Kvar: prova att skicka (Send) och NewMailEx-händelser i en långlivad brygga; IT-policy för att skicka jobbmejl till Claude.",
+              "size": 5
             },
             {
               "id": "mail.1.2",
@@ -1484,7 +1494,8 @@
               "notes": "Inkorgens nya mejl (NewMailEx eller periodisk avläsning) med avsändare, ämne, text, bilagor och ConversationID.",
               "dependsOn": [
                 "mail.1.1"
-              ]
+              ],
+              "size": 3
             }
           ]
         },
@@ -1500,7 +1511,8 @@
               "notes": "Billig modell (Haiku) bedömer: skräp, bara info, bör besvaras, kräver åtgärd; kort motivering och föreslagen åtgärd.",
               "dependsOn": [
                 "mail.1.2"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.2.2",
@@ -1519,7 +1531,8 @@
               "dependsOn": [
                 "mail.2.2",
                 "mail.2.1"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.2.4",
@@ -1528,7 +1541,8 @@
               "notes": "Användaren: oavsett val sparas vad användaren gjorde, typ av innehåll, avsändare m.m., så att bedömningen och den föreslagna åtgärden blir bättre med tiden. Sparas i databasen (mail.4.1).",
               "dependsOn": [
                 "mail.2.1"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.2.5",
@@ -1537,7 +1551,8 @@
               "notes": "Förslag från main, ej beslutat. För mejl som bör besvaras läser agenten in sig och tar fram ett förslag redan innan användaren tittar, så att \"Svara åt mig\" är klart direkt och hovringsträdet kan visa den föreslagna åtgärden. Kan stängas av för att spara tokens.",
               "dependsOn": [
                 "mail.2.1"
-              ]
+              ],
+              "size": 3
             }
           ]
         },
@@ -1572,7 +1587,8 @@
               "dependsOn": [
                 "mail.2.3",
                 "mail.3.3"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.3.2",
@@ -1581,7 +1597,8 @@
               "notes": "Användaren: visar originalmejlet och en chatt med mejlagenten där vi diskuterar vad som ska göras. Komplicerade åtgärder får automatiskt ett eget tillfälligt projekt (mail.4.3), så allt körs som vanligt men visas annorlunda.",
               "dependsOn": [
                 "mail.3.1"
-              ]
+              ],
+              "size": 5
             },
             {
               "id": "mail.3.3",
@@ -1590,7 +1607,8 @@
               "notes": "Användaren: mejlen hanteras helt i appen; Outlook används dolt i bakgrunden och inget Outlook-fönster öppnas. Agentens svar visas i appen och skickas via Outlook först när användaren godkänt det, aldrig av sig självt.",
               "dependsOn": [
                 "mail.3.2"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.3.4",
@@ -1612,7 +1630,8 @@
               "notes": "Varje mejltråd (ConversationID) får egen session, transkript och arbetsmapp med det agenten skapat; sparas över omstart. Användaren: data sparas strukturerat i en databas, inte som tusentals JSON-filer. Förslag: en SQLite-fil i appens datamapp (node:sqlite finns inbyggt i Electrons Node) med tabeller för mejl (Outlook-id, tråd-id, avsändare, mottagare, ämne, tid, bedömning, status), trådar (session-id, sammanfattning) och händelser (agentens svar, åtgärder, skapade filer); bara agentens filer ligger som filer i en mapp per tråd. Användaren: varje skickat mejl märks med vem som skrev det: användaren direkt i Outlook, agenten (godkänt oförändrat) eller agenten med användarens ändringar; appen vet vilka den själv skickat (Outlook-id sparas vid skick), allt annat i Skickat är användarens.",
               "dependsOn": [
                 "mail.3.2"
-              ]
+              ],
+              "size": 5
             },
             {
               "id": "mail.4.2",
@@ -1622,7 +1641,8 @@
               "dependsOn": [
                 "mail.4.1",
                 "mail.1.2"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.4.3",
@@ -1632,7 +1652,8 @@
               "dependsOn": [
                 "mail.3.2",
                 "mail.4.1"
-              ]
+              ],
+              "size": 5
             },
             {
               "id": "mail.4.4",
@@ -1641,7 +1662,8 @@
               "notes": "Förslag från main, ej beslutat. Gäller mejlet ett projekt som appen redan kör (personer, ämnesord, filer) föreslås det projektets session i stället för ett nytt tillfälligt projekt, så arbetet hamnar där kunskapen redan finns.",
               "dependsOn": [
                 "mail.4.1"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.4.5",
@@ -1650,7 +1672,8 @@
               "notes": "Förslag från main, ej beslutat. Agenten noterar löften i skickade svar (\"skickar rapporten på fredag\") och mejl som väntar på svar från andra, och påminner via schemat när något förfaller eller inget svar kommit.",
               "dependsOn": [
                 "mail.4.1"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.4.6",
@@ -1659,7 +1682,8 @@
               "notes": "Förslag från main, ej beslutat. Agenten lär sig användarens ton, längd och språk per mottagare från Skickat, så svaren låter som användaren. Användaren: ja, om resultatet blir bra och användbart. Plan: prova först på några riktiga svar, med och utan stilprofil sida vid sida, och behåll bara om användaren tycker att det låter mer som användaren själv. Användaren: löpande omträning, men agenten får aldrig träna på agentskrivna mejl. Förslag: profilen byggs bara av mejl användaren skrivit själv i Outlook och förnyas av ett schemalagt jobb (t.ex. en gång i månaden). Användarens ändringar i agentens utkast sparas som skillnad och är den starkaste signalen om vad agenten gör fel. Användaren: ja, spara ändringarna i agentens utkast som signal.",
               "dependsOn": [
                 "mail.1.1"
-              ]
+              ],
+              "size": 3
             }
           ]
         },
@@ -1694,7 +1718,8 @@
               "notes": "Förslag från main, ej beslutat. Kallelser visas i hovringsträdet med tid, arrangör och ämne, och med valen Acceptera, Preliminärt, Avböj (med kort hälsning) och Föreslå ny tid. Svaret går via Outlook, och kalendern uppdateras.",
               "dependsOn": [
                 "mail.2.3"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.6.2",
@@ -1703,7 +1728,8 @@
               "notes": "Förslag från main, ej beslutat. Agenten kollar kalendern: krockar, möten tätt inpå varandra och om du redan har ett möte om samma sak, och föreslår ett val (t.ex. avböj, du är dubbelbokad med X).",
               "dependsOn": [
                 "mail.6.1"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.6.3",
@@ -1722,13 +1748,15 @@
               "dependsOn": [
                 "mail.6.1",
                 "mail.4.1"
-              ]
+              ],
+              "size": 3
             },
             {
               "id": "mail.6.5",
               "title": "Samspel med planeringsappen",
               "status": "not_started",
-              "notes": "Förslag från main, ej beslutat. Användarens planeringsapp bokar arbetspass som upptagen tid i Outlook och kopplar mötestid till projekt. Mejlspåret ska läsa det i stället för att dubblera: krockkontrollen (mail.6.2) ser skillnad på inbokade arbetspass (flyttbara) och möten, åtgärder och löften från mejl (mail.4.5) kan bli punkter i planeringsappen, och morgonöversikten (mail.7.1) tar med dagens plan. Hur appen lagrar sin data utreds först; den ändras inte utan användarens beslut."
+              "notes": "Förslag från main, ej beslutat. Användarens planeringsapp bokar arbetspass som upptagen tid i Outlook och kopplar mötestid till projekt. Mejlspåret ska läsa det i stället för att dubblera: krockkontrollen (mail.6.2) ser skillnad på inbokade arbetspass (flyttbara) och möten, åtgärder och löften från mejl (mail.4.5) kan bli punkter i planeringsappen, och morgonöversikten (mail.7.1) tar med dagens plan. Hur appen lagrar sin data utreds först; den ändras inte utan användarens beslut.",
+              "size": 3
             }
           ]
         },

@@ -14,7 +14,6 @@ import { PASTE_FILE_MAX_BYTES, PASTE_MAX_BYTES, PASTE_TYPES } from '../shared/pa
 const PASTE_KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 /** Tool calls in a turn that count as real work, after which the work schema should have been touched. */
 const SCHEMA_REMINDER_TOOLS = 3;
-const SCHEMA_REMINDER = 'Under förra turen arbetade du utan att röra arbetsschemat (.claude-manager/todo.json). Uppdatera det först: markera det som blev klart, sätt pågår bara på det som faktiskt pågår just nu och återställ resten, lägg till det som tillkommit och stryk det som blivit överflödigt. Nämn det inte i chatten.';
 import type {
   AppSettings,
   TranscriptEntry,
@@ -46,13 +45,14 @@ import type {
 import { CALLOUT_PROTOCOL, createSessionEngine, loadHistory } from './modules/session-engine';
 import { createSessionModel } from './modules/session-model';
 import { createUsageMonitor } from './modules/usage-monitor';
+import { checkSchema, schemaReminder } from './modules/todo-tree/check';
 import { createTodoWatcher, mappingRequest, SUBAGENT_SCHEMA_BRIEF, TODO_PROTOCOL, TODO_RELATIVE_PATH } from './modules/todo-tree';
 import { createJsonStore } from './modules/json-store';
 import { currentColor, pickColor } from './modules/palette';
 import { createGroundRules, groundRulesEditorPrompt } from './modules/ground-rules';
 import { createProjects, locateProject } from './modules/projects';
 import { createStructuredQuery } from './modules/structured-query';
-import { createNotifier } from './modules/notifier';
+import { createNotifier, type AlertRequest } from './modules/notifier';
 import { createWindowManager } from './modules/window-manager';
 import { createTray } from './modules/tray';
 import { importCandidates, liveTerminals } from './modules/terminal-sessions';
@@ -216,6 +216,10 @@ function boot(): void {
   const turnWork = new Map<string, { since: number; tools: number }>();
   const schemaChangedAt = new Map<string, number>();
   const schemaStale = new Set<string>();
+  /** The findings last sent to each session, so an ignored one is not repeated with every message. */
+  const schemaFindingsSent = new Map<string, string>();
+  /** Alerts waiting until the app has shown the question they are about (sound and toast come with the card). */
+  const queuedAlerts = new Map<string, { req: AlertRequest; relevant: (s: SessionSummary) => boolean }>();
   const todo = createTodoWatcher((id, tree) => {
     schemaChangedAt.set(id, Date.now());
     model.setTodo(id, tree);
@@ -361,6 +365,7 @@ function boot(): void {
           focus(record.id);
         }
         notifier.clear(event.sessionId);
+        queuedAlerts.delete(event.sessionId);
         break;
       // The mapping turn's own model and effort are temporary and never saved to the card.
       case 'model_changed':
@@ -370,15 +375,17 @@ function boot(): void {
         if (record && !mappingTurn(record.id)) saveRecord({ ...record, effort: event.effort });
         break;
       case 'input_requested':
-        notifier.alert({
+        // The same text as the pending panel shows: the header chip and the question.
+        alertWhenShown({
           sessionId: event.sessionId,
           title: `${record?.name ?? 'Session'} väntar på dig`,
-          body: event.pending.kind === 'question' ? event.pending.questions.map((q) => q.question).join('\n') : event.pending.summary,
+          body: event.pending.kind === 'question' ? event.pending.questions.map((q) => (q.header ? `${q.header}: ${q.question}` : q.question)).join('\n') : event.pending.summary,
           urgent: true,
-        });
+        }, (s) => s.pendingCount > 0);
         break;
       case 'input_resolved':
       case 'exited':
+        queuedAlerts.delete(event.sessionId);
         if (!model.summary(event.sessionId)?.pendingCount) notifier.clear(event.sessionId);
         // A mapping waiting for this session starts now; one whose turn was running ends with the process.
         if (event.type === 'exited' && mappingActive?.id === event.sessionId) void (mappingActive.restore ? endMapping('stopped') : sendMappingTurn());
@@ -421,6 +428,7 @@ function boot(): void {
       syncTimer = null;
       const summaries = model.summaries();
       pushEvent('state:sessions', summaries);
+      flushAlerts(summaries);
       windows.setDock(settings.dockVisible, settings.dockEdge, summaries.length);
       windows.setOverlay(settings.overlayVisible, summaries.length + 1);
       tray.setWaiting(summaries.filter((s) => s.status === 'waiting').length);
@@ -428,6 +436,20 @@ function boot(): void {
       rememberQuestions(summaries);
       logCards(summaries);
     }, SYNC_DELAY_MS);
+  }
+
+  /** Sound and toast come when the app shows the question, not before: queued until the next push has gone out. */
+  function alertWhenShown(req: AlertRequest, relevant: (s: SessionSummary) => boolean): void {
+    queuedAlerts.set(req.sessionId, { req, relevant });
+    scheduleSync();
+  }
+
+  function flushAlerts(summaries: SessionSummary[]): void {
+    for (const [id, { req, relevant }] of [...queuedAlerts]) {
+      queuedAlerts.delete(id);
+      const s = summaries.find((x) => x.id === id);
+      if (s && relevant(s)) notifier.alert(req);
+    }
   }
 
   // ---------- Sessions ----------
@@ -471,10 +493,18 @@ function boot(): void {
       model.setDrift(id, null);
       scheduleSync();
     }
-    const schema = !text.trimStart().startsWith('/') && schemaStale.delete(id);
+    const plain = !text.trimStart().startsWith('/');
+    const untouched = plain && schemaStale.delete(id);
+    const record = findRecord(id);
+    const summary = model.summary(id);
+    const findings = plain && summary?.todo && record && record.kind !== 'quick' && !mappingTurn(id) && hasSchema(record.cwd) ? checkSchema(summary.todo, { agentsWorking: summary.activeAgents > 0 }) : [];
+    const key = findings.join('\n');
+    const fresh = key !== (schemaFindingsSent.get(id) ?? '') ? findings : [];
+    if (plain) schemaFindingsSent.set(id, key);
+    const reminder = schemaReminder(fresh, untouched);
     const notes = [
       ...(drift ? [appContext('Ändringar gjorda utanför appen följde med', describeDrift(drift))] : []),
-      ...(schema ? [appContext('Påminnelse om arbetsschemat', SCHEMA_REMINDER)] : []),
+      ...(reminder ? [appContext('Påminnelse om arbetsschemat', reminder)] : []),
     ];
     sendToSession(id, notes.length ? `${notes.join('\n\n')}\n\n${text}` : text);
   }
@@ -682,9 +712,9 @@ function boot(): void {
     const s = model.summary(id);
     if (!s || s.status === 'working' || s.pendingCount) return;
     if (s.status === 'waiting' && s.questions.length) {
-      notifier.alert({ sessionId: id, title: `${s.name} har ${s.questions.length} frågor till dig`, body: s.questions.slice(0, 3).map((q) => q.text).join('\n'), urgent: true });
+      alertWhenShown({ sessionId: id, title: `${s.name} har ${s.questions.length} frågor till dig`, body: s.questions.slice(0, 3).map((q) => q.text).join('\n'), urgent: true }, (x) => x.status === 'waiting' && x.questions.length > 0 && !x.pendingCount);
     } else if (settings.alertOnDone) {
-      notifier.alert({ sessionId: id, title: `${s.name} är klar`, body: result, urgent: false });
+      alertWhenShown({ sessionId: id, title: `${s.name} är klar`, body: result, urgent: false }, (x) => x.status !== 'working' && !x.pendingCount);
     }
   }
 

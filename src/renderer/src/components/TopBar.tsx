@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AppSettings, DockEdge, UpdateStatus } from '../../../shared/contracts';
+import { ChevronDown, Plus } from 'lucide-react';
+import '../styles/new-menu.css';
 import { send } from '../lib/api';
 import { ChatIcon, ExistingProjectIcon, NewProjectIcon, NoSleepIcon, RulesIcon } from './Icons';
 import type { DialogKind } from './StartDialogs';
@@ -117,16 +119,53 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
   );
 }
 
+/** "Nytt": chat, projects and ground rules in one drop-down. Closes on a click outside or Escape. */
+function NewMenu({ onDialog }: { onDialog: (k: DialogKind) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent): void => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  const pick = (k: DialogKind): void => {
+    setOpen(false);
+    onDialog(k);
+  };
+  return (
+    <div className="new-menu" ref={ref}>
+      <button type="button" className="new-menu-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <Plus className="icon" />
+        Nytt
+        <ChevronDown className="icon" />
+      </button>
+      {open && (
+        <div className="new-menu-pop" role="menu">
+          <button type="button" role="menuitem" className="new-menu-item" onClick={() => pick('chat')}><ChatIcon />Ny chatt</button>
+          <button type="button" role="menuitem" className="new-menu-item" onClick={() => pick('project')}><NewProjectIcon />Nytt projekt</button>
+          <button type="button" role="menuitem" className="new-menu-item" onClick={() => pick('existing')}><ExistingProjectIcon />Befintligt projekt</button>
+          <div className="new-menu-sep" role="separator" />
+          <button type="button" role="menuitem" className="new-menu-item" onClick={() => pick('rules')}><RulesIcon />Grundregler</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TopBar({ settings, update, view, onView, onDialog }: TopBarProps) {
   return (
     <header className="topbar">
-      <nav className="start-menu" aria-label="Starta">
-        <button type="button" title="Ny chatt" onClick={() => onDialog('chat')}><ChatIcon /><span className="start-label">Ny chatt</span></button>
-        <button type="button" title="Nytt projekt" onClick={() => onDialog('project')}><NewProjectIcon /><span className="start-label">Nytt projekt</span></button>
-        <button type="button" title="Befintligt projekt" onClick={() => onDialog('existing')}><ExistingProjectIcon /><span className="start-label">Befintligt projekt</span></button>
-        <span className="start-menu-sep" />
-        <button type="button" title="Grundregler" onClick={() => onDialog('rules')}><RulesIcon /><span className="start-label">Grundregler</span></button>
-      </nav>
+      <NewMenu onDialog={onDialog} />
       <span className="topbar-sep" />
       {/* Left, next to the start menu: the overlay sits in the middle of the screen and would cover them there. */}
       <div className="view-tabs" role="tablist">

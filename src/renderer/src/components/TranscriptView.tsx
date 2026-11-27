@@ -10,6 +10,8 @@ import { MarkdownText } from './MarkdownText';
 import { UserText } from './UserText';
 import { ANSWER_ROOM_CHARS } from '../../../shared/answerRoom';
 import { nearlySame } from '../lib/textMatch';
+import { countableIds, shouldFollow, unseenCount } from '../lib/followScroll';
+import '../styles/transcript-follow.css';
 
 function Thinking({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -302,26 +304,75 @@ function Entry({ entry, sessionId, final }: { entry: Exclude<TranscriptEntry, To
  * Scrollable live transcript: your messages, each turn's answer, callouts and questions stand out; the
  * agent's narration and commands along the way are folded into work logs (Detaljerat shows it all raw,
  * with only the runs of commands folded).
- * Sticks to the bottom unless the user scrolled up.
+ * Sticks to the bottom unless the user scrolled up; then new messages are counted in a "N nya" button, and
+ * the view jumps down by itself only once the user has been idle (never while reading or selecting text).
  */
 export function TranscriptView({ entries, sessionId, footer, footerKey }: { entries: TranscriptEntry[]; sessionId: string; footer?: ReactNode; footerKey?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
+  const lastActivity = useRef(Date.now());
+  const seen = useRef<Set<string>>(new Set());
+  const [unseen, setUnseen] = useState(0);
 
-  useLayoutEffect(() => {
+  const toBottom = (smooth: boolean): void => {
     const el = ref.current;
-    if (el && stick.current) el.scrollTop = el.scrollHeight;
-  }, [entries, footerKey]);
+    if (!el) return;
+    stick.current = true;
+    seen.current = new Set(countableIds(entries));
+    setUnseen(0);
+    if (smooth) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    else el.scrollTop = el.scrollHeight;
+  };
+
+  /** Follow, jump or just count, depending on where the user is and what they are doing. */
+  const evaluate = (): void => {
+    const el = ref.current;
+    if (!el) return;
+    const sel = window.getSelection();
+    const hasSelection = !!sel && !sel.isCollapsed && !!sel.anchorNode && el.contains(sel.anchorNode);
+    const count = unseenCount(entries, seen.current);
+    const action = shouldFollow({
+      atBottom: stick.current,
+      unseen: count,
+      idleMs: Date.now() - lastActivity.current,
+      hasSelection,
+      windowFocused: document.hasFocus(),
+    });
+    if (action === 'stick') {
+      el.scrollTop = el.scrollHeight;
+      seen.current = new Set(countableIds(entries));
+      setUnseen(0);
+    } else if (action === 'jump') toBottom(true);
+    else setUnseen(count);
+  };
+
+  useLayoutEffect(evaluate, [entries, footerKey]);
+
+  // While messages wait below the view, look again now and then so the jump happens once the user goes idle.
+  useEffect(() => {
+    if (unseen <= 0) return;
+    const t = setInterval(evaluate, 5000);
+    return () => clearInterval(t);
+  });
+
+  const touch = (): void => {
+    lastActivity.current = Date.now();
+  };
 
   const onScroll = (): void => {
     const el = ref.current;
-    if (el) stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    if (!el) return;
+    stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    if (stick.current && unseen > 0) {
+      seen.current = new Set(countableIds(entries));
+      setUnseen(0);
+    }
   };
 
   const finals = finalAnswers(entries);
   const detail = useContext(ChatDetailContext);
   return (
-    <div className="transcript" ref={ref} onScroll={onScroll}>
+    <div className="transcript" ref={ref} onScroll={onScroll} onWheel={touch} onPointerDown={touch} onKeyDown={touch} onMouseMove={touch}>
       {rounds(arrange(entries, finals, detail)).map((round) => {
         const answer = roundAnswer(round, finals);
         return (
@@ -339,6 +390,11 @@ export function TranscriptView({ entries, sessionId, footer, footerKey }: { entr
         );
       })}
       {footer}
+      {unseen > 0 && (
+        <button type="button" className="t-new-btn" onClick={() => toBottom(true)}>
+          {unseen} nya ↓
+        </button>
+      )}
     </div>
   );
 }

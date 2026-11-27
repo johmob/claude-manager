@@ -81,6 +81,12 @@ export function QuestionBox({ session }: { session: SessionSummary }) {
     send('session:dismiss-callouts', { id: session.id });
     close();
   };
+  // With a single question a quick answer is the whole reply, so it goes at once; with several it only fills in.
+  const pick = (i: number, value: string): void => {
+    if (questions.length !== 1) return setAnswer(i, value);
+    send('session:send', { id: session.id, text: composeAnswers(questions, [value]) });
+    close();
+  };
   const assumptions = questions.filter((q) => q.kind === 'assumption').length;
 
   return (
@@ -110,7 +116,7 @@ export function QuestionBox({ session }: { session: SessionSummary }) {
                 {quick.map((option) => {
                   const value = option === 'Stämmer' ? 'Stämmer.' : option;
                   return (
-                    <button key={option} type="button" className="btn qf-quick-btn" data-picked={answers[i] === value ? 'true' : undefined} onClick={() => setAnswer(i, value)}>
+                    <button key={option} type="button" className="btn qf-quick-btn" data-picked={answers[i] === value ? 'true' : undefined} onClick={() => pick(i, value)}>
                       {option}
                     </button>
                   );
@@ -142,7 +148,9 @@ export function QuestionBox({ session }: { session: SessionSummary }) {
       })}
       <div className="qbox-foot">
         <button type="button" className="btn" onClick={skipAll}>Hoppa över alla</button>
-        <span className="qbox-hint muted">Enter: nästa fält · Ctrl+Enter: skicka</span>
+        <span className="qbox-hint muted">
+          {questions.length === 1 ? 'Ett klick på ett snabbsvar skickar direkt · Enter: skicka' : 'Enter: nästa fält · Ctrl+Enter: skicka'}
+        </span>
         <button type="button" className="btn primary" onClick={submit}>Skicka svaren</button>
       </div>
     </section>

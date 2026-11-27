@@ -21,11 +21,13 @@ export function arrangeLevel(parent: TodoNode): { open: TodoNode[]; done: TodoNo
   const groups = rest.filter((c) => c.children.length);
   const loose = rest.filter((c) => !c.children.length);
   if (!groups.length || !loose.length) return { open: rest, done };
+  const weight = loose.reduce((sum, l) => sum + l.weight, 0);
   const other: TodoNode = {
     id: `${parent.id}.other`,
     title: OTHER_TITLE,
     status: loose.some((l) => l.status === 'in_progress') ? 'in_progress' : 'not_started',
-    progress: Math.round(loose.reduce((sum, l) => sum + l.progress, 0) / loose.length),
+    weight,
+    progress: Math.round(loose.reduce((sum, l) => sum + l.progress * l.weight, 0) / weight),
     owner: '',
     dependsOn: [],
     blocked: false,
