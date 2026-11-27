@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:29:47.165Z",
+  "updated": "2026-11-27T09:31:50.164Z",
   "tracks": [
     {
       "id": "design",
@@ -539,6 +539,12 @@
               "title": "Dubbla frågor slås ihop",
               "status": "not_started",
               "notes": "Användaren: agenten ställer en fråga, arbetar vidare och ställer den igen med annan formulering i ett senare meddelande; då visas båda som egna frågor. Förslag: när taggaren (turn-tags) hittar frågor och det redan finns obesvarade, får Haiku de öppna frågorna med och markerar vilka nya som är samma fråga; den nyare formuleringen ersätter den äldre på samma plats (utkast till svar behålls), i stället för att läggas till."
+            },
+            {
+              "id": "chat.2.19",
+              "title": "Snabbsvar skickas direkt",
+              "status": "not_started",
+              "notes": "Användaren: när rutan bara har en fråga (t.ex. ja/nej) ska ett tryck på Ja, Nej eller ett annat snabbsvar skicka svaret direkt, inte bara fylla i textfältet och kräva \"Skicka svaren\". Med flera frågor fyller knappen i som nu. Fritext går fortfarande att skriva i stället."
             }
           ]
         },
@@ -1596,7 +1602,7 @@
               "id": "mail.4.6",
               "title": "Skrivstil från Skickat",
               "status": "not_started",
-              "notes": "Förslag från main, ej beslutat. Agenten lär sig användarens ton, längd och språk per mottagare från Skickat, så svaren låter som användaren. Användaren: ja, om resultatet blir bra och användbart. Plan: prova först på några riktiga svar, med och utan stilprofil sida vid sida, och behåll bara om användaren tycker att det låter mer som användaren själv. Användaren: löpande omträning, men agenten får aldrig träna på agentskrivna mejl. Förslag: profilen byggs bara av mejl användaren skrivit själv i Outlook och förnyas av ett schemalagt jobb (t.ex. en gång i månaden). Användarens ändringar i agentens utkast sparas som skillnad och är den starkaste signalen om vad agenten gör fel.",
+              "notes": "Förslag från main, ej beslutat. Agenten lär sig användarens ton, längd och språk per mottagare från Skickat, så svaren låter som användaren. Användaren: ja, om resultatet blir bra och användbart. Plan: prova först på några riktiga svar, med och utan stilprofil sida vid sida, och behåll bara om användaren tycker att det låter mer som användaren själv. Användaren: löpande omträning, men agenten får aldrig träna på agentskrivna mejl. Förslag: profilen byggs bara av mejl användaren skrivit själv i Outlook och förnyas av ett schemalagt jobb (t.ex. en gång i månaden). Användarens ändringar i agentens utkast sparas som skillnad och är den starkaste signalen om vad agenten gör fel. Användaren: ja, spara ändringarna i agentens utkast som signal.",
               "dependsOn": [
                 "mail.1.1"
               ]
