@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
-import { briefSubagents, describeTool, savedUserText, splitCallouts, translate } from './index';
+import { briefSubagents, describeTool, sandboxDecision, savedUserText, splitCallouts, translate } from './index';
 
 const sdk = (message: object): SDKMessage => message as SDKMessage;
 
@@ -155,5 +155,33 @@ describe('a bold start that runs on into the sentence', () => {
     expect(splitCallouts(body).callouts).toEqual([{ kind: 'important', title: '', text: '**Koppla in avtryckaren med 24 V avslaget**, och isolera ledarna 6–8 var för sig.' }]);
     expect(splitCallouts('> [!NOTE]\n> **Titel.** Text här.').callouts).toEqual([{ kind: 'note', title: 'Titel', text: 'Text här.' }]);
     expect(splitCallouts('> [!NOTE]\n> **Titel** – text här.').callouts).toEqual([{ kind: 'note', title: 'Titel', text: 'Text här.' }]);
+  });
+});
+
+describe('sandboxDecision', () => {
+  const sandbox = { tools: ['Read', 'Write'], writeRoot: 'C:\\Data\\mail\\threads\\abc', mcpServers: {} };
+  const write = (path: string) => sandboxDecision(sandbox, 'Write', { file_path: path }).allow;
+
+  it('allows writes inside the root, whatever the slashes and case', () => {
+    expect(write('C:\\Data\\mail\\threads\\abc\\note.md')).toBe(true);
+    expect(write('c:/data/MAIL/threads/abc/sub/x.txt')).toBe(true);
+    expect(sandboxDecision(sandbox, 'Edit', { file_path: 'C:\\Data\\mail\\threads\\abc\\a.txt' }).allow).toBe(true);
+    expect(sandboxDecision(sandbox, 'NotebookEdit', { notebook_path: 'C:\\Data\\mail\\threads\\abc\\a.ipynb' }).allow).toBe(true);
+  });
+
+  it('denies writes outside the root, via .., on other drives, to siblings or relative', () => {
+    expect(write('C:\\Data\\mail\\threads\\abc\\..\\other\\x.txt')).toBe(false);
+    expect(write('C:\\Data\\mail\\threads\\abcd\\x.txt')).toBe(false);
+    expect(write('D:\\Data\\mail\\threads\\abc\\x.txt')).toBe(false);
+    expect(write('C:\\Windows\\x.txt')).toBe(false);
+    expect(write('x.txt')).toBe(false);
+    expect(sandboxDecision(sandbox, 'Write', {}).allow).toBe(false);
+  });
+
+  it('allows reading and the mail tools, denies everything else', () => {
+    for (const tool of ['Read', 'Glob', 'Grep', 'mcp__mail__propose_reply']) expect(sandboxDecision(sandbox, tool, {}).allow).toBe(true);
+    for (const tool of ['Bash', 'PowerShell', 'WebFetch', 'WebSearch', 'Agent', 'mcp__other__send']) {
+      expect(sandboxDecision(sandbox, tool, { command: 'x' })).toEqual({ allow: false, message: 'Inte tillåtet för mejlagenten.' });
+    }
   });
 });

@@ -747,31 +747,31 @@
             {
               "id": "voice.2.1",
               "title": "Mikrofonknapp som slutar lyssna själv",
-              "status": "in_progress",
-              "progress": 40,
-              "notes": "Användaren: ett klick startar inspelningen, inget hållande. Appen känner av när användaren tystnat och skickar då; tystnadens längd ska kunna ställas (förslag 1–5 s, standard 2 s, i ⚙). Ett klick till avbryter. Valfritt läge: lägg texten i rutan i stället för att skicka direkt. Antagande (main, 2026-11-27): beroendet på voice.1.2 (prova Win+H) släpptes; Win+H är bara en jämförelse och behövs inte för att bygga. T5 klar: MicButton, VoiceSettings och voice.css finns (ej verifierade i appen); T3 klar: wav.ts, silence.ts, recorder.ts med tester (recorder ej provad i appen); återstår inkoppling i ChatInput/TopBar (T7).",
+              "status": "done",
+              "progress": 100,
+              "notes": "Klart i koden: MicButton i ChatInput (Fokus och kompakt kort), skicka direkt eller lägg i rutan vid markören, Esc/klick avbryter, tystnadstid i ⚙. Rutan med text skickas aldrig direkt. Ej provat i den körande appen än (dolda testet T8). Användaren ville ha ett klick som startar och tystnad som stoppar; beroendet på voice.1.2 släpptes.",
               "size": 3
             },
             {
               "id": "voice.2.2",
               "title": "Lokal transkribering",
-              "status": "in_progress",
-              "progress": 35,
+              "status": "done",
+              "progress": 100,
               "dependsOn": [
                 "voice.2.1"
               ],
-              "notes": "Modulen src/main/modules/voice (hämtning med kontrollsumma, uppackning, whisper-körning) är skriven och enhetstestad; kontrollerad mot riktiga whisper.cpp b5907 och KB-whisper base på en testinspelning. Återstår: behörighetsmodulen, kopplingen i main/index.ts och contracts.ts samt det dolda testet.",
+              "notes": "Klart i koden: voice-modulen kopplad i main (voice:status/prepare/transcribe, state:voice, dispose vid avslut), behörighetshanterare för mikrofon/urklipp på sessionen, falsk mikrofon för testinstanser, hämtningsknapp i ⚙ och i MicButton. Ej provat end-to-end i appen än (dolda testet T8: hämtning, transkribering).",
               "size": 5
             },
             {
               "id": "voice.2.3",
               "title": "Städa talspråket",
-              "status": "in_progress",
-              "progress": 50,
+              "status": "done",
+              "progress": 100,
               "dependsOn": [
                 "voice.2.2"
               ],
-              "notes": "Valfritt: Haiku gör om det transkriberade till en tydlig instruktion; användaren ser texten och kan ändra innan den skickas. Modulen klar (voice-cleanup: cleanupRequest/readCleanup, med tester). Kvar: voice:clean i main, useVoice och inställningen i ⚙ (integrationen)."
+              "notes": "Klart i koden: voice:clean i main (Haiku via voice-cleanup, original vid fel), inställningen Städa talspråket i ⚙ som tvingar text i rutan, och Visa originalet under rutan tills användaren ändrar eller skickar. Ej provat i appen än (T8)."
             }
           ]
         },
@@ -783,12 +783,12 @@
             {
               "id": "voice.4.1",
               "title": "Röstsvar på frågor",
-              "status": "in_progress",
-              "progress": 30,
+              "status": "done",
+              "progress": 100,
               "dependsOn": [
                 "voice.2.2"
               ],
-              "notes": "Mikrofon i frågerutan i chatten; säger man ett av alternativen väljs det. Bygger på chat.2.16 (klar). Matchningen (optionMatch.ts, isSendCommand) är klar med tester. Kvar: mikrofonen per frågekort i QuestionBox.tsx, som väntar på integrationen.",
+              "notes": "Klart i koden: mikrofon per frågekort i QuestionBox (utan städning). Matchat alternativ väljs som ett klick (en enda fråga skickas direkt), annars läggs texten i svarsfältet; bara Skicka/Skicka svaren skickar svaren (när något är besvarat). Ej provat i appen än (T8, valfritt steg 8).",
               "size": 3
             },
             {
@@ -1105,14 +1105,14 @@
             {
               "id": "ui.3.15",
               "title": "Overlay snäpper till lägen",
-              "status": "not_started",
-              "notes": "Användaren: overlayn går nu att dra fritt, vilket är bra, men dras den nära överkant mitt, mitt höger eller mitt vänster ska den snäppa till ett fast läge (magnetiskt inom en liten zon, med en antydan om läget under dragningen). Utanför zonerna ligger den kvar där den släpps."
+              "status": "done",
+              "notes": "Overlayn snäpper till topp-mitt, mitt-vänster och mitt-höger (inom 48 px från kanten och 120 px från mitten); hoppet är antydan under dragningen. Läget sparas som snap i ankaret och hålls kvar när bredden ändras. Rena regler i overlay-place.ts med tester; ej provat med riktig mus."
             },
             {
               "id": "ui.3.16",
               "title": "Overlay dold vid helskärm",
-              "status": "not_started",
-              "notes": "Användaren: när appens fönster är i helskärm (maximerat eller helskärm) döljs overlayn, eftersom allt redan syns i appen. Den kommer tillbaka när fönstret minimeras, återställs eller hamnar bakom ett annat fönster. Användaren bekräftar: overlayn döljs enbart när appen är i helskärm och inte skymd av något annat fönster."
+              "status": "done",
+              "notes": "Overlayn döljs bara medan huvudfönstret är synligt, ej minimerat, maximerat eller helskärm, på samma skärm och appen har fokus; visas igen vid minimera, återställ, annan app i förgrunden. Regeln overlaySuppressed har enhetstester; ej provat i verklig helskärm."
             }
           ]
         },
@@ -1484,14 +1484,16 @@
             {
               "id": "mail.1.1",
               "title": "Koppling till Outlook classic",
-              "status": "not_started",
+              "status": "in_progress",
+              "progress": 0,
               "notes": "Kontrollerat 2026-11-25 på jobbdatorn: Outlook classic 16.0 (Microsoft 365, 64-bit) körs, ett Exchange-konto i cachat läge. COM via GetActiveObject ansluter på ~40 ms; inkorg och Skickat läses, ConversationID finns, skyddade fält (avsändare, text) läses utan säkerhetsprompt eftersom Defender är på och uppdaterad; inga Outlook-policyer satta. Nya Outlook finns också installerat men används inte. Kvar: prova att skicka (Send) och NewMailEx-händelser i en långlivad brygga; IT-policy för att skicka jobbmejl till Claude.",
               "size": 5
             },
             {
               "id": "mail.1.2",
               "title": "Bevaka nya mejl",
-              "status": "not_started",
+              "status": "in_progress",
+              "progress": 0,
               "notes": "Inkorgens nya mejl (NewMailEx eller periodisk avläsning) med avsändare, ämne, text, bilagor och ConversationID.",
               "dependsOn": [
                 "mail.1.1"
@@ -1508,8 +1510,9 @@
             {
               "id": "mail.2.1",
               "title": "Agentbedömning per mejl",
-              "status": "not_started",
-              "notes": "Billig modell (Haiku) bedömer: skräp, bara info, bör besvaras, kräver åtgärd; kort motivering och föreslagen åtgärd.",
+              "status": "in_progress",
+              "notes": "Billig modell (Haiku) bedömer: skräp, bara info, bör besvaras, kräver åtgärd; kort motivering och föreslagen åtgärd. Byggt: begäran (Haiku, isolerad) och svarsläsare med tester i mail-triage; återstår inkoppling i mail-root och delade typer.",
+              "progress": 60,
               "dependsOn": [
                 "mail.1.2"
               ],
@@ -1594,7 +1597,8 @@
             {
               "id": "mail.3.2",
               "title": "Ta det med agenten",
-              "status": "not_started",
+              "status": "in_progress",
+              "progress": 25,
               "notes": "Användaren: visar originalmejlet och en chatt med mejlagenten där vi diskuterar vad som ska göras. Komplicerade åtgärder får automatiskt ett eget tillfälligt projekt (mail.4.3), så allt körs som vanligt men visas annorlunda.",
               "dependsOn": [
                 "mail.3.1"
@@ -1627,8 +1631,9 @@
             {
               "id": "mail.4.1",
               "title": "Trådens historik och kontext",
-              "status": "not_started",
-              "notes": "Varje mejltråd (ConversationID) får egen session, transkript och arbetsmapp med det agenten skapat; sparas över omstart. Användaren: data sparas strukturerat i en databas, inte som tusentals JSON-filer. Förslag: en SQLite-fil i appens datamapp (node:sqlite finns inbyggt i Electrons Node) med tabeller för mejl (Outlook-id, tråd-id, avsändare, mottagare, ämne, tid, bedömning, status), trådar (session-id, sammanfattning) och händelser (agentens svar, åtgärder, skapade filer); bara agentens filer ligger som filer i en mapp per tråd. Användaren: varje skickat mejl märks med vem som skrev det: användaren direkt i Outlook, agenten (godkänt oförändrat) eller agenten med användarens ändringar; appen vet vilka den själv skickat (Outlook-id sparas vid skick), allt annat i Skickat är användarens.",
+              "status": "in_progress",
+              "progress": 40,
+              "notes": "Varje mejltråd (ConversationID) får egen session, transkript och arbetsmapp med det agenten skapat; sparas över omstart. Användaren: data sparas strukturerat i en databas, inte som tusentals JSON-filer. Förslag: en SQLite-fil i appens datamapp (node:sqlite finns inbyggt i Electrons Node) med tabeller för mejl (Outlook-id, tråd-id, avsändare, mottagare, ämne, tid, bedömning, status), trådar (session-id, sammanfattning) och händelser (agentens svar, åtgärder, skapade filer); bara agentens filer ligger som filer i en mapp per tråd. Användaren: varje skickat mejl märks med vem som skrev det: användaren direkt i Outlook, agenten (godkänt oförändrat) eller agenten med användarens ändringar; appen vet vilka den själv skickat (Outlook-id sparas vid skick), allt annat i Skickat är användarens. Läget: databasmodulen mail-store är byggd och testad (SQLite, FTS, trådnyckel, utkast, händelser, inlärning, regler, rensning). Kvar: tråd-session och arbetsmapp i mail-root, och att byta lokala typer mot contracts.",
               "dependsOn": [
                 "mail.3.2"
               ],
@@ -1696,14 +1701,16 @@
             {
               "id": "mail.5.1",
               "title": "Mejl är data, inte order",
-              "status": "not_started",
-              "notes": "Förslag från main, ej beslutat. Instruktioner i ett mejl (\"skicka mig filen X\") följs aldrig av sig själva. Mejlagenten har begränsade verktyg och skickar inget utan användarens godkännande, och den varnar för misstänkt nätfiske."
+              "status": "in_progress",
+              "progress": 50,
+              "notes": "Förslag från main, ej beslutat. Instruktioner i ett mejl (\"skicka mig filen X\") följs aldrig av sig själva. Mejlagenten har begränsade verktyg och skickar inget utan användarens godkännande, och den varnar för misstänkt nätfiske. Teknisk spärr klar: sandbox i sessionsmotorn, isolerade strukturerade frågor, dold mejl-session. Mejlagentens prompt och verktyg: mejlagentens systemprompt (mejl är data, inget sändverktyg), wrapMailData, sandboxFor och verktygsservern i modulen mail-agent. Kvar: inkoppling i mail-root (sessionen startas med sandbox och verktygsservern) och delade typer."
             },
             {
               "id": "mail.5.2",
               "title": "Lokalt förfilter",
-              "status": "not_started",
-              "notes": "Förslag från main, ej beslutat. Nyhetsbrev och utskick (List-Unsubscribe, kända avsändare) sorteras lokalt utan AI, vilket sparar tokens. Användaren kan undanta avsändare eller ämnen som aldrig ska skickas till Claude."
+              "status": "in_progress",
+              "notes": "Förslag från main, ej beslutat. Nyhetsbrev och utskick (List-Unsubscribe, kända avsändare) sorteras lokalt utan AI, vilket sparar tokens. Användaren kan undanta avsändare eller ämnen som aldrig ska skickas till Claude. Byggt: lokalt förfilter (regler, mötes- och rapportklasser, utskickshuvuden) med tester; återstår inkoppling i mail-root och regelhantering i UI.",
+              "progress": 60
             }
           ]
         },

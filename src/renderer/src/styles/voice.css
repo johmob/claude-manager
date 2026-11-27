@@ -23,3 +23,12 @@
 .voice-download { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .voice-bar { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
 .voice-bar > span { display: block; height: 100%; background: var(--accent-ui); transition: width .25s; }
+
+.chat-input:has(.voice-original) { flex-wrap: wrap; }
+.chat-input > .mic-wrap { align-self: flex-end; }
+.voice-original { flex-basis: 100%; display: flex; gap: 8px; align-items: baseline; font-size: 0.75rem; color: var(--muted); }
+
+.qbox-answer-row { display: flex; gap: 8px; align-items: flex-start; }
+.qbox-answer-row > .qbox-answer { flex: 1; min-width: 0; }
+
+.settings-heading { padding-top: 6px; border-top: 1px solid var(--border); font-size: 0.7188rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }

@@ -3,6 +3,8 @@ import type { AppSettings, DockEdge, UpdateStatus } from '../../../shared/contra
 import { ChevronDown, Plus } from 'lucide-react';
 import '../styles/new-menu.css';
 import { send } from '../lib/api';
+import { useVoice } from '../state/useVoice';
+import { VoiceSettings } from './VoiceSettings';
 import { ChatIcon, ExistingProjectIcon, NewProjectIcon, NoSleepIcon, RulesIcon } from './Icons';
 import type { DialogKind } from './StartDialogs';
 
@@ -58,6 +60,7 @@ function Toggle(props: { label: string; on: boolean; onChange: (on: boolean) => 
 /** Settings changed now and then: look, updates and where the dock sits. Closes on a click outside. */
 function SettingsMenu({ settings, update }: { settings: AppSettings; update: UpdateStatus }) {
   const [open, setOpen] = useState(false);
+  const voice = useVoice();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -105,6 +108,15 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
               {EDGES.map((e) => <option key={e.value} value={e.value}>{e.label}</option>)}
             </select>
           </label>
+          <div className="settings-heading">Röst</div>
+          <VoiceSettings
+            silenceSeconds={settings.voiceSilenceSeconds}
+            autoSend={settings.voiceAutoSend}
+            cleanup={settings.voiceCleanup}
+            status={voice.status}
+            onChange={(patch) => send('settings:update', patch)}
+            onPrepare={voice.prepare}
+          />
           <div className="settings-version">
             Version {update.version} · {update.state === 'checking' ? 'Söker…' : updateText(update)}
             {update.state !== 'off' && (

@@ -2,8 +2,11 @@ import { createContext, useContext, useEffect, useRef, useState, type CSSPropert
 import type { OpenQuestion, SessionSummary } from '../../../shared/contracts';
 import { send } from '../lib/api';
 import { composeAnswers, draftKey, drafts, onDraftsChanged } from '../lib/questionAnswers';
+import { isSendCommand, matchSpokenOption } from '../lib/optionMatch';
 import { quickAnswers } from '../lib/quickAnswers';
 import { useReveal } from '../lib/revealQuestions';
+import { useVoice } from '../state/useVoice';
+import { MicButton } from './MicButton';
 import { MarkdownText } from './MarkdownText';
 import { SessionMark } from './SessionMark';
 import '../styles/questions.css';
@@ -48,6 +51,7 @@ export function QuestionBox({ session }: { session: SessionSummary }) {
   const [byQuestion, setByQuestion] = useState(() => drafts.get(session.id));
   const [sentKey, setSentKey] = useState<string | null>(null);
   const boxRef = useRef<HTMLElement>(null);
+  const voice = useVoice();
   const fields = useRef<(HTMLTextAreaElement | null)[]>([]);
   const answers = questions.map((q) => byQuestion[draftKey(q)] ?? '');
   const key = questionsKey(session);
@@ -87,6 +91,29 @@ export function QuestionBox({ session }: { session: SessionSummary }) {
     send('session:send', { id: session.id, text: composeAnswers(questions, [value]) });
     close();
   };
+  /**
+   * What was said into one question's microphone: "skicka" sends the answers; one of the offered options (by
+   * number, letter, its own words, ja/nej) is chosen exactly as a click would; anything else is added to the
+   * answer field. Nothing is cleaned up here.
+   */
+  const onSpoken = (i: number, said: string): void => {
+    const q = questions[i];
+    if (!q) return;
+    if (isSendCommand(said)) {
+      if (answers.some((a) => a.trim())) submit();
+      return;
+    }
+    const options = quickFor(q);
+    const hit = matchSpokenOption(said, options);
+    const option = hit === null ? undefined : options[hit];
+    if (option !== undefined) {
+      pick(i, option === 'Stämmer' ? 'Stämmer.' : option);
+      fields.current.find((f, j) => j > i && f && !answers[j]?.trim())?.focus();
+    } else {
+      setAnswer(i, [answers[i]?.trimEnd(), said].filter(Boolean).join(' '));
+      fields.current[i]?.focus();
+    }
+  };
   const assumptions = questions.filter((q) => q.kind === 'assumption').length;
 
   return (
@@ -123,6 +150,7 @@ export function QuestionBox({ session }: { session: SessionSummary }) {
                 })}
               </div>
             )}
+            <div className="qbox-answer-row">
             <textarea
               ref={(el) => void (fields.current[i] = el)}
               className="input qbox-answer"
@@ -143,6 +171,8 @@ export function QuestionBox({ session }: { session: SessionSummary }) {
                 }
               }}
             />
+            <MicButton voice={voice.rawApi} silenceSeconds={voice.silenceSeconds} onText={(said) => onSpoken(i, said)} compact />
+            </div>
           </div>
         );
       })}

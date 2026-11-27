@@ -2,6 +2,7 @@
 // Knows nothing about sessions beyond how many cards the dock and overlay must fit.
 import { BrowserWindow, Menu, screen } from 'electron';
 import type { NativeImage, Rectangle } from 'electron';
+import { overlaySuppressed, snapZone, snappedPosition } from './overlay-place';
 import type { DockEdge, IpcEventChannel, IpcEventMap, IpcInvokeMap, OverlayAnchor, PopupView, ThemeChoice } from '../../../shared/contracts';
 
 type SnapMode = IpcInvokeMap['window:snap']['req']['mode'];
@@ -126,8 +127,12 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   let overlayDetail = false;
   let overlayWide = false;
   let overlayCount = 0;
+  /** What the app wants (shown, with cards), apart from being hidden while the app fills the screen. */
+  let overlayWanted = false;
+  let overlayHiddenForApp = false;
   let overlayAnchor: OverlayAnchor | null = opts.overlayAnchor ?? null;
   let dragTimer: NodeJS.Timeout | null = null;
+  let dragSnap: OverlayAnchor['snap'] | null = null;
   let popup: BrowserWindow | null = null;
   let popupShows: PopupView | null = null;
 
@@ -201,7 +206,8 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
   }
 
   function setOverlay(visible: boolean, count: number): void {
-    if (!visible || count === 0) {
+    overlayWanted = visible && count > 0;
+    if (!overlayWanted) {
       overlay?.hide();
       return;
     }
@@ -220,16 +226,53 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     const width = Math.min(overlayDetail ? Math.max(row, detailWidth) : row, area.width);
     const height = OVERLAY_HEIGHT + (overlayDetail ? (overlayWide ? OVERLAY_CHAT_HEIGHT : OVERLAY_DETAIL_HEIGHT) : 0);
     const centerX = anchor?.centerX ?? area.x + area.width / 2;
-    const x = Math.min(Math.max(Math.round(centerX - width / 2), area.x), area.x + area.width - width);
-    const y = Math.min(Math.max(Math.round(anchor?.top ?? area.y + 2), area.y), area.y + area.height - OVERLAY_HEIGHT);
+    let x = Math.min(Math.max(Math.round(centerX - width / 2), area.x), area.x + area.width - width);
+    let y = Math.min(Math.max(Math.round(anchor?.top ?? area.y + 2), area.y), area.y + area.height - OVERLAY_HEIGHT);
+    if (anchor?.snap) ({ x, y } = snappedPosition(anchor.snap, area, width, height, OVERLAY_HEIGHT));
+    overlayHiddenForApp = appFillsScreen();
+    if (overlayHiddenForApp) {
+      overlay.setBounds(at({ x, y, width, height }));
+      overlay.hide();
+      return;
+    }
     place(overlay, { x, y, width, height });
   }
+
+  /** The app's main window fills the screen and is the one in front: everything shows in it already. */
+  function appFillsScreen(): boolean {
+    if (hidden || !overlay || overlay.isDestroyed() || main.isDestroyed()) return false;
+    const focused = BrowserWindow.getFocusedWindow();
+    return overlaySuppressed({
+      mainVisible: main.isVisible(),
+      minimized: main.isMinimized(),
+      maximized: main.isMaximized(),
+      fullscreen: main.isFullScreen(),
+      sameDisplay: screen.getDisplayMatching(main.getBounds()).id === screen.getDisplayMatching(overlay.getBounds()).id,
+      appFocused: focused !== null && [main, dock, overlay, popup].includes(focused),
+    });
+  }
+
+  /** Shows or hides the overlay again when the app's state changed (not while the user drags it). */
+  function reevaluateOverlay(): void {
+    if (!overlayWanted || !overlay || overlay.isDestroyed() || dragTimer) return;
+    if (appFillsScreen() !== overlayHiddenForApp) setOverlay(true, overlayCount);
+  }
+  let blurTimer: NodeJS.Timeout | null = null;
+  for (const ev of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen', 'minimize', 'restore', 'show', 'hide', 'focus'] as const) {
+    main.on(ev as 'show', reevaluateOverlay);
+  }
+  // Focus moves between the app's own windows through a blur first: wait a moment before deciding.
+  main.on('blur', () => {
+    if (blurTimer) clearTimeout(blurTimer);
+    blurTimer = setTimeout(reevaluateOverlay, 150);
+  });
+  main.on('closed', () => blurTimer && clearTimeout(blurTimer));
 
   function setOverlayDetail(open: boolean, wide = false): void {
     if (open === overlayDetail && wide === overlayWide) return;
     overlayDetail = open;
     overlayWide = open && wide;
-    if (overlay?.isVisible()) setOverlay(true, overlayCount);
+    if (overlayWanted) setOverlay(true, overlayCount);
   }
 
   function setOverlayFocus(focus: boolean): void {
@@ -257,18 +300,28 @@ export function createWindowManager(opts: WindowManagerOptions): WindowManager {
     }
     const bounds = overlay.getBounds();
     if (phase === 'end') {
-      overlayAnchor = { centerX: bounds.x + bounds.width / 2, top: bounds.y };
+      overlayAnchor = { centerX: bounds.x + bounds.width / 2, top: bounds.y, ...(dragSnap ? { snap: dragSnap } : {}) };
       opts.onOverlayMoved?.(hidden ? null : overlayAnchor);
       return;
     }
     // Follows the cursor until released (a safety stop after a minute, in case the release is missed).
     const start = screen.getCursorScreenPoint();
     const from = { x: bounds.x, y: bounds.y };
+    dragSnap = null;
     const began = Date.now();
     dragTimer = setInterval(() => {
       if (!overlay || overlay.isDestroyed() || Date.now() - began > 60_000) return dragOverlay('end');
       const at = screen.getCursorScreenPoint();
-      overlay.setPosition(from.x + at.x - start.x, from.y + at.y - start.y);
+      const x = from.x + at.x - start.x;
+      const y = from.y + at.y - start.y;
+      // Near the top middle or the middle of a side edge the overlay jumps to that place: the jump is the hint.
+      const area = screen.getDisplayNearestPoint(at).workArea;
+      const zone = snapZone({ x, y, width: bounds.width, height: OVERLAY_HEIGHT }, area);
+      dragSnap = zone;
+      if (zone) {
+        const p = snappedPosition(zone, area, bounds.width, bounds.height, OVERLAY_HEIGHT);
+        overlay.setPosition(p.x, p.y);
+      } else overlay.setPosition(x, y);
     }, 16);
   }
 

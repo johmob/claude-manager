@@ -1,6 +1,6 @@
 // Composition root: the only place that knows every module. It wires modules together with
 // callbacks and data, owns persistence of records/settings, and serves the renderer's IPC.
-import { BrowserWindow, app, dialog, ipcMain, nativeImage, shell } from 'electron';
+import { BrowserWindow, app, dialog, ipcMain, nativeImage, net, session, shell } from 'electron';
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync, type Dirent } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { homedir, tmpdir } from 'node:os';
@@ -72,6 +72,10 @@ import { readSummary, SUMMARY_THRESHOLD, summaryRequest } from './modules/answer
 import { compactCheckRequest, readCompactCheck } from './modules/compact-check';
 import { registerLocalImageScheme, serveLocalImages } from './modules/local-images';
 import { copyToClipboard, mailWithAttachment, outlookPath, saveCopyAs } from './modules/file-actions';
+import { createVoice } from './modules/voice';
+import { cleanupRequest, readCleanup } from './modules/voice-cleanup';
+import { fakeMicSwitches, installPermissionHandlers } from './modules/media-permission';
+import { VOICE_SILENCE_DEFAULT, clampSilence } from '../shared/voice';
 
 const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: '',
@@ -88,6 +92,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   logging: true,
   keepAwake: false,
   theme: 'night',
+  voiceSilenceSeconds: VOICE_SILENCE_DEFAULT,
+  voiceAutoSend: true,
+  voiceCleanup: false,
   defaultModel: 'opus',
   defaultEffort: 'medium',
   defaultPermissionMode: 'auto',
@@ -139,7 +146,7 @@ function usageNote(file: string): string {
 }
 
 /** Renderer requests that come with every mouse move or state read; not worth a log line. */
-const QUIET_CHANNELS = new Set<string>(['overlay:set-interactive', 'overlay:set-detail', 'overlay:set-focus', 'app:get-state', 'session:transcript', 'usage:day', 'quick:current', 'quick:summaries', 'popup:current', 'session:folder-sessions', 'window:ensure-width']);
+const QUIET_CHANNELS = new Set<string>(['overlay:set-interactive', 'overlay:set-detail', 'overlay:set-focus', 'app:get-state', 'session:transcript', 'usage:day', 'quick:current', 'quick:summaries', 'popup:current', 'session:folder-sessions', 'window:ensure-width', 'voice:status', 'voice:transcribe', 'voice:clean']);
 
 /** How often the side panel's schedule (next runs, file changes) is refreshed. */
 const SCHEDULE_REFRESH_MS = 30_000;
@@ -151,6 +158,8 @@ const DRIFT_UPDATE_PROMPT = 'Uppdatera arbetsschemat efter detta: läs det som b
 const TAG_TIMEOUT_MS = 90_000;
 const TEST_INSTANCE = process.env['CLAUDE_MANAGER_TEST'] === '1';
 app.setPath('userData', process.env['CLAUDE_MANAGER_DATA_DIR'] || join(app.getPath('appData'), 'claude-manager'));
+// A test instance can feed a WAV file to the microphone (only when CLAUDE_MANAGER_TEST=1 and CLAUDE_MANAGER_FAKE_MIC are both set).
+for (const [key, value] of fakeMicSwitches(process.env)) app.commandLine.appendSwitch(key, value);
 
 // Local images agents refer to are shown through an app-only scheme, registered before the app is ready.
 registerLocalImageScheme();
@@ -251,6 +260,15 @@ function boot(): void {
       settings = { ...settings, overlayAnchor };
       settingsStore.write(settings);
     },
+  });
+  // The microphone and the clipboard are the only permissions the app's own pages get.
+  installPermissionHandlers(session.defaultSession, isAppUrl);
+  // Local speech-to-text (whisper.cpp): first-use download into the data folder, then transcription on this computer.
+  const voice = createVoice({
+    dir: join(userData, 'voice'),
+    fetch: net.fetch as unknown as typeof fetch,
+    onStatus: (status) => pushEvent('state:voice', status),
+    log: (msg) => appLog.write('voice', { msg }),
   });
   const notifier = createNotifier({ onClick: showSession, flash: (on) => windows.flash(on), muted: TEST_INSTANCE });
   // A test instance has no tray icon: it must not be mistaken for the user's app.
@@ -1086,6 +1104,7 @@ function boot(): void {
     clearInterval(resumeTimer);
     updater?.stop();
     engine.stopAll();
+    voice.dispose();
     usage.stop();
     todo.close();
     tray.destroy();
@@ -1112,6 +1131,23 @@ function boot(): void {
     await shell.openPath(appLog.dir);
   });
   handle('update:check', () => updater?.checkNow());
+
+  // ---------- Voice ----------
+  handle('voice:status', () => voice.status());
+  handle('voice:prepare', () => voice.prepare());
+  handle('voice:transcribe', async (req) => {
+    const result = await voice.transcribe(req.wav);
+    // Length and time only, never what was said.
+    appLog.write('voice', { bytes: req.wav.byteLength, ms: result.ms, chars: result.text.length });
+    return result;
+  });
+  handle('voice:clean', async (req) => {
+    try {
+      return { text: readCleanup(await structuredQuery(cleanupRequest(req.text, userData)), req.text) };
+    } catch {
+      return { text: req.text };
+    }
+  });
 
   handle('quick:ask', (req) => {
     const text = req.text.trim();
@@ -1437,6 +1473,28 @@ function gitSetupPrompt(name: string): string {
   ].join(' ');
 }
 
+/** The app's own pages: the dev server in development, otherwise the bundled file. Both the origin and the full URL are accepted. */
+function isAppUrl(url: string): boolean {
+  const dev = app.isPackaged ? '' : process.env['ELECTRON_RENDERER_URL'];
+  if (dev) {
+    try {
+      if (new URL(url).origin === new URL(dev).origin) return true;
+    } catch {
+      /* not a URL */
+    }
+  }
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'file:') return false;
+    // A page's origin is just "file://", so the path cannot be checked then.
+    if (u.pathname === '/' || u.pathname === '') return true;
+    const page = resolve(fileURLToPath(u)).toLowerCase();
+    return page.startsWith(resolve(join(__dirname, '../renderer')).toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
 function validSettings(r: unknown): AppSettings | null {
   if (!isRecord(r)) return null;
   const pick = <T>(value: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(value as T) ? (value as T) : fallback);
@@ -1449,13 +1507,16 @@ function validSettings(r: unknown): AppSettings | null {
     dockVisible: bool(r['dockVisible'], d.dockVisible),
     dockEdge: pick(r['dockEdge'], DOCK_EDGES, d.dockEdge),
     overlayVisible: bool(r['overlayVisible'], d.overlayVisible),
-    overlayAnchor: isRecord(r['overlayAnchor']) && typeof r['overlayAnchor']['centerX'] === 'number' && typeof r['overlayAnchor']['top'] === 'number' ? { centerX: r['overlayAnchor']['centerX'], top: r['overlayAnchor']['top'] } : null,
+    overlayAnchor: isRecord(r['overlayAnchor']) && typeof r['overlayAnchor']['centerX'] === 'number' && typeof r['overlayAnchor']['top'] === 'number' ? { centerX: r['overlayAnchor']['centerX'], top: r['overlayAnchor']['top'], ...(['top', 'left', 'right'].includes(r['overlayAnchor']['snap'] as string) ? { snap: r['overlayAnchor']['snap'] as 'top' | 'left' | 'right' } : {}) } : null,
     launchAtLogin: bool(r['launchAtLogin'], d.launchAtLogin),
     autoUpdate: bool(r['autoUpdate'], d.autoUpdate),
     autoResume: bool(r['autoResume'], d.autoResume),
     logging: bool(r['logging'], d.logging),
     keepAwake: bool(r['keepAwake'], d.keepAwake),
     theme: pick(r['theme'], THEME_CHOICES, d.theme),
+    voiceSilenceSeconds: clampSilence(r['voiceSilenceSeconds'] ?? d.voiceSilenceSeconds),
+    voiceAutoSend: bool(r['voiceAutoSend'], d.voiceAutoSend),
+    voiceCleanup: bool(r['voiceCleanup'], d.voiceCleanup),
     textScale: typeof r['textScale'] === 'number' && Number.isFinite(r['textScale']) ? clampScale(r['textScale']) : d.textScale,
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),
     defaultEffort: pick(r['defaultEffort'], EFFORT_CHOICES, d.defaultEffort),

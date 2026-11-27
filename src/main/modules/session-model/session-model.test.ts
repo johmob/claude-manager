@@ -498,4 +498,16 @@ describe('questions all skipped', () => {
     model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Ska jag starta om appen åt dig?', about: '', detail: '', brief: '', options: [] }], []);
     expect(model.summary('s1')?.questions).toEqual([]);
   });
+
+  it('keeps mail sessions hidden: no summary, text not held, no tagging', () => {
+    const model = createSessionModel(() => 1000);
+    model.upsertRecord({ ...record, id: 'mail:t1', kind: 'mail' });
+    const apply = (event: EventBody) => model.apply({ ...event, sessionId: 'mail:t1' } as SessionEvent);
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'Hej' });
+    apply({ type: 'text', text: 'Svar' });
+    apply({ type: 'turn_finished', result: 'Svar', isError: false, interrupted: false, tokens: 1, durationMs: 1 });
+    expect(model.summaries().map((s) => s.id)).not.toContain('mail:t1');
+    expect(model.transcript('mail:t1').some((e) => e.kind === 'assistant' && e.held)).toBe(false);
+  });
 });

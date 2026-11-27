@@ -1,10 +1,13 @@
 // Shared vocabulary between main-process modules, the composition root and the renderer.
 // Types and a few constants only, never functions or logic, so importing it never couples modules' behaviour.
 
+import type { VoiceCleanRequest, VoiceStatus, VoiceTranscribeRequest, VoiceTranscribeResult } from './voice';
+export type { VoiceCleanRequest, VoiceStatus, VoiceTranscribeRequest, VoiceTranscribeResult } from './voice';
+
 // ---------- Session configuration ----------
 
-/** "quick": the small "Ny chatt" window for quick questions; never a card. */
-export type SessionKind = 'chat' | 'project' | 'ground-rules' | 'quick';
+/** "quick": the small "Ny chatt" window for quick questions; never a card. "mail": a mail thread's agent; hidden like "quick". */
+export type SessionKind = 'chat' | 'project' | 'ground-rules' | 'quick' | 'mail';
 export type ModelChoice = 'default' | 'opus' | 'sonnet' | 'haiku' | 'fable';
 export type PermissionChoice = 'auto' | 'default' | 'acceptEdits' | 'plan';
 
@@ -52,6 +55,8 @@ export interface SessionRecord {
 export interface OverlayAnchor {
   centerX: number;
   top: number;
+  /** Dropped in a snap zone (top centre, middle left or middle right of the work area): stays there when the overlay resizes. */
+  snap?: 'top' | 'left' | 'right';
 }
 
 /** A job the app runs on a schedule (from the project's .claude-manager/schedule.json). */
@@ -291,6 +296,12 @@ export interface SessionStartSpec {
   initialPrompt?: string;
   /** Appended to the task of every subagent the session starts (the Agent tool), so it is always followed. */
   subagentBrief?: string;
+  /**
+   * Locks the session down (the mail agent): only these built-in tools, only these MCP servers (no user,
+   * project or claude.ai ones), no settings sources, files written only under writeRoot; every other tool is
+   * denied without asking. mcpServers holds SDK server configs (createSdkMcpServer), opaque here.
+   */
+  sandbox?: { tools: string[]; writeRoot: string; mcpServers: Record<string, unknown> };
 }
 
 // ---------- Questions and permission requests ----------
@@ -498,6 +509,8 @@ export interface StructuredRequest {
   /** Built-in tools the call may use; [] for none. */
   tools: string[];
   maxTurns: number;
+  /** No MCP servers and no claude.ai connectors at all (for untrusted input such as mail). */
+  isolated?: boolean;
 }
 
 /** A stateless Claude call returning JSON matching the schema, or null. Created by the root and handed to modules that need one. */
@@ -812,6 +825,12 @@ export interface AppSettings {
   /** Install new versions from GitHub on their own once no session is busy. */
   autoUpdate: boolean;
   theme: ThemeChoice;
+  /** Seconds of silence after speech before the microphone stops by itself (1–5). */
+  voiceSilenceSeconds: number;
+  /** Send the transcript at once; off puts it in the box. */
+  voiceAutoSend: boolean;
+  /** Haiku rewrites spoken text into a clear instruction (forces paste mode). */
+  voiceCleanup: boolean;
   defaultModel: ModelChoice;
   defaultEffort: EffortChoice;
   defaultPermissionMode: PermissionChoice;
@@ -914,6 +933,14 @@ export interface IpcInvokeMap {
   'session:dismiss-callouts': { req: { id: string }; res: void };
   'ground-rules:edit': { req: { instructions: string }; res: string };
   'settings:update': { req: Partial<AppSettings>; res: AppSettings };
+  /** Whether speech-to-text can run, and the first-use download. */
+  'voice:status': { req: void; res: VoiceStatus };
+  /** Starts the first-use download if needed (idempotent); progress comes as state:voice. */
+  'voice:prepare': { req: void; res: void };
+  /** Transcribes one recording locally. Rejects with a Swedish message on failure. */
+  'voice:transcribe': { req: VoiceTranscribeRequest; res: VoiceTranscribeResult };
+  /** Haiku clean-up of a transcript; returns the input unchanged when the call fails. */
+  'voice:clean': { req: VoiceCleanRequest; res: { text: string } };
   'usage:refresh': { req: void; res: void };
   'window:snap': { req: { mode: 'left' | 'right' | 'full' | 'restore' }; res: void };
   /** Maximises the main window when its content is narrower than `width`. True when it did. */
@@ -941,6 +968,8 @@ export interface IpcEventMap {
   'state:settings': AppSettings;
   'state:account': AccountSnapshot;
   'state:update': UpdateStatus;
+  /** Speech-to-text availability and download progress. */
+  'state:voice': VoiceStatus;
   /** The quick chat's state (working, pending permission), or null when it has not started. */
   'state:quick': SessionSummary | null;
   'state:quick-summaries': Record<string, string>;

@@ -10,6 +10,7 @@ import type {
   ContextUsage,
   PendingInput,
   SessionEvent,
+  SessionKind,
   SessionRecord,
   SessionStatus,
   SavedQuestions,
@@ -146,6 +147,11 @@ interface SessionState {
   seq: number;
 }
 
+/** Hidden sessions (the quick chat, mail threads) never get a card, question extraction, held text or tagging. */
+function hidden(kind: SessionKind): boolean {
+  return kind === 'quick' || kind === 'mail';
+}
+
 export function createSessionModel(now: () => number = Date.now): SessionModel {
   const states = new Map<string, SessionState>();
   /** Learned from finished compactions, so the next estimate fits this machine and plan. */
@@ -238,7 +244,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
      */
     const collectQuestions = (): TranscriptEntry[] => {
       // The quick chat is answered right where it is asked.
-      if (s.record.kind === 'quick') return [];
+      if (hidden(s.record.kind)) return [];
       const fresh = s.callouts.slice(s.calloutsBefore);
       s.calloutsBefore = s.callouts.length;
       // A [!QUESTION] is a question as it stands. A [!NOTE] may be an assumption to confirm or just
@@ -298,8 +304,8 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
       case 'text':
         markActive('Skriver svar…');
         if (!event.agentId) s.turnText = event.text;
-        // The main agent's text waits for the turn's tags (the quick chat is never tagged).
-        return add({ kind: 'assistant', text: event.text, thinking: takeThinking(), agentId: event.agentId, ...(!event.agentId && s.record.kind !== 'quick' ? { held: true } : {}) });
+        // The main agent's text waits for the turn's tags (hidden sessions are never tagged).
+        return add({ kind: 'assistant', text: event.text, thinking: takeThinking(), agentId: event.agentId, ...(!event.agentId && !hidden(s.record.kind) ? { held: true } : {}) });
       case 'tool_use':
         markActive(event.summary ? `${event.name}: ${event.summary}` : event.name);
         if (event.spawn) s.spawns.set(event.toolUseId, event.spawn);
@@ -396,7 +402,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         if (event.interrupted) return [...read, ...leftover, ...release(s), ...system('Avbruten.', 'info')];
         if (event.isError) return [...read, ...leftover, ...release(s), ...system(event.result, 'error')];
         // A turn with text of its own waits for its tags before its end shows; one without has nothing to tag.
-        s.tagging = s.record.kind !== 'quick' && s.transcript.some((e) => e.kind === 'assistant' && e.held);
+        s.tagging = !hidden(s.record.kind) && s.transcript.some((e) => e.kind === 'assistant' && e.held);
         if (s.tagging) s.lastActivity = 'Läser igenom svaret…';
         return [...read, ...leftover, ...collectQuestions(), ...(s.tagging ? [] : release(s))];
       }
@@ -630,7 +636,7 @@ export function createSessionModel(now: () => number = Date.now): SessionModel {
         s.calloutsBefore = 0;
       }
     },
-    summaries: () => [...states.values()].filter((s) => s.record.kind !== 'quick').map(summarize),
+    summaries: () => [...states.values()].filter((s) => !hidden(s.record.kind)).map(summarize),
     summary: (id) => {
       const s = states.get(id);
       return s ? summarize(s) : undefined;

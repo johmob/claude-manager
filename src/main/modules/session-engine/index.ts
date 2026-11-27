@@ -2,7 +2,7 @@
 // into the app's labelled SessionEvents. Holds no UI state; questions and permission requests
 // stay pending here until the host answers them.
 import { getSessionMessages, query } from '@anthropic-ai/claude-agent-sdk';
-import type { HookCallback, PermissionResult, Query, SDKMessage, SDKUserMessage, SessionMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { HookCallback, McpServerConfig, PermissionResult, Query, SDKMessage, SDKUserMessage, SessionMessage } from '@anthropic-ai/claude-agent-sdk';
 import type {
   Callout,
   CalloutKind,
@@ -98,6 +98,7 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
     const inbox = new InputQueue();
     const pending = new Map<string, PendingDecision>();
     const stderrTail: string[] = [];
+    const sandbox = spec.sandbox;
 
     const q = query({
       prompt: inbox,
@@ -105,8 +106,12 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
         cwd: spec.cwd,
         model: spec.model === 'default' ? undefined : spec.model,
         effort: spec.effort === 'default' ? undefined : spec.effort,
-        settings: spec.contextWindow === 'auto' ? undefined : { autoCompactWindow: spec.contextWindow },
-        permissionMode: spec.permissionMode,
+        settings: {
+          ...(spec.contextWindow === 'auto' ? {} : { autoCompactWindow: spec.contextWindow }),
+          ...(sandbox ? { disableClaudeAiConnectors: true } : {}),
+        },
+        ...(sandbox ? { tools: sandbox.tools, mcpServers: sandbox.mcpServers as Record<string, McpServerConfig>, strictMcpConfig: true, settingSources: [] } : {}),
+        permissionMode: sandbox ? 'default' : spec.permissionMode,
         resume: spec.resumeClaudeSessionId,
         thinking: { type: 'adaptive', display: 'summarized' },
         systemPrompt: { type: 'preset', preset: 'claude_code', append: spec.appendSystemPrompt },
@@ -115,7 +120,8 @@ export function createSessionEngine(onEvent: (event: SessionEvent) => void, opti
           stderrTail.push(...data.split(/\r?\n/).filter(Boolean));
           stderrTail.splice(0, Math.max(0, stderrTail.length - STDERR_LINES));
         },
-        canUseTool: (toolName, input, opts) => requestDecision(spec.id, pending, toolName, input, opts.requestId, opts.signal),
+        canUseTool: (toolName, input, opts) =>
+          sandbox ? Promise.resolve(toPermissionResult(sandboxDecision(sandbox, toolName, input))) : requestDecision(spec.id, pending, toolName, input, opts.requestId, opts.signal),
         ...(spec.subagentBrief ? { hooks: { SubagentStart: [{ hooks: [briefSubagents(spec.subagentBrief)] }] } } : {}),
       },
     });
@@ -634,4 +640,53 @@ function firstLine(text: string): string {
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+// ---------- Sandbox (the mail agent) ----------
+
+export type SandboxDecision = { allow: true } | { allow: false; message: string };
+
+const SANDBOX_DENIED = 'Inte tillåtet för mejlagenten.';
+const SANDBOX_READ_TOOLS = ['Read', 'Glob', 'Grep'];
+const SANDBOX_WRITE_TOOLS: Record<string, string> = { Write: 'file_path', Edit: 'file_path', NotebookEdit: 'notebook_path' };
+
+/** Lower-cased, forward-slashed, with "." and ".." resolved; null when the path climbs above its root or is relative. */
+function normalizePath(path: string): string | null {
+  const slashed = path.replaceAll('\\', '/');
+  const drive = /^[a-zA-Z]:/.exec(slashed)?.[0] ?? '';
+  const rest = slashed.slice(drive.length);
+  if (!rest.startsWith('/')) return null;
+  const parts: string[] = [];
+  for (const part of rest.split('/')) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') {
+      if (!parts.length) return null;
+      parts.pop();
+    } else parts.push(part);
+  }
+  return `${drive}/${parts.join('/')}`.toLowerCase();
+}
+
+/** Whether `path` is `root` itself or inside it (case-insensitive, either slash). */
+export function isInside(root: string, path: string): boolean {
+  const r = normalizePath(root);
+  const p = normalizePath(path);
+  if (!r || !p) return false;
+  const base = r.endsWith('/') ? r : `${r}/`;
+  return p === r || p.startsWith(base);
+}
+
+/** What a sandboxed session may do; everything not listed is denied, never asked about. */
+export function sandboxDecision(sandbox: NonNullable<SessionStartSpec['sandbox']>, toolName: string, input: Record<string, unknown>): SandboxDecision {
+  if (toolName.startsWith('mcp__mail__') || SANDBOX_READ_TOOLS.includes(toolName)) return { allow: true };
+  const key = SANDBOX_WRITE_TOOLS[toolName];
+  if (key) {
+    const path = input[key];
+    if (typeof path === 'string' && isInside(sandbox.writeRoot, path)) return { allow: true };
+  }
+  return { allow: false, message: SANDBOX_DENIED };
+}
+
+function toPermissionResult(decision: SandboxDecision): PermissionResult {
+  return decision.allow ? { behavior: 'allow' } : { behavior: 'deny', message: decision.message };
 }

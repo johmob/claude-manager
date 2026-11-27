@@ -4,9 +4,11 @@ import { PASTE_FILE_MAX_BYTES, PASTE_MAX_BYTES, PASTE_TYPES, withAttachments } f
 import { errorMessage, send } from '../lib/api';
 import { baseName } from '../lib/fileShare';
 import { localImageUrl } from '../lib/localImage';
+import { useVoice, type VoiceText } from '../state/useVoice';
 import '../styles/attach.css';
 import '../styles/chat-input.css';
 import { CompactButton } from './CompactButton';
+import { MicButton, type VoiceApi } from './MicButton';
 
 interface Attached {
   path: string;
@@ -61,6 +63,21 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
   const [files, setFiles] = useState<AttachedFile[]>([]);
   const [dragging, setDragging] = useState(false);
   const [problem, setProblem] = useState('');
+  /** After a cleaned-up dictation: what the box got and what was actually said, until the user edits or sends. */
+  const [spoken, setSpoken] = useState<{ cleaned: string; raw: string } | null>(null);
+  const voice = useVoice();
+  /** What the last transcription heard, so the text that comes back from the mic can be paired with its original. */
+  const lastVoice = useRef<VoiceText | null>(null);
+  const caretAfter = useRef<number | null>(null);
+  const micApi: VoiceApi = {
+    status: voice.status,
+    prepare: voice.prepare,
+    transcribe: async (wav) => {
+      const heard = await voice.transcribe(wav);
+      lastVoice.current = heard;
+      return heard.text;
+    },
+  };
 
   /** Adds a file that already lies on disk (dragged from Explorer): images get a thumbnail, anything else a chip. */
   const attachPath = (path: string): void => {
@@ -140,8 +157,8 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
     return () => window.removeEventListener('resize', fit);
   }, [text, compact]);
   /** Enter sends (it waits while the agent is busy); Ctrl+Enter stops what the agent is doing and has it do this instead. */
-  const submit = (redirect = false): void => {
-    const value = withAttachments(text, images.map((i) => i.path), files.map((f) => f.path));
+  const submit = (redirect = false, override?: string): void => {
+    const value = withAttachments(override ?? text, images.map((i) => i.path), files.map((f) => f.path));
     if (!value) return;
     if (redirect && busy) send('session:redirect', { id: session.id, text: value });
     else send('session:send', { id: session.id, text: value });
@@ -149,7 +166,48 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
     setImages([]);
     setFiles([]);
     setProblem('');
+    setSpoken(null);
   };
+  /** Puts dictated text into the box at the cursor, with a space on either side where needed, and leaves the caret after it. */
+  const insertSpoken = (piece: string): void => {
+    const el = areaRef.current;
+    const from = Math.min(el?.selectionStart ?? text.length, text.length);
+    const to = Math.min(Math.max(el?.selectionEnd ?? from, from), text.length);
+    const before = text.slice(0, from);
+    const after = text.slice(to);
+    const lead = before && !/s$/.test(before) ? ' ' : '';
+    const tail = after && !/^s/.test(after) ? ' ' : '';
+    caretAfter.current = (before + lead + piece).length;
+    setText(before + lead + piece + tail + after);
+  };
+  /**
+   * Dictated text. It goes straight to the agent only when the user asked for that, nothing cleaned it up, and
+   * the box is empty (never send something they have not seen); otherwise it goes into the box.
+   */
+  const onSpoken = (said: string): void => {
+    const heard = lastVoice.current;
+    const cleaned = heard !== null && heard.text === said && heard.raw !== heard.text;
+    if (voice.autoSend && !voice.cleanup && !text.trim() && images.length === 0 && files.length === 0) return submit(false, said);
+    insertSpoken(said);
+    setSpoken(cleaned && heard ? { cleaned: said, raw: heard.raw } : null);
+  };
+  const showOriginal = (): void => {
+    if (!spoken) return;
+    const at = text.indexOf(spoken.cleaned);
+    if (at >= 0) {
+      caretAfter.current = at + spoken.raw.length;
+      setText(text.slice(0, at) + spoken.raw + text.slice(at + spoken.cleaned.length));
+    }
+    setSpoken(null);
+  };
+  useLayoutEffect(() => {
+    const at = caretAfter.current;
+    const el = areaRef.current;
+    if (at === null || !el) return;
+    caretAfter.current = null;
+    el.focus();
+    el.setSelectionRange(at, at);
+  }, [text]);
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
@@ -204,16 +262,27 @@ export function ChatInput({ session, compact = false }: { session: SessionSummar
               ? 'Skriv till agenten… (Enter skickar)'
               : 'Skriv till agenten… (Enter skickar, Skift+Enter ny rad)'
         }
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => {
+          setText(e.target.value);
+          setSpoken(null);
+        }}
         onKeyDown={onKey}
         onPaste={onPaste}
         enterKeyHint="send"
       />
+      {compact && <MicButton voice={micApi} silenceSeconds={voice.silenceSeconds} onText={onSpoken} compact />}
       {!compact && (
         <div className="chat-input-side">
+          <MicButton voice={micApi} silenceSeconds={voice.silenceSeconds} onText={onSpoken} />
           <button type="button" className="icon-btn" title="Kommandon" aria-label="Kommandon" onClick={() => setMenuOpen(!menuOpen)}>⋯</button>
           <CompactButton session={session} />
           {menuOpen && <ActionsMenu session={session} onClose={() => setMenuOpen(false)} />}
+        </div>
+      )}
+      {spoken && (
+        <div className="voice-original">
+          Städat talspråk.
+          <button type="button" className="link-btn" onClick={showOriginal}>Visa originalet</button>
         </div>
       )}
     </div>

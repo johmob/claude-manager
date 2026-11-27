@@ -22,6 +22,8 @@ export function createStructuredQuery(options: StructuredQueryOptions = {}): Str
         settingSources: [],
         persistSession: false,
         maxTurns: request.maxTurns,
+        // Untrusted input (mail): no MCP server of any kind, so no connector can be reached from inside the text.
+        ...(request.isolated ? { strictMcpConfig: true, settings: { disableClaudeAiConnectors: true } } : {}),
         outputFormat: { type: 'json_schema', schema: request.schema },
         pathToClaudeCodeExecutable: options.pathToClaudeCodeExecutable,
       },
