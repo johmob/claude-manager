@@ -1,3 +1,13 @@
 {
-  "jobs": []
+  "jobs": [
+    {
+      "id": "resume-2026-11-27",
+      "name": "Bygg mejl och röst när veckokvoten förnyats",
+      "description": "Engångsjobb kl 16:05 när veckokvoten förnyats: agenten arbetar igenom kön i .claude-manager/resume.md (Komprimera-knappen, småfixar i frågorna, mejlspåret och rösten), pushar och släpper men installerar inget.",
+      "cron": "5 16 27 11 *",
+      "kind": "agent",
+      "prompt": "Veckokvoten har förnyats. Läs .claude-manager/resume.md och arbeta igenom kön där, uppifrån, enligt reglerna i filen. Stäng sedan av det här jobbet (enabled: false i .claude-manager/schedule.json).",
+      "enabled": true
+    }
+  ]
 }

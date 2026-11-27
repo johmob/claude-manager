@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:39:40.067Z",
+  "updated": "2026-11-27T09:42:59.020Z",
   "tracks": [
     {
       "id": "design",
@@ -637,6 +637,12 @@
               "title": "Rymligare svarsruta",
               "status": "done",
               "notes": "Användaren: får ofta klicka \"Visa ett stycke till\" (TaggedText döljer stycken under vald detaljnivå). Svarets synliga del ska bli större, och Haiku-taggaren (turn-tags) ska få veta hur mycket som ryms i den så att den väljer stycken som fyller den i stället för att gömma för mycket. || Svaret fylls upp till 1600 tecken med dolda stycken och taggaren får veta längden. Ej provat i dold testinstans. Provat dolt."
+            },
+            {
+              "id": "chat.4.8",
+              "title": "Synlig Komprimera-knapp",
+              "status": "not_started",
+              "notes": "Användaren (0.1.39): det finns fortfarande ingen bra knapp för att komprimera. Dagens knapp är en liten textknapp under kontextmätaren bredvid Fönster: auto och syns knappt. Förslag: en tydlig ikonknapp (fold-vertical) vid chattrutans skicka-knapp eller i chattens rubrik, med kontextens fyllnad i verktygstipset, som framhävs när kontexten börjar bli full; samma förberedelseflöde som chat.4.4."
             }
           ]
         },
