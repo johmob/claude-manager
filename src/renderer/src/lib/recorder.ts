@@ -1,6 +1,6 @@
 // Browser-only microphone recording that stops by itself when the user falls silent.
 import { createSilenceDetector } from './silence';
-import { encodeWav16, resampleLinear, rms } from './wav';
+import { encodeWav16, padToMinLength, resampleLinear, rms } from './wav';
 
 export interface Recording {
   /** Resolves with the WAV, or null when cancelled / no speech. Rejects with a Swedish message on mic errors. */
@@ -133,6 +133,7 @@ export function startRecording(opts: {
       const to = Math.min(total, lastLoudEnd + tail);
       let samples: Float32Array = all.subarray(from, Math.max(from + 1, to));
       if (rate !== TARGET_RATE) samples = resampleLinear(samples, rate, TARGET_RATE);
+      samples = padToMinLength(samples, TARGET_RATE); // at least 1 s for whisper
       return { wav: encodeWav16(samples, TARGET_RATE), ms: Math.round((samples.length / TARGET_RATE) * 1000) };
     } finally {
       if (node) {

@@ -51,6 +51,16 @@ describe('silence detector', () => {
     expect(first(r, 'no-speech')).toBeTruthy();
   });
 
+  it('counts a short word at real frame spacing (128 ms) as speech', () => {
+    const d = createSilenceDetector({ silenceMs: 1000 });
+    const outs: SilenceOutcome[] = [];
+    let t = 0;
+    for (let i = 0; i < 3; i++, t += 128) outs.push(d.feed(0.002, t)); // calibration
+    for (let i = 0; i < 3; i++, t += 128) outs.push(d.feed(0.002, t));
+    for (let i = 0; i < 2; i++, t += 128) outs.push(d.feed(0.1, t)); // ~0.3 s word
+    expect(outs).toContain('speaking');
+  });
+
   it('reports no-speech when nothing is said', () => {
     const r = run([[0.002, 9000]], { silenceMs: 1000, noSpeechMs: 8000 });
     const ns = first(r, 'no-speech')!;

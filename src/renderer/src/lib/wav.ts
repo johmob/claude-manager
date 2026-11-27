@@ -44,6 +44,14 @@ export function resampleLinear(input: Float32Array, from: number, to: number): F
   return out;
 }
 
+/** Pads with trailing silence up to minSamples; whisper handles very short clips badly. Longer input is returned as is. */
+export function padToMinLength(samples: Float32Array, minSamples: number): Float32Array {
+  if (samples.length >= minSamples) return samples;
+  const out = new Float32Array(minSamples);
+  out.set(samples);
+  return out;
+}
+
 /** Root mean square of a frame, 0 for an empty one. */
 export function rms(frame: Float32Array): number {
   if (frame.length === 0) return 0;

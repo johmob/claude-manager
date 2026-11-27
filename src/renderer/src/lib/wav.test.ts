@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { encodeWav16, resampleLinear, rms } from './wav';
+import { encodeWav16, padToMinLength, resampleLinear, rms } from './wav';
+
+describe('padToMinLength', () => {
+  it('pads short clips with silence and keeps the samples', () => {
+    const out = padToMinLength(new Float32Array([0.5, -0.5]), 5);
+    expect(Array.from(out)).toEqual([0.5, -0.5, 0, 0, 0]);
+  });
+  it('leaves long clips alone', () => {
+    const a = new Float32Array(10);
+    expect(padToMinLength(a, 5)).toBe(a);
+  });
+});
 
 const tag = (b: Uint8Array, o: number): string => String.fromCharCode(...b.slice(o, o + 4));
 

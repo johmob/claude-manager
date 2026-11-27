@@ -9,7 +9,9 @@ export interface SilenceOptions {
   maxMs?: number;
 }
 
-const MIN_SPEECH_MS = 150;
+// Audio frames arrive about 128 ms apart (2048 samples at 16 kHz), so 150 ms needed three loud frames (~260 ms of
+// speech) and a short word like "Två" never counted. 100 ms needs two frames; a single click still does not count.
+const MIN_SPEECH_MS = 100;
 
 export function createSilenceDetector(opts: SilenceOptions): { feed(level: number, tMs: number): SilenceOutcome } {
   const calibrateMs = opts.calibrateMs ?? 300;
