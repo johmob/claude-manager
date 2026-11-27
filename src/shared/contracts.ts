@@ -622,6 +622,8 @@ export interface OpenQuestion {
   brief: string;
   /** One-click answers the agent offered (e.g. "1", "1b"); empty when it gave none. */
   options: string[];
+  /** The first wording this question replaced when the agent asked it again in other words; a draft answer stays with it. */
+  previous?: string;
 }
 
 /** The app's own updates from GitHub releases. "off" in development, where there is nothing to update. */

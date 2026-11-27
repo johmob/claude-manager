@@ -382,6 +382,29 @@ describe('question queue within a chat', () => {
     model.applyTurnTags('s1', lastUser.id, [{ kind: 'question', text: 'Fyra eller sex skruvar?', about: '', detail: '', brief: '', options: [] }, { kind: 'question', text: 'Ska kåpan vara svart?', about: '', detail: '', brief: '', options: [] }], []);
     expect(model.summary('s1')?.questions.map((q) => q.text)).toEqual(['M3 eller M4?', 'Fyra eller sex skruvar?', 'Ska kåpan vara svart?']);
   });
+
+  it('lets a reworded repeat replace the open question in place, keeping the earliest wording', () => {
+    const { model, apply } = setup();
+    const finish = { type: 'turn_finished', result: '', isError: false, interrupted: false, tokens: 0, durationMs: 0 } as const;
+    const q = (text: string, replaces?: string) => ({ kind: 'question' as const, text, about: '', detail: '', brief: '', options: [], replaces });
+    apply({ type: 'started' });
+    apply({ type: 'turn_started', prompt: 'kör' });
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'M3 eller M4?' } });
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'Svart kåpa?' } });
+    apply(finish);
+    // The agent asks the first one again in other words, in a later message before any reply.
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'Vilken skruv: M3 eller M4?' } });
+    apply(finish);
+    let lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
+    model.applyTurnTags('s1', lastUser.id, [q('Vilken skruv: M3 eller M4?', 'M3 eller M4?')], []);
+    expect(model.summary('s1')?.questions.map((x) => [x.text, x.previous])).toEqual([['Vilken skruv: M3 eller M4?', 'M3 eller M4?'], ['Svart kåpa?', undefined]]);
+    // Reworded once more: the earliest wording is kept.
+    apply({ type: 'callout', callout: { kind: 'question', title: '', text: 'M3 eller M4, vilken?' } });
+    apply(finish);
+    lastUser = model.transcript('s1').filter((e) => e.kind === 'user').pop()!;
+    model.applyTurnTags('s1', lastUser.id, [q('M3 eller M4, vilken?', 'Vilken skruv: M3 eller M4?')], []);
+    expect(model.summary('s1')?.questions.map((x) => [x.text, x.previous])).toEqual([['M3 eller M4, vilken?', 'M3 eller M4?'], ['Svart kåpa?', undefined]]);
+  });
 });
 
 describe('a turn\'s end waits for its tags', () => {

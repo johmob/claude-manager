@@ -57,17 +57,27 @@ describe('turn tags', () => {
         questions: [
           { text: 'Ska greppet vara 1 eller 1b?', kind: 'question', about: 'cad.2 Handtag v4', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2, context: ['1.1', '2.2', '7.1'] },
           { text: 'Fel nummer', kind: 'question', options: [], brief: '', message: 9 },
-          { text: 'Samma som förut?', kind: 'question', options: [], brief: '', message: 1, repeats: true },
+          { text: 'Samma som förut?', kind: 'question', options: [], brief: '', message: 1, same: 'S' },
         ],
       },
       [1, 2],
     );
     expect(tags).toEqual({
       tags: [['result'], [null, 'fail']],
-      questions: [{ text: 'Ska greppet vara 1 eller 1b?', kind: 'question', about: 'cad.2 Handtag v4', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2, context: [[1, 1], [2, 2]] }],
+      questions: [{ text: 'Ska greppet vara 1 eller 1b?', kind: 'question', about: 'cad.2 Handtag v4', options: ['1', '1b'], brief: 'Två greppvarianter.', message: 2, replaces: null, context: [[1, 1], [2, 2]] }],
     });
     expect(readTags(null, [1])).toBeNull();
     expect(taggedBlocks(['a', 'b'], ['pass'])).toEqual([{ text: 'a', tag: 'pass' }, { text: 'b', tag: null }]);
+  });
+  it('maps a reworded repeat of an open question to its text, and treats a bad number as new', () => {
+    const q = (text: string, same: string) => ({ text, kind: 'question', about: '', options: [], brief: '', message: 1, same, context: [] });
+    const tags = readTags({ blocks: [], questions: [q('Fyra eller sex?', 'Ö2'), q('Svart?', 'Ö9'), q('Ny?', ''), q('Redan svarad?', 'S')] }, [1], ['Första?', 'Fyra eller sex skruvar?']);
+    expect(tags?.questions.map((x) => [x.text, x.replaces])).toEqual([['Fyra eller sex?', 'Fyra eller sex skruvar?'], ['Svart?', null], ['Ny?', null]]);
+  });
+  it('numbers the open questions in the request', () => {
+    const prompt = tagRequest([['a']], '.', [], { open: ['Första?', 'Andra?'], answered: [] }).prompt;
+    expect(prompt).toContain('Ö1. Första?');
+    expect(prompt).toContain('Ö2. Andra?');
   });
   it('drops markup and blocks that only repeat the question from its background', () => {
     const q = 'Hur ska läget mappa avtryckaren: vilken nivå när den precis är intryckt och när den är helt intryckt?';

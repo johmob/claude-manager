@@ -21,4 +21,8 @@ describe('draftKey', () => {
   it('ignores case and surrounding space', () => {
     expect(draftKey(q('  Ska Det Vara Så? '))).toBe('ska det vara så?');
   });
+  it('stays the same when the question is reworded', () => {
+    const reworded = { ...q('Vill du ha det så?'), previous: 'Ska det vara så?' };
+    expect(draftKey(reworded)).toBe(draftKey(q('Ska det vara så?')));
+  });
 });

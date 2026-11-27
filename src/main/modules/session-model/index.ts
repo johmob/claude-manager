@@ -43,7 +43,7 @@ export interface SessionModel {
    * tagged blocks of its messages. Ignored if a new turn has started since (`afterEntryId` is no longer the
    * latest message from the user). Returns the entries that changed.
    */
-  applyTurnTags(id: string, afterEntryId: string | null, questions: OpenQuestion[], blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[];
+  applyTurnTags(id: string, afterEntryId: string | null, questions: Array<OpenQuestion & { replaces?: string | null }>, blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[];
   /** Puts tagged blocks on assistant entries (e.g. saved tags after a restart). Returns the entries that changed. */
   setBlocks(id: string, blocks: Array<{ entryId: string; blocks: TaggedBlock[] }>): TranscriptEntry[];
   /**
@@ -673,16 +673,31 @@ export function normalizeQuestion(text: string): string {
     .trim();
 }
 
-/** Open questions first, then new ones not already among them or answered before. */
-function mergeQuestions(open: OpenQuestion[], fresh: OpenQuestion[], answered: string[]): OpenQuestion[] {
+/**
+ * Open questions first, then new ones not already among them or answered before. A fresh question that
+ * says it replaces an open one (the agent asked it again in other words) takes its place in the list and
+ * keeps the earliest wording in `previous`, so a draft answer stays with it.
+ */
+function mergeQuestions(open: OpenQuestion[], fresh: Array<OpenQuestion & { replaces?: string | null }>, answered: string[]): OpenQuestion[] {
+  const result = [...open];
   const seen = new Set(open.map((q) => normalizeQuestion(q.text)));
-  const added = fresh.filter((q) => {
+  const replaced = new Set<number>();
+  for (const { replaces, ...q } of fresh) {
+    const target = replaces ? normalizeQuestion(replaces) : null;
+    const at = target === null ? -1 : result.findIndex((o, i) => i < open.length && !replaced.has(i) && normalizeQuestion(o.text) === target);
+    if (at >= 0) {
+      const old = result[at]!;
+      seen.add(normalizeQuestion(q.text));
+      replaced.add(at);
+      result[at] = { ...q, previous: old.previous ?? old.text };
+      continue;
+    }
     const key = normalizeQuestion(q.text);
-    if (seen.has(key) || alreadyAnswered(answered, q.text)) return false;
+    if (seen.has(key) || alreadyAnswered(answered, q.text)) continue;
     seen.add(key);
-    return true;
-  });
-  return [...open, ...added].slice(0, MAX_QUESTIONS);
+    result.push(q);
+  }
+  return result.slice(0, MAX_QUESTIONS);
 }
 
 /** Whether a question was answered already: the same words, or one containing the other when long enough. */

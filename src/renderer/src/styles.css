@@ -90,17 +90,11 @@ textarea.input { resize: vertical; }
 
 /* ---------- Main window ---------- */
 .main-window { display: flex; flex-direction: column; height: 100%; }
-/* Top bar: start menu on the left, view tabs exactly in the middle, settings on the right. */
+/* Top bar: Nytt menu on the left, view tabs exactly in the middle, settings on the right. */
 .topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; padding: 8px 16px; background: var(--bg-elev); border-bottom: 1px solid var(--border); }
 .topbar-settings { justify-self: end; justify-content: flex-end; }
 @media (max-width: 1180px) { .topbar { grid-template-columns: 1fr; justify-items: center; } .topbar-settings { justify-self: center; } }
 .topbar-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.start-menu { justify-self: start; display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); }
-.start-menu button { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--text); font-size: 0.7813rem; cursor: pointer; }
-.start-menu button:hover { background: var(--bg-hover); }
-.start-menu button:first-child { color: #fff; background: var(--accent-ui); }
-.start-menu button:first-child:hover { filter: brightness(1.08); }
-.start-menu-sep { width: 1px; align-self: stretch; margin: 4px 3px; background: var(--border); }
 .icon { width: 15px; height: 15px; flex: none; }
 .view-tabs { display: inline-flex; gap: 22px; }
 .view-tabs button { position: relative; padding: 6px 2px; border: 0; background: transparent; color: var(--muted); font-size: 0.9063rem; font-weight: 600; letter-spacing: .02em; cursor: pointer; }
@@ -640,7 +634,6 @@ html[data-theme="night"] ::selection { background: rgba(82,200,255,.35); }
 /* Glow where the eye should go */
 html[data-theme="night"] .btn.primary { color: #05060b; font-weight: 650; box-shadow: 0 0 14px rgba(82,200,255,.35); }
 html[data-theme="night"] .btn.primary:hover:not(:disabled) { background: #7dd6ff; box-shadow: 0 0 20px rgba(82,200,255,.5); }
-html[data-theme="night"] .start-menu button:first-child { color: #05060b; font-weight: 650; box-shadow: 0 0 12px rgba(82,200,255,.35); }
 html[data-theme="night"] .input:focus { box-shadow: 0 0 0 1px var(--accent-ui), 0 0 14px rgba(82,200,255,.25); }
 html[data-theme="night"] .toggle.on { box-shadow: 0 0 12px rgba(82,200,255,.22); }
 html[data-theme="night"] .view-tabs button[aria-selected="true"]::after { box-shadow: 0 0 10px var(--accent-ui); }
@@ -832,8 +825,6 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .topbar { grid-template-columns: minmax(0, 1fr) auto auto; }
 .topbar-settings { flex-wrap: nowrap; }
 @media (max-width: 1180px) { .topbar { grid-template-columns: 1fr; } }
-/* A narrow window: the start menu shows its icons only (names as tooltips), so the bar keeps one row. */
-@media (max-width: 1500px) { .start-label { display: none; } .start-menu button { padding: 6px 9px; } }
 
 /* A message sent while the agent was busy, not read yet */
 .t-user[data-queued] .bubble { opacity: .6; font-style: italic; filter: saturate(.4); }
@@ -849,7 +840,7 @@ html[data-theme="night"] .ov-row { background: rgba(6,8,14,.95); }
 .bubble-now { margin-left: 8px; font-style: normal; font-size: 0.75rem; }
 .t-user[data-queued] .bubble-now { opacity: 1; }
 
-/* Top bar: start menu and view tabs on the left (the overlay covers the middle), settings on the right */
+/* Top bar: Nytt menu and view tabs on the left (the overlay covers the middle), settings on the right */
 .topbar { grid-template-columns: auto auto auto minmax(0, 1fr); }
 .topbar .view-tabs { justify-self: start; margin-left: 6px; }
 .topbar-settings { grid-column: 4; }

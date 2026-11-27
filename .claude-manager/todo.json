@@ -558,8 +558,9 @@
             {
               "id": "chat.2.18",
               "title": "Dubbla frågor slås ihop",
-              "status": "not_started",
-              "notes": "Användaren: agenten ställer en fråga, arbetar vidare och ställer den igen med annan formulering i ett senare meddelande; då visas båda som egna frågor. Förslag: när taggaren (turn-tags) hittar frågor och det redan finns obesvarade, får Haiku de öppna frågorna med och markerar vilka nya som är samma fråga; den nyare formuleringen ersätter den äldre på samma plats (utkast till svar behålls), i stället för att läggas till."
+              "status": "done",
+              "progress": 100,
+              "notes": "Taggaren får de öppna frågorna numrerade (Ö1, Ö2…) och svarar med same: Ö<n> för en omformulerad upprepning, S för redan besvarad. Den nya formuleringen ersätter den äldre på samma plats och utkastet till svaret hänger med (previous, draftKey); sparade frågor behåller previous. Tester och typkontroll gröna; ej provat i riktig körning och ej committat."
             },
             {
               "id": "chat.2.19",
@@ -755,11 +756,11 @@
               "id": "voice.2.2",
               "title": "Lokal transkribering",
               "status": "in_progress",
-              "progress": 0,
+              "progress": 35,
               "dependsOn": [
                 "voice.2.1"
               ],
-              "notes": "Egen modul med whisper.cpp och KBLab:s svenska modell; modellen hämtas första gången. Inget ljud lämnar datorn.",
+              "notes": "Modulen src/main/modules/voice (hämtning med kontrollsumma, uppackning, whisper-körning) är skriven och enhetstestad; kontrollerad mot riktiga whisper.cpp b5907 och KB-whisper base på en testinspelning. Återstår: behörighetsmodulen, kopplingen i main/index.ts och contracts.ts samt det dolda testet.",
               "size": 5
             },
             {

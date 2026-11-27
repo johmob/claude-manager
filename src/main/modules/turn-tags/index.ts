@@ -14,7 +14,7 @@ const MAX_ABOUT_CHARS = 100;
 
 export interface TurnTags {
   /** `context`: the blocks (message, block; 1-based) the user needs to see to answer: pictures, tables, the options compared. */
-  questions: Array<Omit<OpenQuestion, 'detail'> & { message: number; context: Array<[number, number]> }>;
+  questions: Array<Omit<OpenQuestion, 'detail' | 'previous'> & { message: number; context: Array<[number, number]>; replaces: string | null }>;
   /** Per message, per block: its tag (null when the model gave none). */
   tags: Array<Array<BlockTag | null>>;
 }
@@ -42,10 +42,10 @@ const SCHEMA = {
           about: { type: 'string' },
           brief: { type: 'string' },
           message: { type: 'integer' },
-          repeats: { type: 'boolean' },
+          same: { type: 'string' },
           context: { type: 'array', items: { type: 'string' } },
         },
-        required: ['text', 'kind', 'about', 'options', 'brief', 'message', 'repeats', 'context'],
+        required: ['text', 'kind', 'about', 'options', 'brief', 'message', 'same', 'context'],
         additionalProperties: false,
       },
     },
@@ -120,12 +120,12 @@ export function tagRequest(messages: string[][], cwd: string, work: string[] = [
     '- kind: "question" eller "assumption". about: vad det gäller, högst 80 tecken, med arbetsschemats punkt-id först om det framgår (t.ex. "cad.2.1 Handtag v4: kåpan"), annars "".',
     '- options: svarsalternativen agenten gav, annars []. brief: en till två meningar, högst 200 tecken, med det användaren behöver veta för att svara; skriv aldrig block-id eller "se block" där.',
     '- message: meddelandets nummer. context: id på de block användaren behöver se för att svara (bilder, länkar, tabeller, alternativ, mätvärden), även från tidigare meddelanden. Bilder och länkar som frågan gäller ska alltid med, också när blocket i övrigt är bakgrund. Inte blocket som bara upprepar frågan själv; [] om frågan räcker.',
-    '- repeats: true om den frågar samma sak som en fråga i listorna nedan, även med andra ord; annars false.',
+    '- same: "Ö<n>" om den frågar samma sak som den väntande frågan med det numret (Ö1, Ö2 …) i listan nedan, även med andra ord (den nya formuleringen ersätter då den gamla); "S" om den frågar samma sak som en nyss besvarad fråga; annars "".',
     'Svara med JSON.',
     '',
     ...(work.length ? ['Pågående punkter i arbetsschemat:', ...work.map((w) => `- ${w}`), ''] : []),
-    ...(asked.open.length ? ['Frågor som redan väntar på svar (ställ dem inte igen):', ...asked.open.map((q) => `- ${q}`), ''] : []),
-    ...(asked.answered.length ? ['Frågor användaren nyss har svarat på (ställ dem inte igen):', ...asked.answered.map((q) => `- ${q}`), ''] : []),
+    ...(asked.open.length ? ['Frågor som redan väntar på svar (ställ dem inte som nya; markera med same):', ...asked.open.map((q, i) => `Ö${i + 1}. ${q}`), ''] : []),
+    ...(asked.answered.length ? ['Frågor användaren nyss har svarat på (ställ dem inte igen; markera med same "S"):', ...asked.answered.map((q) => `- ${q}`), ''] : []),
     'Meddelandena:',
     numbered,
   ].join('\n');
@@ -133,7 +133,7 @@ export function tagRequest(messages: string[][], cwd: string, work: string[] = [
 }
 
 /** The tags from the reply, checked against the messages' blocks; null when the reply is unusable. */
-export function readTags(reply: unknown, blockCounts: number[]): TurnTags | null {
+export function readTags(reply: unknown, blockCounts: number[], open: string[] = []): TurnTags | null {
   if (typeof reply !== 'object' || reply === null) return null;
   const r = reply as { blocks?: unknown; questions?: unknown };
   if (!Array.isArray(r.blocks) || !Array.isArray(r.questions)) return null;
@@ -152,8 +152,12 @@ export function readTags(reply: unknown, blockCounts: number[]): TurnTags | null
     if (typeof q !== 'object' || q === null) return [];
     const x = q as Record<string, unknown>;
     const text = typeof x['text'] === 'string' ? x['text'].trim() : '';
-    // A repeat of a question already open or answered lately is left out.
-    if (!text || !inRange(x['message']) || x['repeats'] === true) return [];
+    if (!text || !inRange(x['message'])) return [];
+    // A repeat of a question answered lately is left out; one of an open question replaces it (a bad number counts as new).
+    const same = typeof x['same'] === 'string' ? x['same'].trim() : '';
+    if (/^s$/i.test(same)) return [];
+    const at = /^ö(\d+)$/i.exec(same);
+    const replaces = at ? (open[Number(at[1]) - 1] ?? null) : null;
     const brief = typeof x['brief'] === 'string' ? x['brief'].trim() : '';
     const about = typeof x['about'] === 'string' ? x['about'].trim().slice(0, MAX_ABOUT_CHARS) : '';
     return [
@@ -164,6 +168,7 @@ export function readTags(reply: unknown, blockCounts: number[]): TurnTags | null
         options: Array.isArray(x['options']) ? x['options'].filter((o): o is string => typeof o === 'string' && !!o.trim()).map((o) => o.trim()).slice(0, 6) : [],
         brief: brief.length > MAX_BRIEF_CHARS ? `${brief.slice(0, MAX_BRIEF_CHARS - 1)}…` : brief,
         message: x['message'] as number,
+        replaces,
         context: (Array.isArray(x['context']) ? x['context'] : []).flatMap((id): Array<[number, number]> => {
           const at = typeof id === 'string' ? /^(\d+)\.(\d+)$/.exec(id.trim()) : null;
           const m = at ? Number(at[1]) : 0;

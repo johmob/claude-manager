@@ -33,9 +33,9 @@ export const drafts = {
   },
 };
 
-/** A question's place in the drafts: its words, so answers stay put when more questions arrive. */
-export function draftKey(q: Pick<OpenQuestion, 'text'>): string {
-  return q.text.trim().toLowerCase();
+/** A question's place in the drafts: its first wording, so answers stay put when more questions arrive or it is reworded. */
+export function draftKey(q: Pick<OpenQuestion, 'text' | 'previous'>): string {
+  return (q.previous ?? q.text).trim().toLowerCase();
 }
 
 /** The one message that carries every answer back to the agent. */

@@ -672,7 +672,7 @@ function boot(): void {
     const messages = messagesForTagging(all.map((e) => e.text));
     const entries = all.slice(-messages.length);
     // The agent's question and note callouts go along last: the tagger keeps real questions and assumptions
-    // and drops repeats of questions already open or answered.
+    // drops repeats of answered questions and lets a reworded repeat of an open one replace it.
     const notes = transcript.slice(from).flatMap((e) => (e.kind === 'callout' && (e.callout.kind === 'note' || e.callout.kind === 'question') ? [`> [!${e.callout.kind.toUpperCase()}] ${e.callout.title ? `**${e.callout.title}:** ` : ''}${e.callout.text}`] : []));
     const toTag = notes.length ? [...messages, splitBlocks(notes.join('\n\n'))] : messages;
     // The same boxes as the user reads them, for a question's background: no markup.
@@ -682,12 +682,13 @@ function boot(): void {
     };
     try {
       if (!entries.length && !notes.length) return;
+      const asked = model.askedQuestions(id);
       const reply = await Promise.race([
-        structuredQuery(tagRequest(toTag, userData, workInProgress(model.summary(id)?.todo ?? null), model.askedQuestions(id))),
+        structuredQuery(tagRequest(toTag, userData, workInProgress(model.summary(id)?.todo ?? null), asked)),
         new Promise<null>((resolve) => setTimeout(() => resolve(null), TAG_TIMEOUT_MS)),
       ]);
-      appLog.write('tags', { sessionId: id, messages: toTag, asked: model.askedQuestions(id), reply });
-      const tags = readTags(reply, toTag.map((m) => m.length));
+      appLog.write('tags', { sessionId: id, messages: toTag, asked, reply });
+      const tags = readTags(reply, toTag.map((m) => m.length), asked.open);
       if (!tags) return;
       tagMemory.remember(id, entries.map((e, i) => ({ text: e.text, tags: tags.tags[i]! })));
       // What the user needs to answer: the blocks the tagger pointed to (pictures, tables, options), else the question's own message.
@@ -695,7 +696,7 @@ function boot(): void {
         const blocks = q.context.map(([m, b]) => (m <= entries.length ? toTag[m - 1]?.[b - 1] : plainNotes.join('\n\n')) ?? '').filter(Boolean);
         return questionDetail(blocks.length ? blocks : splitBlocks(entries[q.message - 1]?.text ?? plainNotes.join('\n\n')), q.text);
       };
-      const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, about: q.about, detail: contextOf(q), brief: q.brief, options: q.options }));
+      const questions = tags.questions.map((q) => ({ kind: q.kind, text: q.text, about: q.about, detail: contextOf(q), brief: q.brief, options: q.options, replaces: q.replaces }));
       const blocks = entries.map((e, i) => ({ entryId: e.id, blocks: taggedBlocks(messages[i]!, tags.tags[i]!) }));
       show(model.applyTurnTags(id, after, questions, blocks));
     } catch {
@@ -1474,6 +1475,7 @@ function validSavedQuestions(raw: unknown): SavedQuestions | null {
           detail: typeof q['detail'] === 'string' ? q['detail'] : '',
           brief: typeof q['brief'] === 'string' ? q['brief'] : '',
           options: Array.isArray(q['options']) ? q['options'].filter((o): o is string => typeof o === 'string') : [],
+          ...(typeof q['previous'] === 'string' && q['previous'] ? { previous: q['previous'] } : {}),
         }]
       : [],
   );
