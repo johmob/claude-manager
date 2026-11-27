@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T11:52:34.521Z",
+  "updated": "2026-11-27T11:53:53.557Z",
   "tracks": [
     {
       "id": "design",
@@ -423,7 +423,7 @@
               "id": "chat.1.9",
               "title": "Färdigformaterat innan det visas",
               "status": "done",
-              "notes": "Användaren: text visas och ändras sedan (formatering, taggar, omflyttning) efter att den redan syns. Allt ska vara färdigformaterat när det visas: inget får byta utseende eller plats efteråt. Gäller både turens slut och det som visas under arbetet. || Sena taggar ändrar inte längre text som redan visas, callouts efter hållen text väntar i loggen, bilder har fast ram. Ej provat i dold testinstans. Provat dolt. Användaren: svaret syntes först oformaterat (i rutan Under arbetet medan det väntade på taggarna). Rättat i 0.1.38: väntande svarstext visas inte i rutan; svaret visas först färdigformaterat. Provat dolt."
+              "notes": "Användaren: text visas och ändras sedan (formatering, taggar, omflyttning) efter att den redan syns. Allt ska vara färdigformaterat när det visas: inget får byta utseende eller plats efteråt. Gäller både turens slut och det som visas under arbetet. || Sena taggar ändrar inte längre text som redan visas, callouts efter hållen text väntar i loggen, bilder har fast ram. Provat dolt. Användaren: svaret syntes först oformaterat (i rutan Under arbetet medan det väntade på taggarna). Rättat i 0.1.38: väntande svarstext visas inte i rutan; svaret visas först färdigformaterat. Provat dolt."
             },
             {
               "id": "chat.1.10",
@@ -630,7 +630,7 @@
               "id": "chat.4.4",
               "title": "Komprimera med förberedelse",
               "status": "done",
-              "notes": "Användaren: knappen Komprimera ska först skicka \"Förbered för komprimering\" till agenten. När agenten svarar bedömer appen (Haiku) om svaret är jakande; i så fall skickar appen /compact. Är svaret tvetydigt visas det för användaren i stället, som får avgöra. Användaren: knappen får en trevlig liten ikon för något som komprimeras, t.ex. lucide fold-vertical eller shrink (pilar mot mitten). Beslut: ikonen fold-vertical (pilar mot mitten). || Knappen skickar \"Förbered för komprimering\"; när svaret och taggarna är inne bedömer Haiku det, ja ger /compact, annars visas Oklart-raden med Komprimera nu / Låt bli. Ej provat i dold testinstans. Provat dolt: förberedelse, sedan /compact av sig själv."
+              "notes": "Användaren: knappen Komprimera ska först skicka \"Förbered för komprimering\" till agenten. När agenten svarar bedömer appen (Haiku) om svaret är jakande; i så fall skickar appen /compact. Är svaret tvetydigt visas det för användaren i stället, som får avgöra. Användaren: knappen får en trevlig liten ikon för något som komprimeras, t.ex. lucide fold-vertical eller shrink (pilar mot mitten). Beslut: ikonen fold-vertical (pilar mot mitten). || Knappen skickar \"Förbered för komprimering\"; när svaret och taggarna är inne bedömer Haiku det, ja ger /compact, annars visas Oklart-raden med Komprimera nu / Låt bli. Provat dolt: förberedelse, sedan /compact av sig själv."
             },
             {
               "id": "chat.4.5",
@@ -642,13 +642,13 @@
               "id": "chat.4.6",
               "title": "Ingen dubblett av svaret",
               "status": "done",
-              "notes": "Användaren: rutan Under arbetet visar huvudagentens senaste meddelande även när samma text redan står som Svar under den. När turen är klar och rutans text i stort sett är svaret ska rutan inte visa den (eller döljas). || Rutan Under arbetet hoppar över meddelanden som liknar svaret och byter utan väntetid när svaret finns. Ej provat i dold testinstans. Provat dolt."
+              "notes": "Användaren: rutan Under arbetet visar huvudagentens senaste meddelande även när samma text redan står som Svar under den. När turen är klar och rutans text i stort sett är svaret ska rutan inte visa den (eller döljas). || Rutan Under arbetet hoppar över meddelanden som liknar svaret och byter utan väntetid när svaret finns. Provat dolt."
             },
             {
               "id": "chat.4.7",
               "title": "Rymligare svarsruta",
               "status": "done",
-              "notes": "Användaren: får ofta klicka \"Visa ett stycke till\" (TaggedText döljer stycken under vald detaljnivå). Svarets synliga del ska bli större, och Haiku-taggaren (turn-tags) ska få veta hur mycket som ryms i den så att den väljer stycken som fyller den i stället för att gömma för mycket. || Svaret fylls upp till 1600 tecken med dolda stycken och taggaren får veta längden. Ej provat i dold testinstans. Provat dolt."
+              "notes": "Användaren: får ofta klicka \"Visa ett stycke till\" (TaggedText döljer stycken under vald detaljnivå). Svarets synliga del ska bli större, och Haiku-taggaren (turn-tags) ska få veta hur mycket som ryms i den så att den väljer stycken som fyller den i stället för att gömma för mycket. || Svaret fylls upp till 1600 tecken med dolda stycken och taggaren får veta längden. Provat dolt."
             },
             {
               "id": "chat.4.8",
@@ -667,25 +667,25 @@
               "id": "chat.5.1",
               "title": "Spara bild som",
               "status": "done",
-              "notes": "Knapp i bildvisaren som öppnar Spara som-dialogen och kopierar bilden dit. Klart: Spara som i bildvisaren (file:act save-as). Ej provat i en dold instans ännu. Provat dolt."
+              "notes": "Knapp i bildvisaren som öppnar Spara som-dialogen och kopierar bilden dit. Klart: Spara som i bildvisaren (file:act save-as). Provat dolt."
             },
             {
               "id": "chat.5.2",
               "title": "Kopiera bilden",
               "status": "done",
-              "notes": "Lägger bilden på urklipp, så den kan klistras in direkt i Teams, Outlook eller annat. Klart: Kopiera bild/fil till urklipp (Electron 45: clipboard.write med ClipboardItem; andra filer via Set-Clipboard). Ej provat i en dold instans ännu. Provat dolt."
+              "notes": "Lägger bilden på urklipp, så den kan klistras in direkt i Teams, Outlook eller annat. Klart: Kopiera bild/fil till urklipp (Electron 45: clipboard.write med ClipboardItem; andra filer via Set-Clipboard). Provat dolt."
             },
             {
               "id": "chat.5.3",
               "title": "Mejla bilden",
               "status": "done",
-              "notes": "Startar Outlook med ett nytt mejl där bilden är bifogad (outlook.exe /a <fil>); knappen visas bara om Outlook finns. Klart: Nytt mejl i Outlook via outlook.exe /a, knappen bara om klassiska Outlook finns. Ej provat i en dold instans ännu. Provat dolt."
+              "notes": "Startar Outlook med ett nytt mejl där bilden är bifogad (outlook.exe /a <fil>); knappen visas bara om Outlook finns. Klart: Nytt mejl i Outlook via outlook.exe /a, knappen bara om klassiska Outlook finns. Menyvalet visas (provat dolt); att Outlook öppnar mejlet med bilagan är inte provat. Provat dolt."
             },
             {
               "id": "chat.5.5",
               "title": "Fillänkar: åtgärder",
               "status": "done",
-              "notes": "Länkar till lokala filer i chatten (PDF, STL, CSV …) får samma åtgärder som bilder: Spara som, Öppna, Visa i mappen, Kopiera filen (klistra in i Teams eller Outlook) och Nytt mejl i Outlook med filen bifogad. Användaren: högerklick på en fillänk i chatten ger en meny med Visa i mapp (Utforskaren öppnas med filen markerad), så filen kan hämtas utan att öppnas eller letas upp. Klart: Högerklicksmeny på fillänkar: Öppna, Visa i mapp, Spara som, Kopiera filen, Nytt mejl. Ej provat i en dold instans ännu. Provat dolt."
+              "notes": "Länkar till lokala filer i chatten (PDF, STL, CSV …) får samma åtgärder som bilder: Spara som, Öppna, Visa i mappen, Kopiera filen (klistra in i Teams eller Outlook) och Nytt mejl i Outlook med filen bifogad. Användaren: högerklick på en fillänk i chatten ger en meny med Visa i mapp (Utforskaren öppnas med filen markerad), så filen kan hämtas utan att öppnas eller letas upp. Klart: Högerklicksmeny på fillänkar: Öppna, Visa i mapp, Spara som, Kopiera filen, Nytt mejl. Provat dolt."
             }
           ]
         }
@@ -1767,7 +1767,8 @@
             }
           ]
         }
-      ]
+      ],
+      "focus": true
     }
   ]
 }
