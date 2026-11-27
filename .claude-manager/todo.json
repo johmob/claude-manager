@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:34:32.733Z",
+  "updated": "2026-11-27T09:39:40.067Z",
   "tracks": [
     {
       "id": "design",
@@ -1410,7 +1410,7 @@
       "id": "mail",
       "title": "Mejl – Outlook",
       "owner": "main",
-      "notes": "Användaren (önskelista): en Outlook-vy i appen. Varje nytt mejl bedöms av en agent; skräp stör inte, mejl som bör besvaras ger en mejlikon-notis i fältet. Varje mejltråd får egen chatt, historik och kontext som överlever omstart, så agenten kan fortsätta t.ex. justera en illustration när svaret kommer dagar senare. Användaren har Outlook classic. Förslag att diskutera (användaren lämnade öppet): egen flik Mejl bredvid Översikt och Fokus; en lista över bedömda mejl där skräp är dolt som standard; knapp \"inte viktigt\" och lista över viktiga avsändare som lär bedömningen; historik och arbetsmappar i appens datamapp under mail/<tråd>; agentens filer föreslås som bilagor men bifogas först när användaren bockar i. Användaren: specen (docs/MAIL.md) skrivs efter mer diskussion. Användaren: allt i spåret är riktning, inte färdig instruktion. Den agent som planerar och bygger har frihet att ändra, förbättra och lägga till; det ska stå uttryckligen i dess uppdrag.",
+      "notes": "Användaren (önskelista): en Outlook-vy i appen. Varje nytt mejl bedöms av en agent; skräp stör inte, mejl som bör besvaras ger en mejlikon-notis i fältet. Varje mejltråd får egen chatt, historik och kontext som överlever omstart, så agenten kan fortsätta t.ex. justera en illustration när svaret kommer dagar senare. Användaren har Outlook classic. Förslag att diskutera (användaren lämnade öppet): egen flik Mejl bredvid Översikt och Fokus; en lista över bedömda mejl där skräp är dolt som standard; knapp \"inte viktigt\" och lista över viktiga avsändare som lär bedömningen; historik och arbetsmappar i appens datamapp under mail/<tråd>; agentens filer föreslås som bilagor men bifogas först när användaren bockar i. Användaren: specen (docs/MAIL.md) skrivs efter mer diskussion. Användaren: allt i spåret är riktning, inte färdig instruktion. Den agent som planerar och bygger har frihet att ändra, förbättra och lägga till; det ska stå uttryckligen i dess uppdrag. Användaren: har redan en egen planeringsapp (separat repo på datorn) som synkar med Outlook-kalendern. Mejlspåret ska samspela med den, inte bygga en egen planering.",
       "items": [
         {
           "id": "mail.1",
@@ -1669,6 +1669,12 @@
                 "mail.6.1",
                 "mail.4.1"
               ]
+            },
+            {
+              "id": "mail.6.5",
+              "title": "Samspel med planeringsappen",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Användarens planeringsapp bokar arbetspass som upptagen tid i Outlook och kopplar mötestid till projekt. Mejlspåret ska läsa det i stället för att dubblera: krockkontrollen (mail.6.2) ser skillnad på inbokade arbetspass (flyttbara) och möten, åtgärder och löften från mejl (mail.4.5) kan bli punkter i planeringsappen, och morgonöversikten (mail.7.1) tar med dagens plan. Hur appen lagrar sin data utreds först; den ändras inte utan användarens beslut."
             }
           ]
         },
