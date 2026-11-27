@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T11:53:53.557Z",
+  "updated": "2026-11-27T11:55:57.231Z",
   "tracks": [
     {
       "id": "design",
@@ -257,6 +257,12 @@
               "title": "Notes per punkt",
               "status": "done",
               "notes": "Varje spår och punkt har 1–3 meningar som visas när användaren klickar på den."
+            },
+            {
+              "id": "plan.1.5",
+              "title": "Vikt per punkt",
+              "status": "not_started",
+              "notes": "Användaren: 79 % klart stämmer inte när stora spår som mejlet och rösten nyss lagts till; förloppet räknas på antal punkter, så en punkt som tar en vecka väger lika lite som en som tar tio minuter. Förslag: valfritt fält \"size\" (relativ storlek, t.ex. 1 liten till 8 mycket stor) som agenten sätter; appen viktar förlopp och procent med det, och punkter utan size räknas som 1. Protokollet ber agenten sätta size på nya punkter."
             }
           ]
         },
@@ -355,6 +361,12 @@
               "title": "Grundregler som checklistor",
               "status": "done",
               "notes": "Användaren: reglerna ska vara superkoncisa och följas. Nu checklistor vid start, större arbete, klart steg och turens slut (~280 ord, förut ~600); schemaprotokollet kortat till ~560 ord. Planerare Opus medium (high för svåra konstruktioner), kodare på lägsta nivå uppgiften kräver. Användaren: ingen spärr eller fråga vid viss förbrukning. Orörda gamla standardregler uppgraderas automatiskt. Når appen vid nästa installation. Användaren: Fable ska inte förbjudas, bara inte föreslås; agenten väljer lämplig planeringsmodell, som standard Opus medium eller high."
+            },
+            {
+              "id": "plan.3.10",
+              "title": "Kontroll av schemat",
+              "status": "not_started",
+              "notes": "Användaren: även main slarvade med trädet (klara punkter hade kvar \"Ej provat\" i anteckningen). Grundregeln är skärpt: när status ändras skrivs anteckningen om till det som gäller nu. Kvar: appen kontrollerar schemat efter varje tur (klar punkt med \"ej provat\" eller \"kvar\" i anteckningen, pågår utan arbetande agent, tomma anteckningar, för långa titlar, blandade nivåer) och påminner agenten med de konkreta fynden i stället för en allmän påminnelse; i dag påminns den bara när filen inte rörts alls."
             }
           ]
         }

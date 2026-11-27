@@ -14,6 +14,7 @@ export const DEFAULT_GROUND_RULES = `# Ground rules: check these off at each poi
 
 **When a step finishes or the plan changes**
 - [ ] Update the schema before going on: status, progress, notes. In progress only while work runs; strike redundant items.
+- [ ] When an item's status changes, rewrite its notes to what is true now: drop what no longer holds ("not tested", "left to do") instead of appending.
 - [ ] Did the user mention something for another item? Put it in that item's notes ("Användaren: …").
 
 **Before you end your turn**
@@ -29,7 +30,7 @@ export const DEFAULT_GROUND_RULES = `# Ground rules: check these off at each poi
 /** Fingerprints of earlier default texts. A file still holding one of them was never edited by the user, so it is upgraded. */
 const PREVIOUS_DEFAULTS = new Set([
   'f4809887d5a8310b', '222faea5917d1d55', '06e730423fed7e6d', 'c9c10b010d4cdbdc', '8bed523f8a84f87d', '4f8f743b6acd9f72',
-  '1ef6ca3130c06600', '8ce2da83da1f502c', '905d81acb0c04a60', '44aa4c40f344239e', 'b7acfad3b7a4e350', '3c9cae5373902d7c',
+  '1ef6ca3130c06600', 'c049b50416fffe9c', '8ce2da83da1f502c', '905d81acb0c04a60', '44aa4c40f344239e', 'b7acfad3b7a4e350', '3c9cae5373902d7c',
 ]);
 
 export function fingerprint(text: string): string {
