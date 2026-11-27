@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:31:50.164Z",
+  "updated": "2026-11-27T09:34:32.733Z",
   "tracks": [
     {
       "id": "design",
@@ -1625,6 +1625,103 @@
               "title": "Lokalt förfilter",
               "status": "not_started",
               "notes": "Förslag från main, ej beslutat. Nyhetsbrev och utskick (List-Unsubscribe, kända avsändare) sorteras lokalt utan AI, vilket sparar tokens. Användaren kan undanta avsändare eller ämnen som aldrig ska skickas till Claude."
+            }
+          ]
+        },
+        {
+          "id": "mail.6",
+          "title": "Kalender och möten",
+          "notes": "Användaren: möteskallelser kommer via mejl och ska kunna hanteras utan att öppna inkorgen alls. Outlook classic sköter kalendern via samma COM-koppling.",
+          "items": [
+            {
+              "id": "mail.6.1",
+              "title": "Kallelser som egen typ",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Kallelser visas i hovringsträdet med tid, arrangör och ämne, och med valen Acceptera, Preliminärt, Avböj (med kort hälsning) och Föreslå ny tid. Svaret går via Outlook, och kalendern uppdateras.",
+              "dependsOn": [
+                "mail.2.3"
+              ]
+            },
+            {
+              "id": "mail.6.2",
+              "title": "Krockar och förslag",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Agenten kollar kalendern: krockar, möten tätt inpå varandra och om du redan har ett möte om samma sak, och föreslår ett val (t.ex. avböj, du är dubbelbokad med X).",
+              "dependsOn": [
+                "mail.6.1"
+              ]
+            },
+            {
+              "id": "mail.6.3",
+              "title": "Inställt och flyttat",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Inställda möten tas bort ur kalendern och markeras lästa utan att störa; flyttade möten visas som \"flyttat från tis 10 till ons 14\".",
+              "dependsOn": [
+                "mail.6.1"
+              ]
+            },
+            {
+              "id": "mail.6.4",
+              "title": "Inför mötet",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. En stund före ett möte kommer en kort genomgång: vilka som kommer, relaterade mejltrådar och vad som är utlovat eller öppet. \"Anslut\" startar Teams-mötet direkt från overlayn.",
+              "dependsOn": [
+                "mail.6.1",
+                "mail.4.1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mail.7",
+          "title": "Inkorg i ordning",
+          "notes": "Förslag från main: så att Outlook-inkorgen speglar det som är hanterat i appen och aldrig behöver öppnas.",
+          "items": [
+            {
+              "id": "mail.7.1",
+              "title": "Morgonöversikt",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Varje morgon en kort sammanfattning: dagens möten, mejl som väntar på dig, löften som förfaller och vad som sorterats bort.",
+              "dependsOn": [
+                "mail.2.1",
+                "mail.4.5"
+              ]
+            },
+            {
+              "id": "mail.7.2",
+              "title": "Arkivera hanterat",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Hanterade mejl flyttas till en arkivmapp i Outlook (valfritt), så inkorgen bara innehåller det som är kvar.",
+              "dependsOn": [
+                "mail.3.4"
+              ]
+            },
+            {
+              "id": "mail.7.3",
+              "title": "Avregistrera med ett klick",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. För nyhetsbrev som du alltid släpper erbjuds avregistrering via mejlets egen avregistreringslänk.",
+              "dependsOn": [
+                "mail.5.2"
+              ]
+            },
+            {
+              "id": "mail.7.4",
+              "title": "Bilagor sammanfattas",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. PDF, Excel och presentationer sammanfattas i mejlvyn, och kan sparas till rätt projekt.",
+              "dependsOn": [
+                "mail.3.1"
+              ]
+            },
+            {
+              "id": "mail.7.5",
+              "title": "Vidarebefordra med not",
+              "status": "not_started",
+              "notes": "Förslag från main, ej beslutat. Ett val för att skicka mejlet vidare till rätt person med en kort not som agenten skrivit.",
+              "dependsOn": [
+                "mail.3.3"
+              ]
             }
           ]
         }
