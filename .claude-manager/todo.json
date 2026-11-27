@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:22:58.882Z",
+  "updated": "2026-11-27T09:29:47.165Z",
   "tracks": [
     {
       "id": "design",
@@ -1549,7 +1549,7 @@
               "id": "mail.4.1",
               "title": "Trådens historik och kontext",
               "status": "not_started",
-              "notes": "Varje mejltråd (ConversationID) får egen session, transkript och arbetsmapp med det agenten skapat; sparas över omstart. Användaren: data sparas strukturerat i en databas, inte som tusentals JSON-filer. Förslag: en SQLite-fil i appens datamapp (node:sqlite finns inbyggt i Electrons Node) med tabeller för mejl (Outlook-id, tråd-id, avsändare, mottagare, ämne, tid, bedömning, status), trådar (session-id, sammanfattning) och händelser (agentens svar, åtgärder, skapade filer); bara agentens filer ligger som filer i en mapp per tråd.",
+              "notes": "Varje mejltråd (ConversationID) får egen session, transkript och arbetsmapp med det agenten skapat; sparas över omstart. Användaren: data sparas strukturerat i en databas, inte som tusentals JSON-filer. Förslag: en SQLite-fil i appens datamapp (node:sqlite finns inbyggt i Electrons Node) med tabeller för mejl (Outlook-id, tråd-id, avsändare, mottagare, ämne, tid, bedömning, status), trådar (session-id, sammanfattning) och händelser (agentens svar, åtgärder, skapade filer); bara agentens filer ligger som filer i en mapp per tråd. Användaren: varje skickat mejl märks med vem som skrev det: användaren direkt i Outlook, agenten (godkänt oförändrat) eller agenten med användarens ändringar; appen vet vilka den själv skickat (Outlook-id sparas vid skick), allt annat i Skickat är användarens.",
               "dependsOn": [
                 "mail.3.2"
               ]
@@ -1596,7 +1596,7 @@
               "id": "mail.4.6",
               "title": "Skrivstil från Skickat",
               "status": "not_started",
-              "notes": "Förslag från main, ej beslutat. Agenten lär sig användarens ton, längd och språk per mottagare från Skickat, så svaren låter som användaren. Användaren: ja, om resultatet blir bra och användbart. Plan: prova först på några riktiga svar, med och utan stilprofil sida vid sida, och behåll bara om användaren tycker att det låter mer som användaren själv.",
+              "notes": "Förslag från main, ej beslutat. Agenten lär sig användarens ton, längd och språk per mottagare från Skickat, så svaren låter som användaren. Användaren: ja, om resultatet blir bra och användbart. Plan: prova först på några riktiga svar, med och utan stilprofil sida vid sida, och behåll bara om användaren tycker att det låter mer som användaren själv. Användaren: löpande omträning, men agenten får aldrig träna på agentskrivna mejl. Förslag: profilen byggs bara av mejl användaren skrivit själv i Outlook och förnyas av ett schemalagt jobb (t.ex. en gång i månaden). Användarens ändringar i agentens utkast sparas som skillnad och är den starkaste signalen om vad agenten gör fel.",
               "dependsOn": [
                 "mail.1.1"
               ]
