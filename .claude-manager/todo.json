@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:45:03.889Z",
+  "updated": "2026-11-27T09:45:27.010Z",
   "tracks": [
     {
       "id": "design",
@@ -1067,6 +1067,12 @@
               "title": "Overlay snäpper till lägen",
               "status": "not_started",
               "notes": "Användaren: overlayn går nu att dra fritt, vilket är bra, men dras den nära överkant mitt, mitt höger eller mitt vänster ska den snäppa till ett fast läge (magnetiskt inom en liten zon, med en antydan om läget under dragningen). Utanför zonerna ligger den kvar där den släpps."
+            },
+            {
+              "id": "ui.3.16",
+              "title": "Overlay dold vid helskärm",
+              "status": "not_started",
+              "notes": "Användaren: när appens fönster är i helskärm (maximerat eller helskärm) döljs overlayn, eftersom allt redan syns i appen. Den kommer tillbaka när fönstret minimeras, återställs eller hamnar bakom ett annat fönster."
             }
           ]
         },
