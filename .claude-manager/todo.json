@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T11:55:57.231Z",
+  "updated": "2026-11-27T12:06:51.173Z",
   "tracks": [
     {
       "id": "design",
@@ -612,6 +612,12 @@
               "title": "Dra in filer",
               "status": "done",
               "notes": "Klart i kod: alla filer kan dras in eller klistras in (via sökväg från Explorer, annars kopia i temp, max 10 MB) och visas som chips. Provat dolt."
+            },
+            {
+              "id": "chat.3.7",
+              "title": "Skrivrutan växer",
+              "status": "not_started",
+              "notes": "Användaren: rutan man skriver i är i praktiken en eller två rader. Den ska växa med texten (t.ex. upp till ungefär halva chattens höjd, sedan rullning inuti) och krympa igen när meddelandet skickats."
             }
           ]
         },
