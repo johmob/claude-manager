@@ -7,6 +7,7 @@ import { homedir, tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import iconPath from '../../resources/icon.png?asset';
+import bridgeScriptPath from '../../resources/outlook-bridge.ps1?asset';
 import { appContext, usageWeight, CONTEXT_WINDOW_CHOICES, DOCK_EDGES, EFFORT_CHOICES, MODEL_CHOICES, PERMISSION_CHOICES, SESSION_ICONS, THEME_CHOICES } from '../shared/contracts';
 import { isRecord } from '../shared/guards';
 import { PASTE_FILE_MAX_BYTES, PASTE_MAX_BYTES, PASTE_TYPES } from '../shared/pastedImages';
@@ -76,6 +77,7 @@ import { createVoice } from './modules/voice';
 import { cleanupRequest, readCleanup } from './modules/voice-cleanup';
 import { fakeMicSwitches, installPermissionHandlers } from './modules/media-permission';
 import { VOICE_SILENCE_DEFAULT, clampSilence } from '../shared/voice';
+import { createMailFeature } from './mail-root';
 
 const DEFAULT_SETTINGS: AppSettings = {
   projectsRoot: '',
@@ -265,6 +267,30 @@ function boot(): void {
       settingsStore.write(settings);
     },
   });
+  // Mail (classic Outlook): off until the user turns it on. Its sources, store and agent sessions are wired in mail-root.ts.
+  const mail = createMailFeature({
+    userData,
+    settings: () => settings,
+    engine,
+    model,
+    structuredQuery,
+    pushEvent,
+    appLog,
+    openPopup: (view) => windows.openPopup(view),
+    // The script is bundled as an asset (inside the asar when installed); the other places cover layouts where the bundler's copy is missing.
+    bridgeScriptPaths: [
+      bridgeScriptPath,
+      join(app.getAppPath(), 'resources', 'outlook-bridge.ps1'),
+      join(process.resourcesPath, 'resources', 'outlook-bridge.ps1'),
+      join(__dirname, '../../resources/outlook-bridge.ps1'),
+    ],
+    shell: {
+      openPath: (path) => shell.openPath(path),
+      showItemInFolder: (path) => shell.showItemInFolder(path),
+      saveCopyAs: (path) => saveCopyAs(path, BrowserWindow.getFocusedWindow()),
+      isRunnable: (path) => RUNNABLE.test(path),
+    },
+  });
   // The microphone and the clipboard are the only permissions the app's own pages get.
   installPermissionHandlers(session.defaultSession, isAppUrl);
   // Local speech-to-text (whisper.cpp): first-use download into the data folder, then transcription on this computer.
@@ -334,6 +360,7 @@ function boot(): void {
       pushEvent('state:account', found);
     })
     .catch((error: unknown) => console.warn('Kontot kunde inte läsas; alla modeller visas', error));
+  mail.applySettings(settings);
   scheduleSync();
 
   app.on('second-instance', (_event, argv) => {
@@ -371,6 +398,15 @@ function boot(): void {
   }
 
   function onSessionEvent(event: SessionEvent): void {
+    // Mail sessions are hidden and private: no app log, no cards, no tags, no alerts. Mail-root reacts to them.
+    if (mail.isMailSession(event.sessionId)) {
+      for (const entry of model.apply(event)) pushEvent('session:transcript-upsert', { id: event.sessionId, entry });
+      if (event.type === 'turn_finished' && event.usage) countUsage('sessions', event.usage, settings.mailModel);
+      if (event.type === 'rate_limit') usage.ingest(event.windows);
+      mail.onSessionEvent(event);
+      scheduleSync();
+      return;
+    }
     // Everything an agent sends (context readings are frequent and left out).
     if (event.type !== 'context_usage') appLog.write('event', { ...event });
     for (const entry of model.apply(event)) showEntry(event.sessionId, entry);
@@ -452,7 +488,7 @@ function boot(): void {
       pushEvent('state:sessions', summaries);
       flushAlerts(summaries);
       windows.setDock(settings.dockVisible, settings.dockEdge, summaries.length);
-      windows.setOverlay(settings.overlayVisible, summaries.length + 1);
+      windows.setOverlay(settings.overlayVisible, summaries.length + 1 + (settings.mailEnabled ? 1 : 0));
       tray.setWaiting(summaries.filter((s) => s.status === 'waiting').length);
       pushEvent('state:quick', model.summary(QUICK_ID) ?? null);
       rememberQuestions(summaries);
@@ -1061,6 +1097,7 @@ function boot(): void {
     windows.setTheme(settings.theme);
     keepAwake.set(settings.keepAwake);
     appLog.setEnabled(settings.logging);
+    mail.applySettings(settings);
     if (changes.autoUpdate !== undefined) updater?.setAuto(settings.autoUpdate);
     pushEvent('state:settings', settings);
     scheduleSync();
@@ -1108,6 +1145,7 @@ function boot(): void {
     clearInterval(resumeTimer);
     updater?.stop();
     engine.stopAll();
+    void mail.stop();
     voice.dispose();
     usage.stop();
     todo.close();

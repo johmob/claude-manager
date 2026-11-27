@@ -5,6 +5,7 @@ import '../styles/new-menu.css';
 import { send } from '../lib/api';
 import { useVoice } from '../state/useVoice';
 import { VoiceSettings } from './VoiceSettings';
+import { MailSettings } from './mail/MailSettings';
 import { ChatIcon, ExistingProjectIcon, NewProjectIcon, NoSleepIcon, RulesIcon } from './Icons';
 import type { DialogKind } from './StartDialogs';
 
@@ -117,6 +118,8 @@ function SettingsMenu({ settings, update }: { settings: AppSettings; update: Upd
             onChange={(patch) => send('settings:update', patch)}
             onPrepare={voice.prepare}
           />
+          <div className="settings-heading">Mejl</div>
+          <MailSettings settings={settings} />
           <div className="settings-version">
             Version {update.version} · {update.state === 'checking' ? 'Söker…' : updateText(update)}
             {update.state !== 'off' && (

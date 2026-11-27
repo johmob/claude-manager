@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from
 import type { DayUsage, SessionSummary, UsageSnapshot, UsageWindow } from '../../../shared/contracts';
 import { FoldVertical } from 'lucide-react';
 import { AgentsIcon, ChatIcon } from '../components/Icons';
+import { MailCell } from '../components/mail/MailCell';
+import { MailTree } from '../components/mail/MailTree';
 import { QuickChatBody, useQuickChat } from '../components/QuickChat';
 import { QuickQuestion, questionsKey } from '../components/QuestionBox';
 import { InfoBar, InfoRow, SessionInfo } from '../components/SessionInfo';
@@ -9,6 +11,7 @@ import { send } from '../lib/api';
 import { countdown, formatReset } from '../lib/format';
 import { usageLevel } from '../lib/usage';
 import { useAppState } from '../state/useAppState';
+import { useMail } from '../state/useMail';
 import { useTheme } from '../lib/theme';
 import { SessionMark } from '../components/SessionMark';
 
@@ -133,6 +136,7 @@ export function OverlayWindow() {
   /** The quick chat folded out under its button; it stays open until closed (Esc, the button, a click elsewhere). */
   const [chatOpen, setChatOpen] = useState(false);
   const quick = useQuickChat();
+  const mail = useMail();
   const chatClick = useRef<number | undefined>(undefined);
   useEffect(() => {
     send('overlay:set-focus', { focus: chatOpen });
@@ -155,9 +159,13 @@ export function OverlayWindow() {
     send('overlay:set-interactive', { interactive: value });
   };
 
+  // The Mejl cell is there only while mail is on (and main has answered).
+  const mailOn = !!state?.settings.mailEnabled && mail?.enabled === true;
+  const mailShown = mailOn && hovered === 'mail' && !chatOpen;
+
   // The window grows downwards while details are shown, and shrinks back afterwards.
   const detailOpen = chatOpen || hovered !== null;
-  useEffect(() => send('overlay:set-detail', { open: detailOpen, wide: chatOpen }), [detailOpen, chatOpen]);
+  useEffect(() => send('overlay:set-detail', { open: detailOpen, wide: chatOpen || mailShown }), [detailOpen, chatOpen, mailShown]);
 
   if (!state) return null;
   const session = state.sessions.find((s) => s.id === hovered) ?? null;
@@ -219,6 +227,7 @@ export function OverlayWindow() {
           </span>
           <span className="ov-name">Fråga</span>
         </div>
+        {mailOn && mail && <MailCell mail={mail} open={mailShown} onHover={() => setHovered('mail')} />}
         <span className="ov-divider" />
         {state.sessions.map((s) => (
           <div
@@ -244,6 +253,10 @@ export function OverlayWindow() {
       {chatOpen ? (
         <div className="ov-detail wide">
           <QuickChatBody compact />
+        </div>
+      ) : mailShown && mail ? (
+        <div className="ov-detail wide">
+          <MailTree mail={mail} />
         </div>
       ) : detailOpen && (
         <div className="ov-detail">

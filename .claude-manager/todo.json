@@ -749,7 +749,7 @@
               "title": "Mikrofonknapp som slutar lyssna själv",
               "status": "done",
               "progress": 100,
-              "notes": "Klart i koden: MicButton i ChatInput (Fokus och kompakt kort), skicka direkt eller lägg i rutan vid markören, Esc/klick avbryter, tystnadstid i ⚙. Rutan med text skickas aldrig direkt. Ej provat i den körande appen än (dolda testet T8). Användaren ville ha ett klick som startar och tystnad som stoppar; beroendet på voice.1.2 släpptes.",
+              "notes": "Provat i den dolda testinstansen: mikrofonknappen i Fokus lyssnar, slutar själv efter tystnad, och med Skicka direkt av hamnar texten i rutan; klick och Esc avbryter utan att ändra rutan. Inställningen Röst i ⚙ visas. Beroendet på voice.1.2 släpptes.",
               "size": 3
             },
             {
@@ -760,7 +760,7 @@
               "dependsOn": [
                 "voice.2.1"
               ],
-              "notes": "Klart i koden: voice-modulen kopplad i main (voice:status/prepare/transcribe, state:voice, dispose vid avslut), behörighetshanterare för mikrofon/urklipp på sessionen, falsk mikrofon för testinstanser, hämtningsknapp i ⚙ och i MicButton. Ej provat end-to-end i appen än (dolda testet T8: hämtning, transkribering).",
+              "notes": "Provat i den dolda testinstansen: hämtningen av whisper och KB-modellen lyckades (filer under datamappen voice/), status blev ready och transkriberingen gav text (engelsk teströst, så texten blev svengelsk). Mikrofonbehörighet och falsk mikrofon fungerade. Ett mycket kort yttrande (ett ord) gav Hörde inget en gång.",
               "size": 5
             },
             {
@@ -771,7 +771,7 @@
               "dependsOn": [
                 "voice.2.2"
               ],
-              "notes": "Klart i koden: voice:clean i main (Haiku via voice-cleanup, original vid fel), inställningen Städa talspråket i ⚙ som tvingar text i rutan, och Visa originalet under rutan tills användaren ändrar eller skickar. Ej provat i appen än (T8)."
+              "notes": "Provat: voice:clean gav Jag vill att du lägger till en knapp som sparar filen. från text med eh, alltså och typ. Städa-inställningen och Visa originalet i gränssnittet är inte provade visuellt."
             }
           ]
         },
@@ -788,7 +788,7 @@
               "dependsOn": [
                 "voice.2.2"
               ],
-              "notes": "Klart i koden: mikrofon per frågekort i QuestionBox (utan städning). Matchat alternativ väljs som ett klick (en enda fråga skickas direkt), annars läggs texten i svarsfältet; bara Skicka/Skicka svaren skickar svaren (när något är besvarat). Ej provat i appen än (T8, valfritt steg 8).",
+              "notes": "Provat i testinstansen: mikrofon per frågekort fyller svarsfältet (fråga utan alternativ), och talat två valde alternativet Två på kortet med alternativen Ett och Två. Skicka-kommandot provades bara i enhetstester.",
               "size": 3
             },
             {
@@ -1485,16 +1485,16 @@
               "id": "mail.1.1",
               "title": "Koppling till Outlook classic",
               "status": "in_progress",
-              "progress": 0,
-              "notes": "Kontrollerat 2026-11-25 på jobbdatorn: Outlook classic 16.0 (Microsoft 365, 64-bit) körs, ett Exchange-konto i cachat läge. COM via GetActiveObject ansluter på ~40 ms; inkorg och Skickat läses, ConversationID finns, skyddade fält (avsändare, text) läses utan säkerhetsprompt eftersom Defender är på och uppdaterad; inga Outlook-policyer satta. Nya Outlook finns också installerat men används inte. Kvar: prova att skicka (Send) och NewMailEx-händelser i en långlivad brygga; IT-policy för att skicka jobbmejl till Claude.",
+              "progress": 85,
+              "notes": "Byggt: resources/outlook-bridge.ps1 (långlivad PowerShell 5.1-brygga, JSON-rader) och modulen mail-source (MailSource: kö med en förfrågan i taget, timeout med omstart, backoff 5 s till 5 min, status), enhetstestad; tools/mail-probe.mjs. Verifierat mot riktiga Outlook (FullLanguage, ingen prompt, ingen Defender-reaktion): hello, konto, lista, get, conversation, unread-of, spara bilaga, find-sent, felvägar; Reply-utkast med HTML-insättning och token-egenskap (raderat utan att skickas). Kvar: faktisk Send() och att token överlever i Skickat (kör node tools/mail-probe.mjs --send-test när användaren tillåter), omstart av Outlook (disconnected). Tidigare kontroll 2026-11-25 på jobbdatorn:Outlook classic 16.0 (Microsoft 365, 64-bit) körs, ett Exchange-konto i cachat läge. COM via GetActiveObject ansluter på ~40 ms; inkorg och Skickat läses, ConversationID finns, skyddade fält (avsändare, text) läses utan säkerhetsprompt eftersom Defender är på och uppdaterad; inga Outlook-policyer satta. Nya Outlook finns också installerat men används inte. Kvar: prova att skicka (Send) och NewMailEx-händelser i en långlivad brygga; IT-policy för att skicka jobbmejl till Claude.",
               "size": 5
             },
             {
               "id": "mail.1.2",
               "title": "Bevaka nya mejl",
               "status": "in_progress",
-              "progress": 0,
-              "notes": "Inkorgens nya mejl (NewMailEx eller periodisk avläsning) med avsändare, ämne, text, bilagor och ConversationID.",
+              "progress": 90,
+              "notes": "Byggt som periodisk avläsning (watch(): nod-timer var 30 s, list-since med vattenstämpel, sedd-mängd, ämnesprefix) i mail-source; NewMailEx ej använt. list-since verifierad mot riktiga inkorgen (60 mejl på ~4 s). Kvar: se ett nytt mejl komma in live (--send-test). Ursprunglig text: Inkorgens nya mejl (NewMailEx eller periodisk avläsning) med avsändare, ämne, text, bilagor och ConversationID.",
               "dependsOn": [
                 "mail.1.1"
               ],
@@ -1511,8 +1511,8 @@
               "id": "mail.2.1",
               "title": "Agentbedömning per mejl",
               "status": "in_progress",
-              "notes": "Billig modell (Haiku) bedömer: skräp, bara info, bör besvaras, kräver åtgärd; kort motivering och föreslagen åtgärd. Byggt: begäran (Haiku, isolerad) och svarsläsare med tester i mail-triage; återstår inkoppling i mail-root och delade typer.",
-              "progress": 60,
+              "notes": "Billig modell (Haiku) bedömer: skräp, bara info, bör besvaras, kräver åtgärd; kort motivering och föreslagen åtgärd. Byggt: begäran (Haiku, isolerad) och svarsläsare med tester i mail-triage; återstår inkoppling i mail-root och delade typer. Läget: mail-root sorterar nya mejl i tur och ordning (lokalt förfilter, sedan Haiku isolerad med inlärningstips); misslyckad bedömning blir \"Kunde inte bedömas\" och prövas en gång till. Kopplat till appen men ännu inte körd mot riktig Outlook.",
+              "progress": 80,
               "dependsOn": [
                 "mail.1.2"
               ],
@@ -1521,8 +1521,8 @@
             {
               "id": "mail.2.2",
               "title": "Mejlikon i overlayn",
-              "status": "not_started",
-              "notes": "Användaren: bredvid \"Frågor\" i overlayn en ikon \"Mejl\" med antalet nya mejl som bör hanteras.",
+              "status": "done",
+              "notes": "Mejlcellen (MailCell) efter Fråga, bara när mejl är på: ikon, antal, status-grå, spinner under bedömning, klick öppnar listan. Ej provkörd i testinstans. Användaren: bredvid \"Frågor\" i overlayn en ikon \"Mejl\" med antalet nya mejl som bör hanteras.",
               "dependsOn": [
                 "mail.2.1"
               ]
@@ -1530,8 +1530,8 @@
             {
               "id": "mail.2.3",
               "title": "Hovringsträd med mejl",
-              "status": "not_started",
-              "notes": "Användaren: hovring över mejlikonen fäller ut ett litet träd under den, ett mejl per rad: avsändaren stort, en mycket kort sammanfattning och en tydlig markering om det kräver åtgärd. Varje mejl har tre val (se mail.3.5–3.7).",
+              "status": "done",
+              "notes": "MailTree: ett mejl per rad med avsändare stort, kort sammanfattning, åtgärdsmärke, nätfiskevarning, utkaststatus och sidfot med antal. Ej provkörd i testinstans. Användaren: hovring över mejlikonen fäller ut ett litet träd under den, ett mejl per rad: avsändaren stort, en mycket kort sammanfattning och en tydlig markering om det kräver åtgärd. Varje mejl har tre val (se mail.3.5–3.7).",
               "dependsOn": [
                 "mail.2.2",
                 "mail.2.1"
@@ -1541,8 +1541,9 @@
             {
               "id": "mail.2.4",
               "title": "Lär av användarens val",
-              "status": "not_started",
-              "notes": "Användaren: oavsett val sparas vad användaren gjorde, typ av innehåll, avsändare m.m., så att bedömningen och den föreslagna åtgärden blir bättre med tiden. Sparas i databasen (mail.4.1).",
+              "status": "in_progress",
+              "progress": 40,
+              "notes": "UI klart: mejllistan och menyn Inte viktigt / Flytta till (mail:reclassify) ger valen till databasen; återstår att mail-root loggar dem och att triagen använder dem. Användaren: oavsett val sparas vad användaren gjorde, typ av innehåll, avsändare m.m., så att bedömningen och den föreslagna åtgärden blir bättre med tiden. Sparas i databasen (mail.4.1).",
               "dependsOn": [
                 "mail.2.1"
               ],
@@ -1568,17 +1569,18 @@
             {
               "id": "mail.3.1",
               "title": "Originalmejlet i appen",
-              "status": "not_started",
-              "notes": "Användaren: originalmejlet (och tråden, bilagor) kan visas i appen i alla steg, aldrig i Outlook-fönstret.",
+              "status": "in_progress",
+              "notes": "Användaren: originalmejlet (och tråden, bilagor) kan visas i appen i alla steg, aldrig i Outlook-fönstret. Status: Popup-UI klar: originalmejlet i sandlåda (sanerad HTML, CSP, inga externa bilder), länklista, bilagor, tråd. Återstår: körning mot riktig main (mail-root) och test i dold instans.",
               "dependsOn": [
                 "mail.1.2"
-              ]
+              ],
+              "progress": 85
             },
             {
               "id": "mail.3.5",
               "title": "Släpp",
-              "status": "not_started",
-              "notes": "Användaren: ignorera; mejlet markeras som läst i Outlook och valet sparas för lärandet.",
+              "status": "done",
+              "notes": "Knappen Släpp i trädet anropar mail:act drop; själva hanteringen ligger i mail-root. Användaren: ignorera; mejlet markeras som läst i Outlook och valet sparas för lärandet.",
               "dependsOn": [
                 "mail.2.3"
               ]
@@ -1586,20 +1588,21 @@
             {
               "id": "mail.3.6",
               "title": "Svara åt mig",
-              "status": "not_started",
-              "notes": "Användaren: agenten skriver ett svar som visas i en helskärmsruta när det är klart. Val: Skicka, Ändra med kommentar (agenten skriver om efter kommentaren) och Avstå (användaren tänkte svara men ångrade sig). Originalmejlet kan visas i rutan.",
+              "status": "in_progress",
+              "notes": "Användaren: agenten skriver ett svar som visas i en helskärmsruta när det är klart. Val: Skicka, Ändra med kommentar (agenten skriver om efter kommentaren) och Avstå (användaren tänkte svara men ångrade sig). Originalmejlet kan visas i rutan. Status: Popup-UI klar: helskärmsutkast med Skicka, Ändra med kommentar och Avstå, originalet bredvid. Återstår: koppling mot main och körning i dold instans.",
               "dependsOn": [
                 "mail.2.3",
                 "mail.3.3"
               ],
-              "size": 3
+              "size": 3,
+              "progress": 75
             },
             {
               "id": "mail.3.2",
               "title": "Ta det med agenten",
               "status": "in_progress",
-              "progress": 25,
-              "notes": "Användaren: visar originalmejlet och en chatt med mejlagenten där vi diskuterar vad som ska göras. Komplicerade åtgärder får automatiskt ett eget tillfälligt projekt (mail.4.3), så allt körs som vanligt men visas annorlunda.",
+              "progress": 75,
+              "notes": "Användaren: visar originalmejlet och en chatt med mejlagenten där vi diskuterar vad som ska göras. Komplicerade åtgärder får automatiskt ett eget tillfälligt projekt (mail.4.3), så allt körs som vanligt men visas annorlunda. Status: Popup-UI klar: original plus chatt med mejlagenten, utkast i chatten, Klar. Återstår: koppling mot main och körning i dold instans.",
               "dependsOn": [
                 "mail.3.1"
               ],
@@ -1608,18 +1611,20 @@
             {
               "id": "mail.3.3",
               "title": "Godkänt svar skickas",
-              "status": "not_started",
-              "notes": "Användaren: mejlen hanteras helt i appen; Outlook används dolt i bakgrunden och inget Outlook-fönster öppnas. Agentens svar visas i appen och skickas via Outlook först när användaren godkänt det, aldrig av sig självt.",
+              "status": "in_progress",
+              "notes": "Användaren: mejlen hanteras helt i appen; Outlook används dolt i bakgrunden och inget Outlook-fönster öppnas. Agentens svar visas i appen och skickas via Outlook först när användaren godkänt det, aldrig av sig självt. Status: Skicka-flödet i UI klart (mail:draft-send, fel visas, utkastet behålls). Återstår: main-sidan och test mot Outlook. Läget: mail-root skickar det godkända svaret via Outlook (bara bilagor agenten föreslog och användaren kryssat), sparar utkastet som skickat och letar upp den skickade kopian via token. Kvar: provköra mot riktig Outlook med testmejl.",
               "dependsOn": [
                 "mail.3.2"
               ],
-              "size": 3
+              "size": 3,
+              "progress": 75
             },
             {
               "id": "mail.3.4",
               "title": "Markeras läst i Outlook",
-              "status": "not_started",
-              "notes": "Användaren: \"hanterat\" betyder att användaren agerat på agentens förslag (godkänt svaret, gjort åtgärden eller avfärdat det), inte att agenten läst mejlet. Först då markeras mejlet som läst i Outlook."
+              "status": "in_progress",
+              "notes": "Användaren: \"hanterat\" betyder att användaren agerat på agentens förslag (godkänt svaret, gjort åtgärden eller avfärdat det), inte att agenten läst mejlet. Först då markeras mejlet som läst i Outlook. Läget: släpp, skickat, avstått och klart markerar mejlet hanterat och läst i Outlook (nytt försök om Outlook var borta); mejl som läses i Outlook lämnar räknaren. Kvar: provköra mot riktig Outlook.",
+              "progress": 80
             }
           ]
         },
@@ -1632,8 +1637,8 @@
               "id": "mail.4.1",
               "title": "Trådens historik och kontext",
               "status": "in_progress",
-              "progress": 40,
-              "notes": "Varje mejltråd (ConversationID) får egen session, transkript och arbetsmapp med det agenten skapat; sparas över omstart. Användaren: data sparas strukturerat i en databas, inte som tusentals JSON-filer. Förslag: en SQLite-fil i appens datamapp (node:sqlite finns inbyggt i Electrons Node) med tabeller för mejl (Outlook-id, tråd-id, avsändare, mottagare, ämne, tid, bedömning, status), trådar (session-id, sammanfattning) och händelser (agentens svar, åtgärder, skapade filer); bara agentens filer ligger som filer i en mapp per tråd. Användaren: varje skickat mejl märks med vem som skrev det: användaren direkt i Outlook, agenten (godkänt oförändrat) eller agenten med användarens ändringar; appen vet vilka den själv skickat (Outlook-id sparas vid skick), allt annat i Skickat är användarens. Läget: databasmodulen mail-store är byggd och testad (SQLite, FTS, trådnyckel, utkast, händelser, inlärning, regler, rensning). Kvar: tråd-session och arbetsmapp i mail-root, och att byta lokala typer mot contracts.",
+              "progress": 80,
+              "notes": "Varje mejltråd (ConversationID) får egen session, transkript och arbetsmapp med det agenten skapat; sparas över omstart. Användaren: data sparas strukturerat i en databas, inte som tusentals JSON-filer. Förslag: en SQLite-fil i appens datamapp (node:sqlite finns inbyggt i Electrons Node) med tabeller för mejl (Outlook-id, tråd-id, avsändare, mottagare, ämne, tid, bedömning, status), trådar (session-id, sammanfattning) och händelser (agentens svar, åtgärder, skapade filer); bara agentens filer ligger som filer i en mapp per tråd. Användaren: varje skickat mejl märks med vem som skrev det: användaren direkt i Outlook, agenten (godkänt oförändrat) eller agenten med användarens ändringar; appen vet vilka den själv skickat (Outlook-id sparas vid skick), allt annat i Skickat är användarens. Läget: databasmodulen mail-store är byggd och testad (SQLite, FTS, trådnyckel, utkast, händelser, inlärning, regler, rensning). mail-root ger varje tråd en dold session (mail:<trådnyckel>) i egen arbetsmapp, sparar Claude-sessionens id på tråden, högst tre samtidigt och stoppas efter 15 minuters vila. Kvar: provköra och koppla projekt (mail.4.4).",
               "dependsOn": [
                 "mail.3.2"
               ],
@@ -1642,13 +1647,14 @@
             {
               "id": "mail.4.2",
               "title": "Svar återupptar tråden",
-              "status": "not_started",
-              "notes": "Ett nytt mejl i en tråd som agenten redan arbetat med öppnar samma session, med tidigare mejl, svar och filer som kontext.",
+              "status": "in_progress",
+              "notes": "Ett nytt mejl i en tråd som agenten redan arbetat med öppnar samma session, med tidigare mejl, svar och filer som kontext. Läget: en tråds session återupptas med sparat id (och tidigare samtal läses in i chatten), så ett nytt svar i tråden fortsätter med full historik; en återupptagning som inte går att läsa startar om rent. Kvar: provköra.",
               "dependsOn": [
                 "mail.4.1",
                 "mail.1.2"
               ],
-              "size": 3
+              "size": 3,
+              "progress": 70
             },
             {
               "id": "mail.4.3",
@@ -1709,8 +1715,8 @@
               "id": "mail.5.2",
               "title": "Lokalt förfilter",
               "status": "in_progress",
-              "notes": "Förslag från main, ej beslutat. Nyhetsbrev och utskick (List-Unsubscribe, kända avsändare) sorteras lokalt utan AI, vilket sparar tokens. Användaren kan undanta avsändare eller ämnen som aldrig ska skickas till Claude. Byggt: lokalt förfilter (regler, mötes- och rapportklasser, utskickshuvuden) med tester; återstår inkoppling i mail-root och regelhantering i UI.",
-              "progress": 60
+              "notes": "Förslag från main, ej beslutat. Nyhetsbrev och utskick (List-Unsubscribe, kända avsändare) sorteras lokalt utan AI, vilket sparar tokens. Användaren kan undanta avsändare eller ämnen som aldrig ska skickas till Claude. Byggt: lokalt förfilter (regler, mötes- och rapportklasser, utskickshuvuden) med tester; Regelhantering i UI klar (lista, ta bort, ämnesord, avsändarregler i radmenyn, mejlbrytare med samtycke); återstår inkoppling i mail-root.",
+              "progress": 80
             }
           ]
         },

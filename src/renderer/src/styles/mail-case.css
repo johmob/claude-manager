@@ -1,0 +1,107 @@
+/* ---------- The mail case: original mail next to the draft or the chat ---------- */
+.modal.full:has(.mc) { width: min(1400px, 98vw); height: 94vh; }
+.modal.full:has(.mc) .modal-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+.mc { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.mc-empty { color: var(--muted); padding: 24px 4px; }
+.mc-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mc-tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.mc-tabs button { background: var(--bg-card); border: 0; padding: 6px 14px; color: var(--muted); border-right: 1px solid var(--border); }
+.mc-tabs button:last-child { border-right: 0; }
+.mc-tabs button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text); }
+.mc-tabs button[data-on] { background: var(--accent-ui); color: #fff; }
+.mc-tabs button:disabled { opacity: .45; cursor: default; }
+.mc-bar-right { display: flex; align-items: center; gap: 10px; }
+.mc-handled { color: var(--green); font-size: 0.8125rem; }
+
+.mc-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.mc[data-mode="draft"] .mc-split, .mc[data-mode="chat"] .mc-split { grid-template-columns: minmax(0, 1.1fr) minmax(320px, 1fr); }
+.mc-mail, .mc-side { min-height: 0; min-width: 0; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); }
+.mc-side { display: flex; flex-direction: column; padding: 12px; }
+@media (max-width: 900px) {
+  .mc[data-mode="draft"] .mc-split, .mc[data-mode="chat"] .mc-split { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+.mm-error { color: var(--red); font-size: 0.8125rem; }
+
+/* ---------- The original mail ---------- */
+.mm { display: flex; flex-direction: column; min-height: 100%; }
+.mm-head { display: flex; flex-direction: column; gap: 5px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.mm-subject { font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+.mm-from-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.mm-from { font-size: 1rem; font-weight: 600; }
+.mm-from-addr, .mm-when { color: var(--muted); font-size: 0.8125rem; }
+.mm-when { margin-left: auto; }
+.mm-rcpt { display: flex; gap: 8px; font-size: 0.8125rem; color: var(--muted); }
+.mm-rcpt-label { flex: none; width: 38px; }
+.mm-rcpt-list { overflow-wrap: anywhere; }
+.mm-rcpt-list .link-btn { padding: 0; font-size: inherit; }
+.mm-triage { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--muted); }
+.mm-cat { flex: none; padding: 3px 8px; border-radius: 999px; font-size: 0.6875rem; background: rgba(125,138,166,.18); color: var(--blue-grey); }
+.mm-cat[data-cat="action"] { background: rgba(245,165,36,.2); color: var(--orange); }
+.mm-cat[data-cat="reply"] { background: rgba(110,139,255,.2); color: var(--accent-ui); }
+.mm-phish { margin-top: 4px; padding: 8px 10px; border-left: 3px solid var(--c-caution); border-radius: 0 8px 8px 0; background: color-mix(in srgb, var(--c-caution) 14%, transparent); font-size: 0.8125rem; }
+.mm-atts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.mm-att { display: inline-flex; align-items: baseline; gap: 8px; max-width: 100%; padding: 4px 10px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border); font-size: 0.8125rem; }
+.mm-att:hover { background: var(--bg-hover); }
+.mm-att-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-att-size { color: var(--muted); font-size: 0.6875rem; flex: none; }
+
+.mm-view-switch { display: flex; align-items: center; gap: 6px; padding: 8px 14px 0; }
+.mm-view-switch button { background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 3px 11px; font-size: 0.75rem; color: var(--muted); }
+.mm-view-switch button[data-on] { background: var(--bg-hover); color: var(--text); border-color: var(--accent-ui); }
+.mm-blocked { margin-left: auto; font-size: 0.75rem; color: var(--muted); }
+/* The frame is the mail's own page: white as the sender wrote it, whatever the app's theme. */
+.mm-frame { flex: 1; min-height: 340px; width: 100%; margin: 8px 0 0; border: 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: #fff; color-scheme: light; }
+.mm-empty { padding: 10px 14px; color: var(--muted); font-size: 0.85rem; }
+
+.mm-links { padding: 8px 14px; font-size: 0.8125rem; }
+.mm-links summary { cursor: pointer; color: var(--muted); }
+.mm-links-note { margin: 6px 0; color: var(--muted); font-size: 0.75rem; }
+.mm-link { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 3px 0; }
+.mm-link-text { color: var(--muted); }
+.mm-link-url { padding: 0; text-align: left; overflow-wrap: anywhere; font-family: var(--mono); font-size: 0.75rem; }
+.mm-link-warn { flex-basis: 100%; color: var(--c-caution); font-size: 0.75rem; }
+.mm-link[data-mismatch] { padding-left: 8px; border-left: 2px solid var(--c-caution); }
+
+.mm-thread { padding: 6px 14px 14px; }
+.mm-thread-title { color: var(--muted); font-size: 0.75rem; margin-bottom: 4px; }
+.mm-thread-row { border-top: 1px solid var(--border); }
+.mm-thread-head { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 6px 0; background: transparent; border: 0; text-align: left; font-size: 0.8125rem; }
+.mm-thread-head:hover { color: var(--accent-ui); }
+.mm-thread-caret { width: 12px; color: var(--muted); }
+.mm-thread-when { margin-left: auto; color: var(--muted); font-size: 0.75rem; }
+.mm-thread-body { padding: 4px 0 10px 20px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.8125rem; color: var(--muted); max-height: 320px; overflow-y: auto; }
+
+/* ---------- The draft to approve ---------- */
+.mdr { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.mdr-state { align-items: center; justify-content: center; flex-direction: row; gap: 10px; color: var(--muted); flex-wrap: wrap; }
+.mdr[data-compact] { flex: none; }
+.mdr-ok { color: var(--green); font-weight: 600; }
+.mdr-muted { color: var(--muted); font-size: 0.85rem; }
+.mdr-to { font-size: 0.8125rem; color: var(--muted); overflow-wrap: anywhere; }
+.mdr-to-label { display: inline-block; width: 28px; }
+.mdr-text { flex: 1; min-height: 220px; resize: none; font-size: 0.95rem; line-height: 1.55; padding: 10px 12px; }
+.mdr[data-compact] .mdr-text { flex: none; min-height: 150px; max-height: 40vh; resize: vertical; font-size: 0.875rem; }
+.mdr-opts { display: flex; align-items: center; gap: 14px; }
+.mdr-check { display: flex; align-items: baseline; gap: 6px; font-size: 0.8125rem; }
+.mdr-edited { font-size: 0.75rem; color: var(--orange); }
+.mdr-atts { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
+.mdr-atts-title { color: var(--muted); font-size: 0.75rem; }
+.mdr-path { color: var(--muted); font-family: var(--mono); font-size: 0.6875rem; overflow-wrap: anywhere; }
+.mdr-comment { display: flex; flex-direction: column; gap: 8px; }
+.mdr-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mdr-actions { padding-top: 2px; }
+
+/* ---------- The talk with the agent ---------- */
+.mch { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.mch-log { flex: 1; min-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+.mch-note { color: var(--muted); font-size: 0.75rem; text-align: center; }
+.mch-q { align-self: flex-end; max-width: 90%; padding: 6px 11px; border-radius: 10px; background: rgba(250,204,21,.06); border: 1px solid rgba(250,204,21,.2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.mch-a { font-size: 0.9rem; line-height: 1.6; overflow-wrap: anywhere; }
+.mch-a p { margin: .4em 0; }
+.mch-working { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.85rem; }
+.mch-draft { flex: none; max-height: 55%; overflow-y: auto; padding: 10px; border: 1px solid var(--accent-ui); border-radius: 10px; background: color-mix(in srgb, var(--accent-ui) 6%, transparent); }
+.mch-input { display: flex; flex-direction: column; gap: 8px; }
+.mch-input textarea { resize: none; }
+.mch-buttons { display: flex; gap: 8px; justify-content: flex-end; }
