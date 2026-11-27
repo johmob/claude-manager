@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:18:55.150Z",
+  "updated": "2026-11-27T09:22:58.882Z",
   "tracks": [
     {
       "id": "design",
@@ -1596,7 +1596,7 @@
               "id": "mail.4.6",
               "title": "Skrivstil från Skickat",
               "status": "not_started",
-              "notes": "Förslag från main, ej beslutat. Agenten lär sig användarens ton, längd och språk per mottagare från Skickat, så svaren låter som användaren.",
+              "notes": "Förslag från main, ej beslutat. Agenten lär sig användarens ton, längd och språk per mottagare från Skickat, så svaren låter som användaren. Användaren: ja, om resultatet blir bra och användbart. Plan: prova först på några riktiga svar, med och utan stilprofil sida vid sida, och behåll bara om användaren tycker att det låter mer som användaren själv.",
               "dependsOn": [
                 "mail.1.1"
               ]
