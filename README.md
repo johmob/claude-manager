@@ -68,6 +68,7 @@ To drive a running app from scripts (screenshots, clicks):
 | **Textstorlek** | Ctrl + plus/minus in the window (Ctrl + 0 resets); remembered. Text uses Inter, bundled with the app. |
 | **Stör ej** | No notifications or taskbar flashing; cards, dock and overlay still turn red. |
 | **Callouts** | Agents tag what matters with markdown alerts: **Risk** (red), **Varning** (amber), **Bra att veta** (purple), **Antagande** (blue), **Förslag** (green). The card shows the latest turn's tags until you dismiss them (×), the dock shows the most severe icon, and the transcript shows each one in place. |
+| **Mejl (Outlook)** | Off by default (⚙ Inställningar, with a consent text first). Reads the mail in your running classic Outlook, sorts each new unread mail (rules first, then Haiku, which sees only the text and no tools) and shows what needs you as a Mejl cell in the overlay: hover for one row per mail with **Släpp**, **Svara åt mig** and **Ta det med agenten**, click a row for the original. A reply is a draft you read and approve (edit it, ask for changes, or Avstå); nothing is sent without Skicka, and the mail agent has no send tool. "Ta det med agenten" opens a chat about the mail; Klar closes the case. Mail you drop, answer or read in Outlook is marked read and leaves the count. Each mail thread keeps its own agent session, so a later reply continues the same conversation. Rules (ignore, important, never send to Claude) are set from the list. Everything is stored locally in `mailmail.db`. |
 
 Closing the window while sessions run asks whether to minimise to the tray (sessions keep running) or stop them. After a restart every session comes back as a card; send a message or press ▶ to resume it with its full history.
 
@@ -85,6 +86,10 @@ src/main/modules/    self-contained modules; none imports another
   focus-rules        which sessions are in Fokus
   account            plan and models the account may use
   structured-query   one-shot Claude call returning schema-checked JSON (injected by the root)
+  mail-source        Outlook through COM: a hidden PowerShell child, JSON lines (swappable MailSource)
+  mail-store         SQLite (node:sqlite) store for mail, threads, drafts, learning, rules
+  mail-triage        pure: prefilter, quoted-text stripping, Haiku triage request and reply reader
+  mail-agent         the mail agent's prompt, in-process MCP tools (no send tool), sandbox
   json-store, palette, ground-rules, projects, notifier, window-manager, tray
 src/preload/         typed IPC bridge (window.cm)
 src/renderer/        React UI for the main window, dock and overlay (#main, #dock, #overlay)

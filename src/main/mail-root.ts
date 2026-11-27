@@ -76,7 +76,7 @@ const zeroCounts = (): Record<MailCategory, number> => Object.fromEntries(MAIL_C
 const addrOf = (a: string): string => a.trim().toLowerCase();
 const short = (s: string, n: number): string => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
-/** What triage reads of a mail; kept in memory from ingest to triage (the store keeps neither message class nor headers). */
+/** What triage reads of a mail; kept in memory from ingest to triage (a restart rebuilds it from the store). */
 interface TriageInput {
   header: Pick<MailHeader, 'messageClass' | 'from' | 'to' | 'cc' | 'subject' | 'attachments' | 'headers'>;
   important: boolean;
@@ -309,7 +309,7 @@ export function createMailFeature(deps: MailFeatureDeps): MailFeature {
       store.handle(id, 'outlook');
       return;
     }
-    const pre = prefilter(msg, store.rules(), account);
+    const pre = prefilter(msg, store.rules(), prefilterSelf());
     if ('ai' in pre) {
       triageInputs.set(id, { header: msg, important: pre.important });
       enqueueTriage(id);
@@ -384,9 +384,12 @@ export function createMailFeature(deps: MailFeatureDeps): MailFeature {
     }
   }
 
+  /** Test instances only see mail the user sent to themselves, so the "from yourself" rule must not file it all away. */
+  const prefilterSelf = (): MailAccount | null => (ONLY_SUBJECT ? null : account);
+
   function inputOf(id: number, m: StoredMessage): TriageInput {
     return triageInputs.get(id) ?? {
-      header: { messageClass: 'IPM.Note', from: m.item.from, to: m.to, cc: m.cc, subject: m.item.subject, attachments: m.attachments, headers: {} },
+      header: { messageClass: m.messageClass, from: m.item.from, to: m.to, cc: m.cc, subject: m.item.subject, attachments: m.attachments, headers: m.headers },
       important: false,
     };
   }
@@ -400,7 +403,7 @@ export function createMailFeature(deps: MailFeatureDeps): MailFeature {
     if (g !== gen || !store) return;
     store.setStatus(id, 'triaging');
     const input = inputOf(id, m);
-    const pre = prefilter(input.header, store.rules(), account);
+    const pre = prefilter(input.header, store.rules(), prefilterSelf());
     if (!('ai' in pre)) {
       store.setTriage(id, { category: pre.category, source: 'local', summary: short(m.item.subject, 80), reason: pre.reason, suggestedAction: '', needsAction: false, phishing: false });
       store.addEvent(m.threadId, id, 'triaged', { category: pre.category, source: 'local' });

@@ -171,6 +171,12 @@ describe('mail store', () => {
     expect(s.message(id)).toMatchObject({ threadId: 'aabb01', bodyText: 'Hej, kan ni skicka en offert?' });
   });
 
+  it('returns message class and sorting headers for a restart', () => {
+    const { s } = fresh();
+    const id = s.insertMail(msg({ messageClass: 'IPM.Schedule.Meeting.Request', headers: { 'list-id': '<l.example.org>' } }), 'in')!;
+    expect(s.message(id)).toMatchObject({ messageClass: 'IPM.Schedule.Meeting.Request', headers: { 'list-id': '<l.example.org>' } });
+  });
+
   it('computes sender stats within 180 days only', () => {
     const { s, clock } = fresh('2026-01-01T00:00:00.000Z');
     s.addLearning({ mailId: null, fromAddr: 'Old@Example.com', category: 'info', choice: 'drop' });

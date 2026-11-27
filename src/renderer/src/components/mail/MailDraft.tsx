@@ -41,7 +41,8 @@ export function MailDraft({ mailId, draft, writing, from, others, compact = fals
   finish.current = onFinished;
 
   // A new draft or a new version replaces what is in the box; nothing the user typed survives a rewrite on purpose.
-  const key = draft ? `${draft.id}:${draft.version}` : '';
+  // The status is part of the key: a draft keeps its id and version when it goes from writing to proposed.
+  const key = draft ? `${draft.id}:${draft.version}:${draft.status}` : '';
   useEffect(() => {
     if (!draft) return;
     setBody(draft.body);

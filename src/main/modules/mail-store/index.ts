@@ -50,6 +50,9 @@ export interface StoredMessage {
   entryId: string;
   threadId: string;
   internetId: string;
+  /** What the local prefilter needs, kept so a restart triages like the first time. */
+  messageClass: string;
+  headers: Record<string, string>;
 }
 
 export interface MailEvent { id: number; threadId: string | null; mailId: number | null; at: string; kind: string; data: unknown }
@@ -311,6 +314,8 @@ export function createMailStore(path: string, now: () => Date = () => new Date()
         entryId: str(r.entry_id),
         threadId: str(r.thread_id),
         internetId: str(r.internet_id),
+        messageClass: str(r.message_class) || 'IPM.Note',
+        headers: json<Record<string, string>>(r.headers_json, {}),
       };
     },
     attention() {

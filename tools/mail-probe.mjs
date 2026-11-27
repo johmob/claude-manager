@@ -4,6 +4,9 @@
 //   node tools/mail-probe.mjs              read-only: hello, account, last 24 h of the inbox, the newest mail, its conversation
 //   node tools/mail-probe.mjs --send-test  also sends one test mail to the account's own address, replies to it,
 //                                          finds both again and marks them read (waits up to 15 minutes per step)
+//   node tools/mail-probe.mjs --send-only "<subject>" "<body>"
+//                                          only sends one test mail to the account itself (subject gets the
+//                                          "Claude Manager test " prefix), then exits
 //
 // Nothing else is touched, and no mail is sent to anyone but the account itself.
 import { spawn } from 'node:child_process';
@@ -14,6 +17,8 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const script = join(here, '..', 'resources', 'outlook-bridge.ps1');
 const sendTest = process.argv.includes('--send-test');
+const sendOnlyAt = process.argv.indexOf('--send-only');
+const sendOnly = sendOnlyAt >= 0 ? { subject: process.argv[sendOnlyAt + 1] ?? '', text: process.argv[sendOnlyAt + 2] ?? '' } : null;
 
 const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, '-ParentPid', String(process.pid)], {
   windowsHide: true,
@@ -154,6 +159,12 @@ async function main() {
     say('get', 'no mail to try');
   }
 
+  if (sendOnly) {
+    const r = await call('send-to-self', { subject: `Claude Manager test ${sendOnly.subject}`.trim(), text: sendOnly.text });
+    say('sendOnly.ok', r.ok);
+    if (!r.ok) fail('sendOnly', r);
+    return;
+  }
   if (!sendTest) return;
   if (!accountAddress) { say('sendTest', 'skipped: no account address'); return; }
 
