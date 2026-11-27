@@ -655,9 +655,11 @@ export interface UpdateStatus {
 
 /** What the popup window over the screen shows: a session's work schema or the quick chat. */
 export interface PopupView {
-  /** "quick": the quick chat, large, for reading long answers (its id is "quick"). */
-  kind: 'schema' | 'quick';
+  /** "quick": the quick chat (id "quick"). "mail": a mail (id = mail id) or the mail list (id "list"). */
+  kind: 'schema' | 'quick' | 'mail';
   id: string;
+  /** For "mail": what to show next to the original mail. */
+  mode?: 'mail' | 'draft' | 'chat' | 'list';
 }
 
 export interface SessionSummary {
@@ -834,7 +836,161 @@ export interface AppSettings {
   defaultModel: ModelChoice;
   defaultEffort: EffortChoice;
   defaultPermissionMode: PermissionChoice;
+  /** Read and sort Outlook mail (off by default; the user turns it on). */
+  mailEnabled: boolean;
+  /** Model and effort of the mail agent (drafts and chats). */
+  mailModel: ModelChoice;
+  mailEffort: EffortChoice;
+  /** Draft replies in the background before the user looks (mail.2.5); off by default to save tokens. */
+  mailPrework: boolean;
 }
+
+// ---------- Mail (classic Outlook now; the source is swappable) ----------
+
+/** How triage files a mail. junk and bulk never disturb; reply, action and private count in the overlay. */
+export type MailCategory = 'junk' | 'bulk' | 'info' | 'reply' | 'action' | 'meeting' | 'private';
+export const MAIL_CATEGORIES: readonly MailCategory[] = ['junk', 'bulk', 'info', 'reply', 'action', 'meeting', 'private'];
+/** Categories that count in the Mejl icon while unhandled. 'private': excluded from Claude by the user's rule, so unjudged. */
+export const MAIL_ATTENTION: readonly MailCategory[] = ['reply', 'action', 'private'];
+export type MailStatus = 'new' | 'triaging' | 'triaged' | 'drafting' | 'draft_ready' | 'in_chat' | 'handled';
+/** How the user handled it (mail.3.4); 'outlook': read in Outlook outside the app. */
+export type MailHandled = 'dropped' | 'replied' | 'declined' | 'done' | 'outlook';
+/** Who wrote a sent mail: the user in Outlook, the agent (approved unchanged), or the agent with the user's edits. */
+export type MailAuthor = 'user' | 'agent' | 'agent_edited';
+export type MailRuleKind = 'ignore_sender' | 'important_sender' | 'never_ai_sender' | 'never_ai_subject';
+export const MAIL_RULE_KINDS: readonly MailRuleKind[] = ['ignore_sender', 'important_sender', 'never_ai_sender', 'never_ai_subject'];
+
+export interface MailAddress { name: string; address: string }
+export interface MailAttachmentInfo { index: number; name: string; size: number; inline: boolean }
+
+/** One item as a mail source reports it, without its body. */
+export interface MailHeader {
+  entryId: string;
+  storeId: string;
+  internetId: string;
+  conversationId: string;
+  folder: 'inbox' | 'sent';
+  /** IPM.Note, IPM.Schedule.Meeting.Request, IPM.Report…, as Outlook names it. */
+  messageClass: string;
+  from: MailAddress;
+  to: MailAddress[];
+  cc: MailAddress[];
+  subject: string;
+  /** Received time (inbox) or sent time (sent), ISO UTC. */
+  at: string;
+  unread: boolean;
+  attachments: MailAttachmentInfo[];
+  /** Only the headers sorting needs, lower-case names: list-unsubscribe, list-id, precedence, auto-submitted, x-auto-response-suppress. */
+  headers: Record<string, string>;
+  /** On sent items the app sent itself: the token it set before sending; '' otherwise. */
+  sendToken: string;
+}
+
+export interface MailMessage extends MailHeader {
+  bodyText: string;
+  /** Only when asked for; null otherwise or when the mail has none. */
+  bodyHtml: string | null;
+  /** The body was cut to the source's limit. */
+  truncated: boolean;
+}
+
+export interface MailAccount { address: string; displayName: string }
+
+export type MailSourceState = 'off' | 'starting' | 'connected' | 'outlook-not-running' | 'error';
+export interface MailSourceStatus { state: MailSourceState; message: string; at: string }
+
+export interface MailReplyRequest {
+  entryId: string;
+  replyAll: boolean;
+  /** HTML fragment put at the top of the reply, above the quoted mail. */
+  html: string;
+  /** Full paths of files to attach; each must exist. */
+  attachments: string[];
+  /** Set on the sent item as a named property, so the app can find its own sent copy (authorship). */
+  token: string;
+}
+
+/** A source of mail. Classic Outlook through COM now; Microsoft Graph could take its place. */
+export interface MailSource {
+  start(): void;
+  stop(): Promise<void>;
+  status(): MailSourceStatus;
+  onStatus(listener: (status: MailSourceStatus) => void): () => void;
+  /** Polls a folder for items newer than `since`; reports each item once. Returns a stop function. */
+  watch(options: { folder: 'inbox' | 'sent'; since: string; intervalMs: number; subjectPrefix?: string }, onItems: (items: MailHeader[]) => void): () => void;
+  account(): Promise<MailAccount | null>;
+  fetch(entryId: string, options?: { html?: boolean }): Promise<MailMessage>;
+  /** Every item of the conversation the given item is in, both folders. */
+  conversation(entryId: string): Promise<MailHeader[]>;
+  /** Of these items, the ones still unread. */
+  unreadOf(entryIds: string[]): Promise<string[]>;
+  reply(request: MailReplyRequest): Promise<void>;
+  /** The sent copy carrying this token, or null (yet). */
+  findSent(token: string, withinMinutes: number): Promise<MailHeader | null>;
+  markRead(entryId: string): Promise<void>;
+  saveAttachment(entryId: string, index: number, path: string): Promise<void>;
+  /** For checks only: sends a new mail to the account's own address (the source refuses any other). */
+  sendToSelf(subject: string, text: string): Promise<void>;
+}
+
+/** One mail as the UI lists it: no body. */
+export interface MailItemView {
+  id: number;
+  threadId: string;
+  from: MailAddress;
+  subject: string;
+  at: string;
+  category: MailCategory | null;
+  /** A very short summary (a few words), the reason for the category and the suggested action. */
+  summary: string;
+  reason: string;
+  suggestedAction: string;
+  needsAction: boolean;
+  phishing: boolean;
+  status: MailStatus;
+  handled: MailHandled | null;
+  attachmentCount: number;
+  /** The thread agent's state, or null when the thread has no session running. */
+  agent: 'working' | 'idle' | 'error' | null;
+  draft: 'writing' | 'proposed' | 'failed' | null;
+}
+
+export interface MailOverview {
+  enabled: boolean;
+  source: MailSourceStatus;
+  /** Unhandled mail in MAIL_ATTENTION categories, newest first. */
+  attention: MailItemView[];
+  /** Unhandled mail per category (last 7 days), for "4 info · 7 skräp" lines. */
+  counts: Record<MailCategory, number>;
+  /** Mail waiting for triage. */
+  triaging: number;
+}
+
+export interface MailMessageView {
+  item: MailItemView;
+  to: MailAddress[];
+  cc: MailAddress[];
+  bodyText: string;
+  bodyHtml: string | null;
+  attachments: MailAttachmentInfo[];
+  /** The other mails of the thread the app knows, oldest first. */
+  thread: MailItemView[];
+  /** The thread agent's session id (for its transcript), e.g. "mail:<threadKey>". */
+  sessionId: string;
+}
+
+export interface MailDraftView {
+  id: number;
+  mailId: number;
+  version: number;
+  replyAll: boolean;
+  body: string;
+  attachments: { path: string; name: string }[];
+  status: 'writing' | 'proposed' | 'sent' | 'declined' | 'superseded' | 'failed';
+  error: string;
+}
+
+export interface MailRule { id: number; kind: MailRuleKind; pattern: string }
 
 // ---------- IPC ----------
 
@@ -959,6 +1115,26 @@ export interface IpcInvokeMap {
   'popup:close': { req: void; res: void };
   /** What the popup window shows (asked once when the window has loaded). */
   'popup:current': { req: void; res: PopupView | null };
+  'mail:overview': { req: void; res: MailOverview };
+  /** Recent mail of all categories, newest first (the list view). */
+  'mail:list': { req: { days: number }; res: MailItemView[] };
+  'mail:message': { req: { mailId: number; html: boolean }; res: MailMessageView | null };
+  /** drop = Släpp, reply = Svara åt mig, agent = Ta det med agenten, done = handled in the chat view, reopen = back to unhandled (not unread). */
+  'mail:act': { req: { mailId: number; action: 'drop' | 'reply' | 'agent' | 'done' | 'reopen' }; res: void };
+  'mail:draft': { req: { mailId: number }; res: MailDraftView | null };
+  'mail:draft-revise': { req: { mailId: number; comment: string }; res: void };
+  /** Sends the approved draft through Outlook; body is what the user approved (maybe edited); attachments are the ticked ones. */
+  'mail:draft-send': { req: { mailId: number; draftId: number; body: string; replyAll: boolean; attachments: string[] }; res: { ok: boolean; error: string } };
+  'mail:draft-decline': { req: { mailId: number; draftId: number }; res: void };
+  /** A message to the thread's agent (Ta det med agenten). */
+  'mail:chat': { req: { mailId: number; text: string }; res: void };
+  'mail:reclassify': { req: { mailId: number; category: MailCategory }; res: void };
+  'mail:rules': { req: void; res: MailRule[] };
+  'mail:set-rule': { req: { kind: MailRuleKind; pattern: string; on: boolean }; res: MailRule[] };
+  /** Saves the attachment into the thread folder, then opens it (blocked for runnable types), saves a copy elsewhere, or shows it in its folder. */
+  'mail:attachment': { req: { mailId: number; index: number; action: 'open' | 'save-as' | 'show' }; res: void };
+  /** Tries to attach to Outlook again now. */
+  'mail:reconnect': { req: void; res: void };
 }
 
 /** Main -> renderer pushes. */
@@ -979,6 +1155,8 @@ export interface IpcEventMap {
   'ui:open-session': { id: string };
   /** Tells the popup window what to show. */
   'popup:show': PopupView;
+  'state:mail': MailOverview;
+  'mail:draft-changed': { mailId: number };
 }
 
 export type IpcInvokeChannel = keyof IpcInvokeMap;

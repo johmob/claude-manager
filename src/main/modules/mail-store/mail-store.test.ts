@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createMailStore, threadKey, ftsQuery, type MailMessage, type MailStore } from './index';
+import type { MailMessage } from '../../../shared/contracts';
+import { createMailStore, threadKey, ftsQuery, type MailStore } from './index';
 
 let seq = 0;
 function msg(over: Partial<MailMessage> = {}): MailMessage {

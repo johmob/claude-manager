@@ -98,6 +98,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultModel: 'opus',
   defaultEffort: 'medium',
   defaultPermissionMode: 'auto',
+  mailEnabled: false,
+  mailModel: 'sonnet',
+  mailEffort: 'medium',
+  mailPrework: false,
 };
 
 const SYNC_DELAY_MS = 80;
@@ -1521,6 +1525,10 @@ function validSettings(r: unknown): AppSettings | null {
     defaultModel: pick(r['defaultModel'], MODEL_CHOICES, d.defaultModel),
     defaultEffort: pick(r['defaultEffort'], EFFORT_CHOICES, d.defaultEffort),
     defaultPermissionMode: pick(r['defaultPermissionMode'], PERMISSION_CHOICES, d.defaultPermissionMode),
+    mailEnabled: bool(r['mailEnabled'], d.mailEnabled),
+    mailModel: pick(r['mailModel'], MODEL_CHOICES, d.mailModel),
+    mailEffort: pick(r['mailEffort'], EFFORT_CHOICES, d.mailEffort),
+    mailPrework: bool(r['mailPrework'], d.mailPrework),
   };
 }
 

@@ -1,10 +1,7 @@
-import { appContext } from '../../../shared/contracts';
+import { appContext, type MailAddress, type SessionStartSpec } from '../../../shared/contracts';
 
-/**
- * Mail as the agent's prompts need it. Structurally compatible with MailMessage / the store's rows
- * (contracts, task A); defined locally so this module does not depend on them yet.
- */
-export interface PromptAddress { name: string; address: string }
+export type PromptAddress = MailAddress;
+/** Mail as the agent's prompts need it: a MailMessage or a stored row satisfies it. */
 export interface PromptMail {
   from: PromptAddress;
   to: PromptAddress[];
@@ -151,6 +148,6 @@ export function editSummary(proposed: string, final: string): EditSummary {
 }
 
 /** The session sandbox of a mail agent (see SessionStartSpec.sandbox): no Bash, no web, only the mail MCP server. */
-export function sandboxFor(threadDir: string, mcpServer: unknown): { tools: string[]; writeRoot: string; mcpServers: Record<string, unknown> } {
+export function sandboxFor(threadDir: string, mcpServer: unknown): NonNullable<SessionStartSpec['sandbox']> {
   return { tools: ['Read', 'Glob', 'Grep', 'Write', 'Edit'], writeRoot: threadDir, mcpServers: { mail: mcpServer } };
 }

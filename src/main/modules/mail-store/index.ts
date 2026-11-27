@@ -6,44 +6,13 @@ import { MIGRATIONS } from './schema';
 
 /*
  * The mail store: one SQLite file with mails, threads, drafts, events, the learning log and rules.
- *
- * The types below mirror the "Mail" block of work package B (contracts.ts, task A). They are defined locally
- * so the module compiles before the contracts land; they are structurally identical, so once contracts.ts
- * has them, replace this block with `import type { ... } from '../../../shared/contracts'`.
  */
 
-export type MailCategory = 'junk' | 'bulk' | 'info' | 'reply' | 'action' | 'meeting' | 'private';
-export type MailStatus = 'new' | 'triaging' | 'triaged' | 'drafting' | 'draft_ready' | 'in_chat' | 'handled';
-export type MailHandled = 'dropped' | 'replied' | 'declined' | 'done' | 'outlook';
-export type MailAuthor = 'user' | 'agent' | 'agent_edited';
-export type MailRuleKind = 'ignore_sender' | 'important_sender' | 'never_ai_sender' | 'never_ai_subject';
-export interface MailAddress { name: string; address: string }
-export interface MailAttachmentInfo { index: number; name: string; size: number; inline: boolean }
-export interface MailHeader {
-  entryId: string; storeId: string; internetId: string; conversationId: string;
-  folder: 'inbox' | 'sent'; messageClass: string;
-  from: MailAddress; to: MailAddress[]; cc: MailAddress[];
-  subject: string; at: string; unread: boolean;
-  attachments: MailAttachmentInfo[]; headers: Record<string, string>; sendToken: string;
-}
-export interface MailMessage extends MailHeader { bodyText: string; bodyHtml: string | null; truncated: boolean }
-export interface MailItemView {
-  id: number; threadId: string; from: MailAddress; subject: string; at: string;
-  category: MailCategory | null; summary: string; reason: string; suggestedAction: string;
-  needsAction: boolean; phishing: boolean; status: MailStatus; handled: MailHandled | null;
-  attachmentCount: number; agent: 'working' | 'idle' | 'error' | null;
-  draft: 'writing' | 'proposed' | 'failed' | null;
-}
-export interface MailDraftView {
-  id: number; mailId: number; version: number; replyAll: boolean; body: string;
-  attachments: { path: string; name: string }[];
-  status: 'writing' | 'proposed' | 'sent' | 'declined' | 'superseded' | 'failed'; error: string;
-}
-export interface MailRule { id: number; kind: MailRuleKind; pattern: string }
-
-const MAIL_CATEGORY_LIST: MailCategory[] = ['junk', 'bulk', 'info', 'reply', 'action', 'meeting', 'private'];
-/** Categories that count in the overlay while unhandled (MAIL_ATTENTION in contracts). */
-const ATTENTION: MailCategory[] = ['reply', 'action', 'private'];
+import type {
+  MailAddress, MailAttachmentInfo, MailAuthor, MailCategory, MailDraftView, MailHandled, MailHeader, MailItemView,
+  MailMessage, MailRule, MailRuleKind, MailStatus,
+} from '../../../shared/contracts';
+import { MAIL_ATTENTION, MAIL_CATEGORIES } from '../../../shared/contracts';
 
 export const BODY_CAP = 100_000;
 const JUNK_BODY_DAYS = 30;
@@ -345,11 +314,11 @@ export function createMailStore(path: string, now: () => Date = () => new Date()
       };
     },
     attention() {
-      const marks = ATTENTION.map(() => '?').join(',');
-      return items(`WHERE m.direction = 'in' AND m.status != 'handled' AND m.category IN (${marks}) ORDER BY m.at DESC, m.id DESC`, ...ATTENTION);
+      const marks = MAIL_ATTENTION.map(() => '?').join(',');
+      return items(`WHERE m.direction = 'in' AND m.status != 'handled' AND m.category IN (${marks}) ORDER BY m.at DESC, m.id DESC`, ...MAIL_ATTENTION);
     },
     counts(sinceIso) {
-      const out = Object.fromEntries(MAIL_CATEGORY_LIST.map((c) => [c, 0])) as Record<MailCategory, number>;
+      const out = Object.fromEntries(MAIL_CATEGORIES.map((c) => [c, 0])) as Record<MailCategory, number>;
       for (const r of all(`SELECT category, COUNT(*) AS n FROM mails WHERE direction = 'in' AND status != 'handled' AND category IS NOT NULL AND at >= ? GROUP BY category`, sinceIso)) {
         if (str(r.category) in out) out[str(r.category) as MailCategory] = num(r.n);
       }
