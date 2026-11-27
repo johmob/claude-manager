@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-27T09:06:26.956Z",
+  "updated": "2026-11-27T09:09:01.271Z",
   "tracks": [
     {
       "id": "design",
@@ -1489,7 +1489,7 @@
               "id": "mail.3.4",
               "title": "Markeras läst i Outlook",
               "status": "not_started",
-              "notes": "Användaren: när mejlet hanterats i appen markeras det som läst i Outlook."
+              "notes": "Användaren: \"hanterat\" betyder att användaren agerat på agentens förslag (godkänt svaret, gjort åtgärden eller avfärdat det), inte att agenten läst mejlet. Först då markeras mejlet som läst i Outlook."
             }
           ]
         },
@@ -1502,7 +1502,7 @@
               "id": "mail.4.1",
               "title": "Trådens historik och kontext",
               "status": "not_started",
-              "notes": "Varje mejltråd (ConversationID) får egen session, transkript och arbetsmapp med det agenten skapat; sparas över omstart.",
+              "notes": "Varje mejltråd (ConversationID) får egen session, transkript och arbetsmapp med det agenten skapat; sparas över omstart. Användaren: data sparas strukturerat i en databas, inte som tusentals JSON-filer. Förslag: en SQLite-fil i appens datamapp (node:sqlite finns inbyggt i Electrons Node) med tabeller för mejl (Outlook-id, tråd-id, avsändare, mottagare, ämne, tid, bedömning, status), trådar (session-id, sammanfattning) och händelser (agentens svar, åtgärder, skapade filer); bara agentens filer ligger som filer i en mapp per tråd.",
               "dependsOn": [
                 "mail.3.2"
               ]
