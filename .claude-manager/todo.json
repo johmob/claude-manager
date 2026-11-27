@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-25T07:01:13.761Z",
+  "updated": "2026-11-27T08:09:36.267Z",
   "tracks": [
     {
       "id": "design",
@@ -533,6 +533,12 @@
               "title": "Städa gammal frågestil",
               "status": "not_started",
               "notes": "De .qf-regler i styles.css som bara det borttagna helskärmsflödet för frågor använde."
+            },
+            {
+              "id": "chat.2.18",
+              "title": "Dubbla frågor slås ihop",
+              "status": "not_started",
+              "notes": "Användaren: agenten ställer en fråga, arbetar vidare och ställer den igen med annan formulering i ett senare meddelande; då visas båda som egna frågor. Förslag: när taggaren (turn-tags) hittar frågor och det redan finns obesvarade, får Haiku de öppna frågorna med och markerar vilka nya som är samma fråga; den nyare formuleringen ersätter den äldre på samma plats (utkast till svar behålls), i stället för att läggas till."
             }
           ]
         },
