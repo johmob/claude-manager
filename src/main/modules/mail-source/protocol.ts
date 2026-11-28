@@ -90,6 +90,7 @@ function attachments(v: unknown): MailAttachmentInfo[] {
     name: str(a.name),
     size: num(a.size),
     inline: a.inline === true,
+    contentId: str(a.contentId),
   }));
 }
 

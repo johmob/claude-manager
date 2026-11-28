@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-28T06:57:34.578Z",
+  "updated": "2026-11-28T07:01:48.808Z",
   "tracks": [
     {
       "id": "design",
@@ -1569,8 +1569,8 @@
             {
               "id": "mail.3.1",
               "title": "Originalmejlet i appen",
-              "status": "not_started",
-              "notes": "Delvis klart (90 %). Originalmejlet visas i sandlådad iframe (srcdoc) utan att appens CSP behöver ändras; text/HTML-växel och tråd syns. Provat med testmejl utan bilagor och länkar: bilagechips, spara/öppna och länklistan är inte provade mot riktig bilaga. Användaren (0.1.42): visningen \"Som skickat\" visar inte bilder, har en vit ruta och andra typsnitt; den ska visas i appens stil i stället.",
+              "status": "done",
+              "notes": "Originalmejlet visas i appen i appens stil: temats bakgrund, textfärg och typsnitt, mejlets egna typsnitt, färger och bakgrunder bortrensade, struktur och tabeller kvar, länkar listade men inte klickbara. Inbäddade bilder (cid) sparas i trådens mapp och visas; externa bilder blockeras med knappen Visa externa bilder per mejl. Läget Text finns kvar. Släppt i 0.1.43; enhetstestat, bilagor och verkliga mejl bedöms i användning.",
               "dependsOn": [
                 "mail.1.2"
               ]

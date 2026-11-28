@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { MailAddress, MailAttachmentInfo, MailCategory, MailItemView, MailMessageView } from '../../../../shared/contracts';
 import { errorMessage, send } from '../../lib/api';
-import { mailLinkItems, mailSrcdoc, remoteImageCount, textLinks, textSrcdoc, type MailLink } from '../../lib/mailHtml';
+import { DEFAULT_PALETTE, mailLinkItems, mailSrcdoc, remoteImageCount, textLinks, textSrcdoc, type MailLink, type MailPalette } from '../../lib/mailHtml';
 import '../../styles/mail-case.css';
 import { useContextMenu } from '../ContextMenu';
 
@@ -120,6 +120,36 @@ function ThreadRow({ item }: { item: MailItemView }) {
   );
 }
 
+/** The active theme's colours, font and text size for the mail frame; follows theme and zoom changes. */
+function readPalette(): MailPalette {
+  const css = getComputedStyle(document.documentElement);
+  const v = (name: string, fallback: string): string => css.getPropertyValue(name).trim() || fallback;
+  const size = parseFloat(getComputedStyle(document.body).fontSize);
+  return {
+    bg: v('--bg', DEFAULT_PALETTE.bg),
+    text: v('--text', DEFAULT_PALETTE.text),
+    muted: v('--muted', DEFAULT_PALETTE.muted),
+    accent: v('--accent-ui', DEFAULT_PALETTE.accent),
+    border: v('--border', DEFAULT_PALETTE.border),
+    font: v('--font', DEFAULT_PALETTE.font),
+    mono: v('--mono', DEFAULT_PALETTE.mono),
+    size: Number.isFinite(size) ? size : DEFAULT_PALETTE.size,
+  };
+}
+
+function usePalette(): MailPalette {
+  const [palette, setPalette] = useState<MailPalette>(readPalette);
+  useEffect(() => {
+    const update = (): void => setPalette((old) => { const n = readPalette(); return JSON.stringify(n) === JSON.stringify(old) ? old : n; });
+    const mo = new MutationObserver(update);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'style', 'class'] });
+    window.addEventListener('resize', update);
+    update();
+    return () => { mo.disconnect(); window.removeEventListener('resize', update); };
+  }, []);
+  return palette;
+}
+
 /**
  * The original mail, in the app and never in Outlook. HTML mail is shown in a sandboxed frame (no scripts, no
  * remote content, nothing can navigate); a phishing suspect opens as plain text. Links are listed with their
@@ -132,7 +162,12 @@ export function MailMessage({ view }: { view: MailMessageView }) {
   const [error, setError] = useState('');
   // A mail the sorter flagged as phishing starts as text; the user can still look at the HTML.
   const text = asText ?? (!hasHtml || item.phishing);
-  const srcDoc = useMemo(() => (text ? textSrcdoc(view.bodyText) : mailSrcdoc(view.bodyHtml ?? '')), [text, view.bodyText, view.bodyHtml]);
+  const palette = usePalette();
+  const [remote, setRemote] = useState(false);
+  const srcDoc = useMemo(
+    () => (text ? textSrcdoc(view.bodyText, palette) : mailSrcdoc(view.bodyHtml ?? '', palette, remote)),
+    [text, view.bodyText, view.bodyHtml, palette, remote],
+  );
   const links = useMemo<MailLink[]>(
     () => (text || !view.bodyHtml ? textLinks(view.bodyText).map((url) => ({ url, text: '', mismatch: false })) : mailLinkItems(view.bodyHtml)),
     [text, view.bodyText, view.bodyHtml],
@@ -175,7 +210,14 @@ export function MailMessage({ view }: { view: MailMessageView }) {
         <div className="mm-view-switch" role="group" aria-label="Visning">
           <button type="button" data-on={!text || undefined} onClick={() => setAsText(false)}>Som skickat</button>
           <button type="button" data-on={text || undefined} onClick={() => setAsText(true)}>Text</button>
-          {blocked > 0 && <span className="mm-blocked" title="Bilder från webben hämtas inte, så att avsändaren inte ser att du läst mejlet">{blocked} {blocked === 1 ? 'bild' : 'bilder'} från webben blockerade</span>}
+          {blocked > 0 && !text && (remote ? (
+            <span className="mm-blocked">Bilder från webben visas</span>
+          ) : (
+            <span className="mm-blocked" title="Bilder från webben hämtas inte, så att avsändaren inte ser att du läst mejlet">
+              {blocked} {blocked === 1 ? 'bild' : 'bilder'} från webben blockerade
+              <button type="button" className="link-btn" onClick={() => setRemote(true)}> Visa externa bilder</button>
+            </span>
+          ))}
         </div>
       )}
       <iframe className="mm-frame" title="Mejlets innehåll" sandbox="" srcDoc={srcDoc} />

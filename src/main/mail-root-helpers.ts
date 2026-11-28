@@ -111,3 +111,36 @@ export function idOf(v: unknown): number | null {
 /** Attachment types that can run code or active content beyond what the app's general "runnable" list covers: shown in their folder, never opened by a click. */
 const RISKY_ATTACHMENT = /\.(docm|dotm|xlsm|xltm|xlam|pptm|potm|ppam|ppsm|html?|xhtml|svg|iso|img|vhdx?|chm|appx|appxbundle|msix|dll|ocx|sys|url|website|application|gadget|library-ms|search-ms|diagcab|one)$/i;
 export const isRiskyAttachment = (path: string): boolean => RISKY_ATTACHMENT.test(path);
+
+/** A Content-ID as it is compared: no angle brackets, URL-decoded, lower case. */
+export function cidKey(cid: string): string {
+  let c = cid.trim().replace(/^<|>$/g, '');
+  try {
+    c = decodeURIComponent(c);
+  } catch {
+    // keep as written
+  }
+  return c.toLowerCase();
+}
+
+/** The Content-IDs the HTML refers to as cid:... (normalised). */
+export function cidRefs(html: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of html.matchAll(/\bcid:([^"'\s>)]+)/gi)) out.add(cidKey(m[1]!));
+  return out;
+}
+
+/** The image type of the bytes (only formats that are safe to show), or null. */
+export function imageMime(b: Buffer): string | null {
+  if (b.length > 12 && b[0] === 0x89 && b.toString('latin1', 1, 4) === 'PNG') return 'image/png';
+  if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  if (b.length > 6 && b.toString('latin1', 0, 3) === 'GIF') return 'image/gif';
+  if (b.length > 12 && b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
+  if (b.length > 2 && b[0] === 0x42 && b[1] === 0x4d) return 'image/bmp';
+  return null;
+}
+
+/** Replaces cid:... references with the given data URIs (key: normalised Content-ID). Unknown ones stay. */
+export function replaceCids(html: string, uris: Map<string, string>): string {
+  return html.replace(/\bcid:([^"'\s>)]+)/gi, (all, id: string) => uris.get(cidKey(id)) ?? all);
+}

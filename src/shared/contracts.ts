@@ -861,7 +861,14 @@ export type MailRuleKind = 'ignore_sender' | 'important_sender' | 'never_ai_send
 export const MAIL_RULE_KINDS: readonly MailRuleKind[] = ['ignore_sender', 'important_sender', 'never_ai_sender', 'never_ai_subject'];
 
 export interface MailAddress { name: string; address: string }
-export interface MailAttachmentInfo { index: number; name: string; size: number; inline: boolean }
+export interface MailAttachmentInfo {
+  index: number;
+  name: string;
+  size: number;
+  inline: boolean;
+  /** The Content-ID an inline image is referred to by (cid:...); empty for ordinary attachments. */
+  contentId?: string;
+}
 
 /** One item as a mail source reports it, without its body. */
 export interface MailHeader {

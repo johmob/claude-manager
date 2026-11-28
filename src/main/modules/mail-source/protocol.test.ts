@@ -122,7 +122,7 @@ describe('toHeader / toMessage', () => {
     expect(h.entryId).toBe('5');
     expect(h.to).toEqual([]);
     expect(h.from).toEqual({ name: '', address: '' });
-    expect(h.attachments).toEqual([{ index: 0, name: '', size: 0, inline: false }]);
+    expect(h.attachments).toEqual([{ index: 0, name: '', size: 0, inline: false, contentId: '' }]);
     expect(h.unread).toBe(false);
   });
 

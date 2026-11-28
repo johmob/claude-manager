@@ -235,8 +235,9 @@ function Header-Of($item, [string]$folder, [bool]$withHeaders) {
     for ($i = 1; $i -le $n; $i++) {
       try {
         $a = $as.Item($i)
-        $inline = (Prop $a $PA_CONTENT_ID) -ne ''
-        [void]$atts.Add(@{ index = $i; name = (Str $a.FileName); size = [int64]$a.Size; inline = $inline })
+        $cid = Prop $a $PA_CONTENT_ID
+        $inline = $cid -ne ''
+        [void]$atts.Add(@{ index = $i; name = (Str $a.FileName); size = [int64]$a.Size; inline = $inline; contentId = $cid })
       } catch {}
     }
   } catch {}

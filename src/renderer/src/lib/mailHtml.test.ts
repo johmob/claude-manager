@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAIL_CSP, linkMismatch, mailLinkItems, mailLinks, mailSrcdoc, remoteImageCount, sanitizeMailHtml, textLinks, textSrcdoc } from './mailHtml';
+import { DEFAULT_PALETTE, MAIL_CSP, linkMismatch, mailLinkItems, mailLinks, mailSrcdoc, remoteImageCount, sanitizeMailHtml, textLinks, textSrcdoc } from './mailHtml';
 
 describe('sanitizeMailHtml', () => {
   it('removes scripts with their content, also unclosed ones', () => {
@@ -37,7 +37,15 @@ describe('sanitizeMailHtml', () => {
 
   it('removes dangerous inline styles', () => {
     expect(sanitizeMailHtml('<div style="width:expression(alert(1))">x</div>')).toBe('<div>x</div>');
-    expect(sanitizeMailHtml('<div style="color:red">x</div>')).toBe('<div style="color:red">x</div>');
+    expect(sanitizeMailHtml('<div style="margin:4px">x</div>')).toBe('<div style="margin:4px">x</div>');
+  });
+
+  it("removes the sender's colours, fonts, backgrounds and style blocks but keeps structure", () => {
+    expect(sanitizeMailHtml('<div style="color:red; FONT-FAMILY: Comic Sans; background:#fff; margin:4px">x</div>')).toBe('<div style="margin:4px">x</div>');
+    expect(sanitizeMailHtml('<td style="background-image:url(http://x/a.png);text-align:center">x</td>')).toBe('<td style="text-align:center">x</td>');
+    expect(sanitizeMailHtml('<table bgcolor="#fff" background="x.png"><tr><td>x</td></tr></table>')).toBe('<table><tr><td>x</td></tr></table>');
+    expect(sanitizeMailHtml('<font face="Arial" color="red" size="4"><b>x</b></font>')).toBe('<font size="4"><b>x</b></font>');
+    expect(sanitizeMailHtml('<style>p{color:red}</style><p>x</p>')).toBe('<p>x</p>');
   });
 
   it('leaves text with a stray less-than alone', () => {
@@ -66,8 +74,28 @@ describe('mailSrcdoc', () => {
     expect(doc.match(/<!doctype/gi)).toHaveLength(1);
   });
 
-  it('has a light base style', () => {
-    expect(mailSrcdoc('x')).toContain('background:#fff');
+  it("uses the app's colours and font, not a white page", () => {
+    const doc = mailSrcdoc('<p>x</p>', { ...DEFAULT_PALETTE, bg: '#05060b', text: '#f6f8fc', font: '"Inter Variable", sans-serif', size: 14 });
+    expect(doc).toContain('background:#05060b');
+    expect(doc).toContain('color:#f6f8fc');
+    expect(doc).toContain('font:14px/1.5 "Inter Variable", sans-serif');
+    expect(doc).not.toContain('#fff');
+  });
+
+  it('does not let a theme value break out of the stylesheet', () => {
+    const doc = mailSrcdoc('x', { ...DEFAULT_PALETTE, bg: 'red}</style><script>alert(1)</script>' });
+    expect(doc).not.toContain('<script');
+    expect(doc.match(/<\/style>/g)).toHaveLength(1);
+  });
+
+  it('allows images from the web only when asked for', () => {
+    expect(mailSrcdoc('x')).toContain('img-src data:"');
+    expect(mailSrcdoc('x', DEFAULT_PALETTE, true)).toContain('img-src data: https:');
+  });
+
+  it('shows the plain text in the app style too', () => {
+    expect(textSrcdoc('a < b')).toContain('a &lt; b');
+    expect(textSrcdoc('x')).toContain('background:#0f1115');
   });
 });
 

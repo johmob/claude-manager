@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MailHeader } from '../shared/contracts';
-import { agentState, isRiskyAttachment, attachmentPath, cleanText, firstExisting, hintStats, idOf, isInside, sanitiseFileName, selectIngest, sendErrorText, threadDirOf } from './mail-root-helpers';
+import { cidKey, cidRefs, imageMime, replaceCids, agentState, isRiskyAttachment, attachmentPath, cleanText, firstExisting, hintStats, idOf, isInside, sanitiseFileName, selectIngest, sendErrorText, threadDirOf } from './mail-root-helpers';
 
 const header = (entryId: string, at: string, unread: boolean): MailHeader => ({
   entryId, storeId: '', internetId: '', conversationId: '', folder: 'inbox', messageClass: 'IPM.Note',
@@ -105,5 +105,24 @@ describe('small mappings', () => {
     expect(idOf(0)).toBeNull();
     expect(idOf(1.5)).toBeNull();
     expect(idOf('3')).toBeNull();
+  });
+});
+
+describe('inline images', () => {
+  it('finds and replaces cid references, ignoring case and brackets', () => {
+    const html = "<img src=\"cid:Logo%40x.png\"><img src='cid:other'>";
+    expect([...cidRefs(html)].sort()).toEqual(['logo@x.png', 'other']);
+    expect(cidKey('<Logo@X.png>')).toBe('logo@x.png');
+    const out = replaceCids(html, new Map([['logo@x.png', 'data:image/png;base64,AA']]));
+    expect(out).toContain('src="data:image/png;base64,AA"');
+    expect(out).toContain('cid:other');
+  });
+
+  it('recognises only safe image formats by their bytes', () => {
+    expect(imageMime(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0, 0]))).toBe('image/png');
+    expect(imageMime(Buffer.from([0xff, 0xd8, 0xff, 0xe0]))).toBe('image/jpeg');
+    expect(imageMime(Buffer.from('GIF89a....'))).toBe('image/gif');
+    expect(imageMime(Buffer.from('<svg xmlns="x"></svg>'))).toBeNull();
+    expect(imageMime(Buffer.from([0x4d, 0x5a, 0x90, 0x00]))).toBeNull();
   });
 });

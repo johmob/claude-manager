@@ -51,8 +51,8 @@
 .mm-view-switch button { background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 3px 11px; font-size: 0.75rem; color: var(--muted); }
 .mm-view-switch button[data-on] { background: var(--bg-hover); color: var(--text); border-color: var(--accent-ui); }
 .mm-blocked { margin-left: auto; font-size: 0.75rem; color: var(--muted); }
-/* The frame is the mail's own page: white as the sender wrote it, whatever the app's theme. */
-.mm-frame { flex: 1; min-height: 340px; width: 100%; margin: 8px 0 0; border: 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: #fff; color-scheme: light; }
+/* The frame shows the mail in the app's own colours and font (the page inside is styled from the active theme). */
+.mm-frame { flex: 1; min-height: 340px; width: 100%; margin: 8px 0 0; border: 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--bg); color-scheme: dark; }
 .mm-empty { padding: 10px 14px; color: var(--muted); font-size: 0.85rem; }
 
 .mm-links { padding: 8px 14px; font-size: 0.8125rem; }

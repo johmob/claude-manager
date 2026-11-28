@@ -4,7 +4,7 @@
 // error classes. Mail sessions' events and transcripts do not reach the app log either (index.ts routes them here).
 import { ipcMain } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import type {
   AppSettings, IpcEventChannel, IpcEventMap, IpcInvokeChannel, IpcInvokeMap, MailAccount, MailAttachmentInfo, MailCategory, MailDraftView,
@@ -21,7 +21,7 @@ import {
   type MailToolDeps, type PromptContext, type PromptMail, type ToolMail, type ToolThread,
 } from './modules/mail-agent';
 import {
-  BACKFILL_DAYS, agentState, attachmentPath, cleanText, firstExisting, hintStats, idOf, isInside, isRiskyAttachment, selectIngest, sendErrorText, threadDirOf,
+  BACKFILL_DAYS, agentState, attachmentPath, cidKey, cidRefs, cleanText, imageMime, replaceCids, firstExisting, hintStats, idOf, isInside, isRiskyAttachment, selectIngest, sendErrorText, threadDirOf,
 } from './mail-root-helpers';
 
 export interface MailFeatureDeps {
@@ -746,11 +746,42 @@ export function createMailFeature(deps: MailFeatureDeps): MailFeature {
   async function saveAttachmentFile(m: StoredMessage, index: number): Promise<string> {
     const info: MailAttachmentInfo | undefined = m.attachments.find((a) => a.index === index);
     if (!info) throw new Error('Bilagan finns inte.');
+    return saveAttachmentAs(m, info);
+  }
+
+  async function saveAttachmentAs(m: StoredMessage, info: MailAttachmentInfo): Promise<string> {
+    const index = info.index;
     const path = attachmentPath(threadDirOf(mailDir, m.threadId), m.item.id, index, info.name);
     if (existsSync(path) && statSync(path).size > 0) return path;
     if (!source || source.status().state !== 'connected') throw new Error('Outlook är inte igång, så bilagan kan inte hämtas.');
     await source.saveAttachment(m.entryId, index, path);
     return path;
+  }
+
+  const INLINE_IMAGE_MAX = 4_000_000;
+  const INLINE_TOTAL_MAX = 12_000_000;
+
+  /** Inline images (cid:) of an HTML body become data URIs, saved in the thread folder on the way, so the sandboxed view can show them. */
+  async function inlineImages(m: StoredMessage, attachments: MailAttachmentInfo[], html: string): Promise<string> {
+    const wanted = cidRefs(html);
+    if (wanted.size === 0) return html;
+    const uris = new Map<string, string>();
+    let total = 0;
+    for (const a of attachments) {
+      const key = a.contentId ? cidKey(a.contentId) : '';
+      if (!key || !wanted.has(key) || uris.has(key) || a.size > INLINE_IMAGE_MAX || total + a.size > INLINE_TOTAL_MAX) continue;
+      try {
+        const path = await saveAttachmentAs(m, a);
+        const bytes = readFileSync(path);
+        const mime = imageMime(bytes);
+        if (!mime) continue;
+        total += bytes.length;
+        uris.set(key, `data:${mime};base64,${bytes.toString('base64')}`);
+      } catch (e) {
+        logError('inline-image', e);
+      }
+    }
+    return uris.size ? replaceCids(html, uris) : html;
   }
 
   // ---------- sending ----------
@@ -935,7 +966,7 @@ export function createMailFeature(deps: MailFeatureDeps): MailFeature {
     if (reqOf(req)['html'] === true && source && source.status().state === 'connected') {
       try {
         const full = await source.fetch(m.entryId, { html: true });
-        bodyHtml = full.bodyHtml;
+        bodyHtml = full.bodyHtml ? await inlineImages(m, full.attachments, full.bodyHtml) : null;
         if (!bodyText) bodyText = full.bodyText;
       } catch (e) {
         logError('message-html', e);
