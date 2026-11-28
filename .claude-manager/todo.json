@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-28T07:01:48.808Z",
+  "updated": "2026-11-28T07:05:45.333Z",
   "tracks": [
     {
       "id": "design",
@@ -683,8 +683,8 @@
         },
         {
           "id": "chat.5",
-          "title": "Bilder och filer: spara och dela",
-          "notes": "Användaren: bilder i helskärm och filer som agenten länkar ska kunna sparas, laddas ned och delas, t.ex. till Teams eller Outlook. Ligger i kvällens kö (punkt 1).",
+          "title": "Bilder och filer",
+          "notes": "Användaren: bilder i helskärm och filer som agenten länkar ska kunna sparas, laddas ned och delas, t.ex. till Teams eller Outlook. Ligger i kvällens kö (punkt 1). Gäller att spara och dela bilder och filer.",
           "items": [
             {
               "id": "chat.5.1",
@@ -1141,9 +1141,9 @@
             },
             {
               "id": "ui.4.4",
-              "title": "Översikt/Fokus till vänster, fönsterknapparna borta",
+              "title": "Flikar till vänster",
               "status": "done",
-              "notes": "Användaren: flikarna skymdes av den centrerade overlayen; flyttade efter Grundregler med avgränsare. Vänster/Höger halva/Helskärm borttagna (Windows snappar själv). Klart."
+              "notes": "Användaren: flikarna skymdes av den centrerade overlayen; flyttade efter Grundregler med avgränsare. Vänster/Höger halva/Helskärm borttagna (Windows snappar själv). Klart. Översikt och Fokus ligger till vänster, och fönsterknapparna är borta."
             },
             {
               "id": "ui.4.5",
@@ -1247,7 +1247,7 @@
             },
             {
               "id": "life.2.5",
-              "title": "Gränsmeddelandet säger när gränsen återställs",
+              "title": "Återställningstid i gränsmeddelandet",
               "status": "done",
               "notes": "Användaren: när gränsen nås ska det stå att det fortsätter kl xx, eller vilken dag om det inte är i dag. Klart i chattens notis och på kortet."
             },
@@ -1311,9 +1311,9 @@
           "items": [
             {
               "id": "sched.1.1",
-              "title": "Jobbfil per projekt (.claude-manager/schedule.json)",
+              "title": "Jobbfil per projekt",
               "status": "done",
-              "notes": "Format: id, namn, cron, slag (command/agent), kommando eller uppgift, påslagen, väck agenten vid fel. Appen läser och bevakar filen."
+              "notes": "Format: id, namn, cron, slag (command/agent), kommando eller uppgift, påslagen, väck agenten vid fel. Appen läser och bevakar filen. Filen är .claude-manager/schedule.json i projektet."
             },
             {
               "id": "sched.1.2",
