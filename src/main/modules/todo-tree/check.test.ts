@@ -9,10 +9,11 @@ const check = (items: unknown[], agentsWorking = true) => checkSchema(tree(items
 describe('checkSchema', () => {
   it('is quiet for a tidy schema', () => {
     expect(check([leaf({ status: 'done', notes: 'Klart och provat' })])).toEqual([]);
+    expect(check([leaf({ status: 'done', notes: 'Historiken finns kvar efter omstart.' })])).toEqual([]);
   });
 
   it('flags a done item whose note says it is untested or left', () => {
-    for (const notes of ['Ej provat', 'inte testat än', 'Det är mycket kvar', 'Återstår: test', 'not tested']) {
+    for (const notes of ['Ej provat', 'inte testat än', 'Kvar: test i appen', 'Mycket kvar att göra', 'Ej committat', 'Återstår: test', 'not tested']) {
       expect(check([leaf({ id: 'fw.2', status: 'done', notes })])[0]).toContain('fw.2 är klar');
     }
     expect(check([leaf({ status: 'not_started', notes: 'Ej provat' })])).toEqual([]);

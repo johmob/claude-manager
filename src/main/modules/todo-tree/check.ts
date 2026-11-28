@@ -4,7 +4,7 @@ const MAX_FINDINGS = 8;
 const MAX_WORDS = 5;
 const MAX_TITLE_CHARS = 40;
 /** A note on a finished item that still says something is untested or left. */
-const STALE_NOTE = /(?<![\p{L}\d])(?:(?:ej|inte) (?:provat|testat|prövat)|kvar|återstår|not tested)(?![\p{L}\d])/iu;
+const STALE_NOTE = /(?<![\p{L}\d])(?:(?:ej|inte) (?:provat|provad|testat|prövat|committat)|kvar att|kvar:|återstår|not tested)(?![\p{L}\d])/iu;
 const ARCHIVE_TITLE = /^klart\s*\(/i;
 
 /** Concrete problems in the work schema, each naming the item, so the agent can correct them. */

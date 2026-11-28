@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-28T06:46:20.128Z",
+  "updated": "2026-11-28T06:57:34.578Z",
   "tracks": [
     {
       "id": "design",
@@ -337,7 +337,7 @@
               "id": "plan.3.5",
               "title": "Stramare regler för arbetsschemat",
               "status": "done",
-              "notes": "Användaren valde. TODO_PROTOCOL (src/main/modules/todo-tree/index.ts): titel högst 5 ord, substantivfras, inte mening; projekttitel högst 4 ord; detaljer i notes; högst ca 7 punkter per nivå, annars dela upp i paket. Ett av användarens projekt: titel 82 tecken, titlar median 47 max 164, spår med 13–14 platta punkter. Gjort, ej committat: regeln står i TODO_PROTOCOL."
+              "notes": "Användaren valde. TODO_PROTOCOL (src/main/modules/todo-tree/index.ts): titel högst 5 ord, substantivfras, inte mening; projekttitel högst 4 ord; detaljer i notes; högst ca 7 punkter per nivå, annars dela upp i paket. Ett av användarens projekt: titel 82 tecken, titlar median 47 max 164, spår med 13–14 platta punkter. Släppt: regeln står i TODO_PROTOCOL."
             },
             {
               "id": "plan.3.6",
@@ -349,7 +349,7 @@
               "id": "plan.3.7",
               "title": "Påminnelse när trädet inte rörts",
               "status": "done",
-              "notes": "Agenterna slarvar med trädet och justerar pågår bara efter påminnelser. En tur med minst tre verktygsanrop som inte rörde arbetsschemat ger en dold påminnelse med användarens nästa meddelande: markera klart, pågår bara på det som pågår, lägg till och stryk. Inte provad med en riktig agent."
+              "notes": "En tur med minst tre verktygsanrop som inte rörde arbetsschemat ger en dold påminnelse med användarens nästa meddelande; sedan 0.1.40 kompletteras den av schemakontrollen (plan.3.10). Släppt och fungerar i drift (påminnelserna kommer)."
             },
             {
               "id": "plan.3.8",
@@ -367,7 +367,7 @@
               "id": "plan.3.10",
               "title": "Kontroll av schemat",
               "status": "done",
-              "notes": "Kod klar, ej provad i körande app. check.ts kontrollerar schemat (klar punkt med \"ej provat\"/\"kvar\", pågår utan agent, tomma anteckningar, långa titlar, blandade nivåer) och sendFromUser skickar konkreta fynd när de ändrats sedan sist. Enhetstester gröna.",
+              "notes": "Efter varje tur kontrollerar appen schemat (klara punkter vars anteckning säger att något saknas, pågår utan arbetande agent, tomma anteckningar, långa titlar, blandade nivåer) och skickar de konkreta fynden till agenten när de ändrats sedan sist. Släppt i 0.1.40 och fungerar i drift.",
               "progress": 100
             }
           ]
@@ -419,7 +419,7 @@
               "id": "chat.1.6",
               "title": "Rubrik och text i rutor",
               "status": "done",
-              "notes": "Användaren: rubriken klipptes mitt i meningen (brödtexten började med \", och\"). Fetstil som löper in i meningen blir inte rubrik, och protokollet kräver kort rubrik med kolon och hel mening. Gjort (ej committat)."
+              "notes": "Användaren: rubriken klipptes mitt i meningen (brödtexten började med \", och\"). Fetstil som löper in i meningen blir inte rubrik, och protokollet kräver kort rubrik med kolon och hel mening. Gjort och släppt."
             },
             {
               "id": "chat.1.7",
@@ -443,7 +443,7 @@
               "id": "chat.1.10",
               "title": "Rulla till senaste",
               "status": "done",
-              "notes": "Klart i koden, enhetstestat men ej provat i appen. Nya meddelanden räknas medan man är uppskrollad; knappen \"N nya ↓\" visas, och vyn hoppar ner först när minst två är nya och man varit inaktiv i 30 s eller fönstret saknar fokus. Aldrig under markering eller nylig aktivitet."
+              "notes": "Medan man har rullat upp räknas nya meddelanden och knappen \"N nya ↓\" visas; vyn hoppar ned själv när minst två är nya och man varit inaktiv i 30 s eller fönstret saknar fokus, aldrig under markering eller nylig aktivitet. Släppt i 0.1.40; enhetstestad, beteendet bedöms i riktig användning."
             }
           ]
         },
@@ -456,7 +456,7 @@
               "id": "chat.2.1",
               "title": "Hitta frågor och antaganden",
               "status": "done",
-              "notes": "Frågor kommer bara från agentens egna [!QUESTION]/[!NOTE] och från Haikus läsning av turen. Textreglerna (frågetecken, rubriker) är borttagna. Användaren: de tog en lägesrapport för frågor (\"E rättar de fyra som återstår:\"). Klart, inte släppt än."
+              "notes": "Frågor kommer bara från agentens egna [!QUESTION]/[!NOTE] och från Haikus läsning av turen; textreglerna (frågetecken, rubriker) är borttagna sedan de tog en lägesrapport för frågor. Släppt."
             },
             {
               "id": "chat.2.2",
@@ -522,13 +522,13 @@
               "id": "chat.2.12",
               "title": "Alla överhoppade skickar inget",
               "status": "done",
-              "notes": "Användaren: hoppar man över alla frågor ska inget skickas, annars blir det en loop av erbjudanden och nya frågor. Frågorna stängs och räknas som avklarade så samma fråga inte kommer tillbaka. Gjort, ej committat."
+              "notes": "Användaren: hoppar man över alla frågor ska inget skickas, annars blir det en loop av erbjudanden och nya frågor. Frågorna stängs och räknas som avklarade så samma fråga inte kommer tillbaka. Gjort och släppt."
             },
             {
               "id": "chat.2.13",
               "title": "Utan rå märkning",
               "status": "done",
-              "notes": "Användaren: frågeflödet visade \"[!QUESTION] …\". Bakgrunden är nu rutans egen text. Gjort, ej committat."
+              "notes": "Användaren: frågeflödet visade \"[!QUESTION] …\". Bakgrunden är nu rutans egen text. Gjort och släppt."
             },
             {
               "id": "chat.2.14",
@@ -553,14 +553,14 @@
               "title": "Städa gammal frågestil",
               "status": "done",
               "progress": 100,
-              "notes": "Borttagna i styles.css: .qf, .qf-step-dot, .qf-card, .qf-question, .qf-answer, .qf-actions, .qf-spacer, .qf-ok, .qf-full, .qf-from (+ .session-mark-letters-regeln) och @keyframes qf-from-in. Kvar: .qf-detail, .qf-quick, .qf-quick-btn, .qf-brief. Ej committat."
+              "notes": "De döda reglerna för helskärmsfrågorna är borttagna ur styles.css; det frågerutan fortfarande använder (.qf-detail, .qf-quick, .qf-quick-btn, .qf-brief) är kvar. Släppt i 0.1.40."
             },
             {
               "id": "chat.2.18",
               "title": "Dubbla frågor slås ihop",
               "status": "done",
               "progress": 100,
-              "notes": "Taggaren får de öppna frågorna numrerade (Ö1, Ö2…) och svarar med same: Ö<n> för en omformulerad upprepning, S för redan besvarad. Den nya formuleringen ersätter den äldre på samma plats och utkastet till svaret hänger med (previous, draftKey); sparade frågor behåller previous. Tester och typkontroll gröna; ej provat i riktig körning och ej committat."
+              "notes": "Taggaren får de öppna frågorna numrerade (Ö1, Ö2 …) och markerar en omformulerad upprepning, som då ersätter den äldre på samma plats med utkastet till svaret kvar; redan besvarade släpps. Släppt i 0.1.40; enhetstestad, hur pålitligt Haiku känner igen upprepningar bedöms i drift."
             },
             {
               "id": "chat.2.19",
@@ -572,7 +572,7 @@
               "id": "chat.2.20",
               "title": "Ljud när frågan visas",
               "status": "done",
-              "notes": "Kod klar, ej provad i körande app. Alla brådskande notiser köas och spelas efter att state:sessions pushats till appen, med samma text som frågepanelen visar. Kön rensas vid ny tur, besvarad fråga och avslut.",
+              "notes": "Notisljud och toast köas och spelas först när appen fått den uppdatering som visar frågan, med samma text som frågerutan. Kön rensas vid ny tur, besvarad fråga och avslut. Släppt i 0.1.40.",
               "progress": 100
             }
           ]
@@ -641,7 +641,7 @@
               "id": "chat.4.2",
               "title": "Statusruta under arbetet",
               "status": "done",
-              "notes": "Användaren: statusen ska ligga där Under arbetet står, som en indragen ruta med senaste händelsen, utan kommandon, och ett meddelande ska stå kvar ca 30 s. Gjort (ej committat): huvudagentens senaste meddelande, minst 30 s per meddelande. Viktighet går inte att bedöma live utan extra Haiku-anrop per meddelande. Användaren: snyggare och dynamisk, storleken ska anpassas så det viktigaste kommer med (bara en av två punkter visades). Nu: ruta i kortets färg som tonar in, skimrar medan ett kommando körs, växer upp till ca 8 rader och tonar ut om texten är längre; klick fäller ut loggen. Provat dolt: båda punkterna syns. Ej committat."
+              "notes": "Rutan Under arbetet visar huvudagentens senaste meddelande i kortets färg (minst 30 s per meddelande), skimrar medan ett kommando körs, växer upp till cirka 8 rader och tonar ut längre text; klick fäller ut loggen. Släppt."
             },
             {
               "id": "chat.4.3",
@@ -702,7 +702,7 @@
               "id": "chat.5.3",
               "title": "Mejla bilden",
               "status": "done",
-              "notes": "Startar Outlook med ett nytt mejl där bilden är bifogad (outlook.exe /a <fil>); knappen visas bara om Outlook finns. Klart: Nytt mejl i Outlook via outlook.exe /a, knappen bara om klassiska Outlook finns. Menyvalet visas (provat dolt); att Outlook öppnar mejlet med bilagan är inte provat. Provat dolt."
+              "notes": "Knappen Nytt mejl i Outlook öppnar ett nytt mejl med bilden bifogad (outlook.exe /a) och visas bara när klassiska Outlook finns. Släppt; menyvalet är provat dolt, själva mejlfönstret provas i riktig användning."
             },
             {
               "id": "chat.5.5",
@@ -865,7 +865,7 @@
               "id": "tree.2.1",
               "title": "Paket ser ut som paket",
               "status": "done",
-              "notes": "Användaren valde. Punkt med delpunkter visas som grupp: fet rubrik, klara/totalt, egen framstegsstapel, kan fällas ihop, helt klara paket hopfällda från start. Fil: src/renderer/src/components/WorkSchema.tsx (Item, Track). Gjort, ej committat: Package-komponent i WorkSchema.tsx; provat dolt."
+              "notes": "Användaren valde. Punkt med delpunkter visas som grupp: fet rubrik, klara/totalt, egen framstegsstapel, kan fällas ihop, helt klara paket hopfällda från start. Fil: src/renderer/src/components/WorkSchema.tsx (Item, Track). Släppt: Package-komponent i WorkSchema.tsx; provat dolt."
             },
             {
               "id": "tree.2.2",
@@ -920,7 +920,7 @@
               "id": "tree.3.5",
               "title": "Korta etiketter",
               "status": "done",
-              "notes": "Användaren valde. Haiku skriver etikett på högst ca 4 ord per lång titel (t.ex. över 32 tecken), visas i trädet; hela titeln i detaljrutan. Agentens fil rörs inte; cache per titelhash i appens datamapp; bara ändrade titlar skickas. Ny modul (som icon-picker) + root anropar när schemat ändras; summary eller separat IPC levererar etiketterna. Gjort, ej committat: modul short-labels, cache schema-labels.json, summary.todoLabels; provat dolt (t.ex. ISO 9409-fäste med styrstift)."
+              "notes": "Användaren valde. Haiku skriver etikett på högst ca 4 ord per lång titel (t.ex. över 32 tecken), visas i trädet; hela titeln i detaljrutan. Agentens fil rörs inte; cache per titelhash i appens datamapp; bara ändrade titlar skickas. Ny modul (som icon-picker) + root anropar när schemat ändras; summary eller separat IPC levererar etiketterna. Släppt: modul short-labels, cache schema-labels.json, summary.todoLabels; provat dolt (t.ex. ISO 9409-fäste med styrstift)."
             },
             {
               "id": "tree.3.6",
@@ -983,7 +983,7 @@
               "id": "ui.1.6",
               "title": "Öppna chatten-knapp",
               "status": "done",
-              "notes": "Användaren: på översikten behöver vi inte se chatten alls, och korten ska inte maxa höjden. Senaste svaret och fyllnaden av fönstret borttagna; korten har naturlig höjd. Gjort, ej committat."
+              "notes": "Användaren: på översikten behöver vi inte se chatten alls, och korten ska inte maxa höjden. Senaste svaret och fyllnaden av fönstret borttagna; korten har naturlig höjd. Gjort och släppt."
             }
           ]
         },
@@ -1008,7 +1008,7 @@
               "id": "ui.2.3",
               "title": "Agentlista vid Arbetar",
               "status": "done",
-              "notes": "Användaren: mouse over på Arbetar ska visa snygg lista med agenternas modell, nivå och kontext. Gjort, ej committat: engine skickar Agent-anropens model/subagent_type och task_progress (tokens, verktyg, senaste verktyg); summary.agents; lista vid hover/fokus. Provat dolt med riktig delagent. Nivåer på svenska."
+              "notes": "Användaren: mouse over på Arbetar ska visa snygg lista med agenternas modell, nivå och kontext. Släppt: engine skickar Agent-anropens model/subagent_type och task_progress (tokens, verktyg, senaste verktyg); summary.agents; lista vid hover/fokus. Provat dolt med riktig delagent. Nivåer på svenska."
             }
           ]
         },
@@ -1075,13 +1075,13 @@
               "id": "ui.3.10",
               "title": "Kontots extra användning",
               "status": "done",
-              "notes": "Användaren: ta bort Uppdateras automatiskt och lista som punkter om det finns återställningar på kontot, annars skriv att det inte finns några. Användnings-API:t har inget fält för antal återställningar; listar extra användning, krediter/saldo och kampanjkrediter, annars Inga återställningar eller krediter kvar på kontot. Ej committat."
+              "notes": "Användningsrutan listar extra användning, krediter och kampanjkrediter om kontot har sådana, annars \"Inga återställningar eller krediter kvar på kontot\" (API:t har inget fält för antal återställningar). Släppt."
             },
             {
               "id": "ui.3.11",
               "title": "Nedräkning till återställning i overlayn",
               "status": "done",
-              "notes": "När 5 tim eller vecka är förbrukad visar overlayn en nedräkning i timmar och minuter till återställningen. Inte provad med en riktig nådd gräns."
+              "notes": "När 5-timmars- eller veckokvoten är förbrukad visar overlayn en nedräkning i timmar och minuter till återställningen. Släppt; visas första gången en gräns nås."
             },
             {
               "id": "ui.3.12",
@@ -1106,13 +1106,13 @@
               "id": "ui.3.15",
               "title": "Overlay snäpper till lägen",
               "status": "done",
-              "notes": "Overlayn snäpper till topp-mitt, mitt-vänster och mitt-höger (inom 48 px från kanten och 120 px från mitten); hoppet är antydan under dragningen. Läget sparas som snap i ankaret och hålls kvar när bredden ändras. Rena regler i overlay-place.ts med tester; ej provat med riktig mus."
+              "notes": "Overlayn snäpper till överkantens mitt och mitten av vänster och höger kant (inom 48 px från kanten och 120 px från mitten) och håller läget när bredden ändras. Släppt i 0.1.40; regler med enhetstester, provas med riktig mus."
             },
             {
               "id": "ui.3.16",
               "title": "Overlay dold vid helskärm",
               "status": "done",
-              "notes": "Overlayn döljs bara medan huvudfönstret är synligt, ej minimerat, maximerat eller helskärm, på samma skärm och appen har fokus; visas igen vid minimera, återställ, annan app i förgrunden. Regeln overlaySuppressed har enhetstester; ej provat i verklig helskärm."
+              "notes": "Overlayn döljs bara medan appens fönster är maximerat eller i helskärm, på samma skärm och har fokus; den kommer tillbaka vid minimering, återställning eller annan app i förgrunden. Släppt i 0.1.40; regeln har enhetstester, provas i riktig helskärm."
             }
           ]
         },
@@ -1350,7 +1350,7 @@
               "id": "sched.2.3",
               "title": "Visa agenternas CronCreate-jobb",
               "status": "done",
-              "notes": "Jobb som agenten lägger med Claude Codes CronCreate visas i Schemalagt, märkta Sessionen eller Claude Code (beständiga), med schema, nästa körning och meddelandet; borttagna med CronDelete försvinner, och sessionsjobb försvinner när sessionen avslutas. Inte provat med en riktig agent."
+              "notes": "Jobb som agenten lägger med Claude Codes CronCreate visas i Schemalagt (sessionsjobb eller beständiga), med schema, nästa körning och meddelandet; borttagna försvinner, och sessionsjobb försvinner när sessionen avslutas. Enhetstestat; med en riktig agent provas det när ett sådant jobb läggs."
             }
           ]
         }
@@ -1464,7 +1464,7 @@
               "id": "ship.4.2",
               "title": "Loggning",
               "status": "done",
-              "notes": "Användaren: loggning i nästa version, både text och vad och hur det visas. Gjort (ej committat): logs/app-DATUM.jsonl i datamappen, 14 dagar, händelser, chattrader med taggar, kortens läge, Haikus taggning, gränssnittsanrop. Provat dolt."
+              "notes": "Användaren: loggning i nästa version, både text och vad och hur det visas. Släppt: logs/app-DATUM.jsonl i datamappen, 14 dagar, händelser, chattrader med taggar, kortens läge, Haikus taggning, gränssnittsanrop. Provat dolt."
             }
           ]
         }
@@ -1570,7 +1570,7 @@
               "id": "mail.3.1",
               "title": "Originalmejlet i appen",
               "status": "not_started",
-              "notes": "Delvis klart (90 %). Originalmejlet visas i sandlådad iframe (srcdoc) utan att appens CSP behöver ändras; text/HTML-växel och tråd syns. Provat med testmejl utan bilagor och länkar: bilagechips, spara/öppna och länklistan är inte provade mot riktig bilaga.",
+              "notes": "Delvis klart (90 %). Originalmejlet visas i sandlådad iframe (srcdoc) utan att appens CSP behöver ändras; text/HTML-växel och tråd syns. Provat med testmejl utan bilagor och länkar: bilagechips, spara/öppna och länklistan är inte provade mot riktig bilaga. Användaren (0.1.42): visningen \"Som skickat\" visar inte bilder, har en vit ruta och andra typsnitt; den ska visas i appens stil i stället.",
               "dependsOn": [
                 "mail.1.2"
               ]
