@@ -1,6 +1,6 @@
 {
   "title": "Claude Manager",
-  "updated": "2026-11-28T07:09:35.725Z",
+  "updated": "2026-11-28T07:11:13.979Z",
   "tracks": [
     {
       "id": "design",
@@ -1766,7 +1766,7 @@
               "id": "mail.6.5",
               "title": "Samspel med planeringsappen",
               "status": "not_started",
-              "notes": "Förslag från main, ej beslutat. Användarens planeringsapp bokar arbetspass som upptagen tid i Outlook och kopplar mötestid till projekt. Mejlspåret ska läsa det i stället för att dubblera: krockkontrollen (mail.6.2) ser skillnad på inbokade arbetspass (flyttbara) och möten, åtgärder och löften från mejl (mail.4.5) kan bli punkter i planeringsappen, och morgonöversikten (mail.7.1) tar med dagens plan. Hur appen lagrar sin data utreds först; den ändras inte utan användarens beslut. Användaren (2026-11-28): koppla ihop apparna så att löften i agentens mejlsvar blir punkter i planeringsappen. Förslag efter koll av planeringsappen: den håller sin data i minnet och skriver hela filen själv, så Claude Manager ska inte skriva i den filen (ändringar skulle skrivas över). I stället lägger Claude Manager en liten JSON-fil per löfte i en inkorgsmapp bredvid planeringsappens data (titel, beskrivning, förfallodag, länk tillbaka till mejltråden), och planeringsappen bevakar mappen, tar in punkten och tar bort filen. Det kräver en liten ändring i planeringsappen, som görs i dess eget projekt efter användarens beslut. Löftet föreslås i svarsutkastet och skickas till planeringsappen först när användaren godkänner svaret.",
+              "notes": "Förslag från main, ej beslutat. Användarens planeringsapp bokar arbetspass som upptagen tid i Outlook och kopplar mötestid till projekt. Mejlspåret ska läsa det i stället för att dubblera: krockkontrollen (mail.6.2) ser skillnad på inbokade arbetspass (flyttbara) och möten, åtgärder och löften från mejl (mail.4.5) kan bli punkter i planeringsappen, och morgonöversikten (mail.7.1) tar med dagens plan. Hur appen lagrar sin data utreds först; den ändras inte utan användarens beslut. Användaren (2026-11-28): koppla ihop apparna så att löften i agentens mejlsvar blir punkter i planeringsappen. Förslag efter koll av planeringsappen: den håller sin data i minnet och skriver hela filen själv, så Claude Manager ska inte skriva i den filen (ändringar skulle skrivas över). Användaren (2026-11-28): planeringsappen ska inte ändras eller veta om kopplingen; Claude Manager tvingar in punkten. Plan: när användaren godkänt ett svar med löfte stänger Claude Manager planeringsappen snyggt (så den sparar), lägger in punkten i dess datafil med säkerhetskopia och atomisk skrivning, och startar den igen. Flera löften samlas och läggs in på en gång. Planeringsappen läser inte om filen medan den kör, därför omstarten. Risk: ett kort blink när den startas om.",
               "size": 5
             }
           ]
