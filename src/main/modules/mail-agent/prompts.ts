@@ -74,7 +74,7 @@ function contextBody(ctx: PromptContext): string {
   return parts.join('\n') || 'Ingen extra information.';
 }
 
-/** "Svara åt mig": write a first draft through propose_reply. */
+/** "Skriv svar": write a first draft through propose_reply. */
 export function draftPrompt(mail: PromptMail, ctx: PromptContext): string {
   return [
     appContext('Mejlagenten skriver ett utkast', contextBody(ctx)),
@@ -89,7 +89,7 @@ export function revisePrompt(comment: string): string {
     `\n\nAnvändarens kommentar:\n${comment}\n\nSkriv om utkastet efter kommentaren och lämna det med mcp__mail__propose_reply.`;
 }
 
-/** "Ta det med agenten": the opening of the chat. */
+/** "Prata igenom": the opening of the chat. */
 export function chatOpening(mail: PromptMail, ctx: PromptContext): string {
   return [
     appContext('Mejlagenten får mejlet', contextBody(ctx)),

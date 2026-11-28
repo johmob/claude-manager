@@ -678,7 +678,12 @@ export function isInside(root: string, path: string): boolean {
 
 /** What a sandboxed session may do; everything not listed is denied, never asked about. */
 export function sandboxDecision(sandbox: NonNullable<SessionStartSpec['sandbox']>, toolName: string, input: Record<string, unknown>): SandboxDecision {
-  if (toolName.startsWith('mcp__mail__') || SANDBOX_READ_TOOLS.includes(toolName)) return { allow: true };
+  if (toolName.startsWith('mcp__mail__')) return { allow: true };
+  // Reads stay inside the thread folder too, so text in a mail cannot lead the agent to other files on the computer.
+  if (SANDBOX_READ_TOOLS.includes(toolName)) {
+    const target = [input.file_path, input.path, input.pattern].find((v): v is string => typeof v === 'string' && /^([a-z]:|[\\/])/i.test(v));
+    return !target || isInside(sandbox.writeRoot, target) ? { allow: true } : { allow: false, message: SANDBOX_DENIED };
+  }
   const key = SANDBOX_WRITE_TOOLS[toolName];
   if (key) {
     const path = input[key];

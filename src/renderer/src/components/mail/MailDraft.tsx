@@ -110,7 +110,7 @@ export function MailDraft({ mailId, draft, writing, from, others, compact = fals
     return (
       <div className="mdr mdr-state" data-compact={compact || undefined}>
         <span className="mdr-muted">Inget utkast ännu.</span>
-        <button type="button" className="btn primary" onClick={() => send('mail:act', { mailId, action: 'reply' })}>Svara åt mig</button>
+        <button type="button" className="btn primary" onClick={() => send('mail:act', { mailId, action: 'reply' })}>Skriv svar</button>
       </div>
     );
   }

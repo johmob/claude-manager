@@ -64,7 +64,7 @@ export function needsAttention(m: MailItemView): boolean {
 }
 
 const HANDLED_TEXT: Record<NonNullable<MailItemView['handled']>, string> = {
-  dropped: 'Släppt',
+  dropped: 'Ignorerat',
   replied: 'Besvarad',
   declined: 'Avstod',
   done: 'Klar',

@@ -53,7 +53,7 @@ function chatLines(entries: TranscriptEntry[]): Line[] {
 }
 
 /**
- * "Ta det med agenten": a talk with the thread's mail agent next to the original mail. The plain quick-chat style
+ * "Prata igenom": a talk with the thread's mail agent next to the original mail. The plain quick-chat style
  * is used, not the work transcript with tags and folding, which is made for coding sessions. A draft the agent
  * proposes shows above the input with the same Skicka / Ändra med kommentar / Avstå choices.
  */

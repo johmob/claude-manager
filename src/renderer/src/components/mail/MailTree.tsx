@@ -35,9 +35,9 @@ function MailRow({ item }: { item: MailItemView }) {
         </div>
       )}
       <div className="mt-actions">
-        <button type="button" className="btn small" title="Markera som läst och gå vidare" onClick={(e) => act(e, item.id, 'drop')}>Släpp</button>
-        <button type="button" className="btn small" disabled={locked} title={locked ? lockedTitle : 'Agenten skriver ett svarsutkast åt dig'} onClick={(e) => act(e, item.id, 'reply')}>Svara åt mig</button>
-        <button type="button" className="btn small" disabled={locked} title={locked ? lockedTitle : 'Öppna mejlet med en agent att prata igenom det med'} onClick={(e) => act(e, item.id, 'agent')}>Ta det med agenten</button>
+        <button type="button" className="btn small" title="Markera som läst och gå vidare" onClick={(e) => act(e, item.id, 'drop')}>Ignorera</button>
+        <button type="button" className="btn small" disabled={locked} title={locked ? lockedTitle : 'Agenten skriver ett svarsutkast åt dig'} onClick={(e) => act(e, item.id, 'reply')}>Skriv svar</button>
+        <button type="button" className="btn small" disabled={locked} title={locked ? lockedTitle : 'Öppna mejlet med en agent att prata igenom det med'} onClick={(e) => act(e, item.id, 'agent')}>Prata igenom</button>
       </div>
     </li>
   );

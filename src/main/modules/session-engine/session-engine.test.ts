@@ -178,6 +178,14 @@ describe('sandboxDecision', () => {
     expect(sandboxDecision(sandbox, 'Write', {}).allow).toBe(false);
   });
 
+  it('allows reading only inside the root', () => {
+    expect(sandboxDecision(sandbox, 'Read', { file_path: 'C:\\Data\\mail\\threads\\abc\\a.txt' }).allow).toBe(true);
+    expect(sandboxDecision(sandbox, 'Read', { file_path: 'C:\\Windows\\win.ini' }).allow).toBe(false);
+    expect(sandboxDecision(sandbox, 'Grep', { pattern: 'x', path: 'C:/Users' }).allow).toBe(false);
+    expect(sandboxDecision(sandbox, 'Glob', { pattern: 'C:/**/*.txt' }).allow).toBe(false);
+    expect(sandboxDecision(sandbox, 'Glob', { pattern: '*.md' }).allow).toBe(true);
+  });
+
   it('allows reading and the mail tools, denies everything else', () => {
     for (const tool of ['Read', 'Glob', 'Grep', 'mcp__mail__propose_reply']) expect(sandboxDecision(sandbox, tool, {}).allow).toBe(true);
     for (const tool of ['Bash', 'PowerShell', 'WebFetch', 'WebSearch', 'Agent', 'mcp__other__send']) {

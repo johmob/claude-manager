@@ -1119,14 +1119,14 @@ export interface IpcInvokeMap {
   /** Recent mail of all categories, newest first (the list view). */
   'mail:list': { req: { days: number }; res: MailItemView[] };
   'mail:message': { req: { mailId: number; html: boolean }; res: MailMessageView | null };
-  /** drop = Släpp, reply = Svara åt mig, agent = Ta det med agenten, done = handled in the chat view, reopen = back to unhandled (not unread). */
+  /** drop = Ignorera, reply = Skriv svar, agent = Prata igenom, done = handled in the chat view, reopen = back to unhandled (not unread). */
   'mail:act': { req: { mailId: number; action: 'drop' | 'reply' | 'agent' | 'done' | 'reopen' }; res: void };
   'mail:draft': { req: { mailId: number }; res: MailDraftView | null };
   'mail:draft-revise': { req: { mailId: number; comment: string }; res: void };
   /** Sends the approved draft through Outlook; body is what the user approved (maybe edited); attachments are the ticked ones. */
   'mail:draft-send': { req: { mailId: number; draftId: number; body: string; replyAll: boolean; attachments: string[] }; res: { ok: boolean; error: string } };
   'mail:draft-decline': { req: { mailId: number; draftId: number }; res: void };
-  /** A message to the thread's agent (Ta det med agenten). */
+  /** A message to the thread's agent (Prata igenom). */
   'mail:chat': { req: { mailId: number; text: string }; res: void };
   'mail:reclassify': { req: { mailId: number; category: MailCategory }; res: void };
   'mail:rules': { req: void; res: MailRule[] };

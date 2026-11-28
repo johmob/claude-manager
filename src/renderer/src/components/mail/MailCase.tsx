@@ -12,7 +12,7 @@ import { agentActionsDisabled } from './mailRows';
 export type MailCaseMode = 'mail' | 'draft' | 'chat';
 
 const HANDLED_TEXT: Record<MailHandled, string> = {
-  dropped: 'Släppt',
+  dropped: 'Ignorerat',
   replied: 'Besvarat',
   declined: 'Du avstod från att svara',
   done: 'Klart',
@@ -57,7 +57,7 @@ function useMailMessage(mailId: number): { view: MailMessageView | null; loaded:
 
 /**
  * One mail in full: the original on the left (in the app, never in Outlook), and next to it what the user is
- * doing with it: the draft to approve ("Svara åt mig") or a talk with the agent ("Ta det med agenten").
+ * doing with it: the draft to approve ("Skriv svar") or a talk with the agent ("Prata igenom").
  */
 export function MailCase({ mailId, mode: initial, onClose }: { mailId: number; mode: MailCaseMode; onClose: () => void }) {
   const { view, loaded, error } = useMailMessage(mailId);
@@ -107,7 +107,7 @@ export function MailCase({ mailId, mode: initial, onClose }: { mailId: number; m
               title={agentOff ? 'Mejlet är undantaget från Claude av en av dina regler' : 'Agenten skriver ett svar som du godkänner'}
               onClick={() => choose('draft')}
             >
-              Svara åt mig
+              Skriv svar
             </button>
             <button
               type="button"
@@ -118,7 +118,7 @@ export function MailCase({ mailId, mode: initial, onClose }: { mailId: number; m
               title={agentOff ? 'Mejlet är undantaget från Claude av en av dina regler' : 'Prata igenom mejlet med agenten'}
               onClick={() => choose('chat')}
             >
-              Ta det med agenten
+              Prata igenom
             </button>
           </div>
           <div className="mc-bar-right">
@@ -137,7 +137,7 @@ export function MailCase({ mailId, mode: initial, onClose }: { mailId: number; m
                   onClose();
                 }}
               >
-                Släpp
+                Ignorera
               </button>
             )}
           </div>
